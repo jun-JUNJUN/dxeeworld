@@ -42,11 +42,16 @@ def create_app():
         }),
     ]
     
+    # テンプレートディレクトリを作成（存在しない場合）
+    template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates')
+    os.makedirs(template_path, exist_ok=True)
+    
     # アプリケーション設定
     settings = {
         "debug": config['debug'],
         "static_path": static_path,
         "static_url_prefix": "/static/",
+        "template_path": template_path,
         "autoreload": config['debug'],
         # 静的ファイルのキャッシュ設定
         "static_hash_cache": not config['debug'],

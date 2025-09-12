@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}ホーム - Startup Platform{% end %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-content">
+        <h1 class="hero-title">次世代のスタートアップエコシステム</h1>
+        <p class="hero-subtitle">
+            イノベーションと才能が出会う場所。あなたのキャリアを加速させ、
+            未来を創造するスタートアップに参加しよう。
+        </p>
+        <div class="hero-actions">
+            {% if not current_user %}
+            <a href="/register" class="btn btn-primary">今すぐ始める</a>
+            <a href="/jobs" class="btn btn-secondary">求人を探す</a>
+            {% else %}
+            <a href="/jobs" class="btn btn-primary">求人を探す</a>
+            <a href="/profile" class="btn btn-secondary">プロフィール</a>
+            {% end %}
+        </div>
+    </div>
+    <div class="hero-visual">
+        <div class="floating-cards">
+            <div class="card startup-card">
+                <div class="card-icon">🚀</div>
+                <h3>スタートアップ</h3>
+                <p>革新的なアイデアを実現</p>
+            </div>
+            <div class="card talent-card">
+                <div class="card-icon">💡</div>
+                <h3>優秀な人材</h3>
+                <p>専門スキルを持つプロ</p>
+            </div>
+            <div class="card growth-card">
+                <div class="card-icon">📈</div>
+                <h3>成長機会</h3>
+                <p>キャリアアップを支援</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="features-section">
+    <div class="section-header">
+        <h2>プラットフォームの特徴</h2>
+        <p>Kaggleライクな競争的環境で、最高の才能とプロジェクトを発見</p>
+    </div>
+    
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">🎯</div>
+            <h3>精密なマッチング</h3>
+            <p>AIを活用したスキルマッチングシステムで、最適な求人とタレントをマッチング</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">🏆</div>
+            <h3>実績ベース評価</h3>
+            <p>プロジェクトの成果と実績を可視化し、透明性の高い評価システムを提供</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">🌐</div>
+            <h3>グローバルネットワーク</h3>
+            <p>世界中のスタートアップと人材を繋ぐ、ボーダーレスなプラットフォーム</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">📚</div>
+            <h3>学習リソース</h3>
+            <p>スキルアップのための教材とメンターシップで継続的な成長をサポート</p>
+        </div>
+    </div>
+</section>
+
+<section class="stats-section">
+    <div class="stats-container">
+        <div class="stat-item">
+            <div class="stat-number">10,000+</div>
+            <div class="stat-label">アクティブユーザー</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">5,000+</div>
+            <div class="stat-label">求人情報</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">1,200+</div>
+            <div class="stat-label">登録企業</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">95%</div>
+            <div class="stat-label">マッチング成功率</div>
+        </div>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="cta-content">
+        <h2>今すぐあなたの未来を始めよう</h2>
+        <p>革新的なスタートアップで働き、世界を変える一員になりませんか？</p>
+        {% if not current_user %}
+        <a href="/register" class="btn btn-primary btn-large">無料で登録する</a>
+        {% else %}
+        <a href="/jobs" class="btn btn-primary btn-large">求人を探す</a>
+        {% end %}
+    </div>
+</section>
+{% end %}

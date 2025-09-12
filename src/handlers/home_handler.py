@@ -9,4 +9,4 @@ class HomeHandler(BaseHandler):
     
     def get(self):
         """ホームページを表示"""
-        self.write("<html><body><h1>Startup Platform</h1><p>Coming Soon...</p></body></html>")
+        self.render("home.html")
