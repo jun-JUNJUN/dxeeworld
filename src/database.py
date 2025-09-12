@@ -102,6 +102,71 @@ class DatabaseService:
             logger.error(f"delete_one エラー: {e}")
             return False
     
+    async def find_many(self, collection: str, filter_dict: dict = None, limit: int = None, sort: list = None):
+        """複数ドキュメントを検索"""
+        try:
+            if not self.client:
+                await self.connect()
+            
+            collection_obj = self.db[collection]
+            cursor = collection_obj.find(filter_dict or {})
+            
+            if sort:
+                cursor = cursor.sort(sort)
+            
+            if limit:
+                cursor = cursor.limit(limit)
+            
+            results = await cursor.to_list(length=limit)
+            return results
+            
+        except Exception as e:
+            logger.error(f"find_many エラー: {e}")
+            return []
+    
+    async def update_one(self, collection: str, filter_dict: dict, update_dict: dict):
+        """単一ドキュメントを更新"""
+        try:
+            if not self.client:
+                await self.connect()
+            
+            collection_obj = self.db[collection]
+            result = await collection_obj.update_one(filter_dict, {'$set': update_dict})
+            return result.modified_count > 0
+            
+        except Exception as e:
+            logger.error(f"update_one エラー: {e}")
+            return False
+    
+    async def count_documents(self, collection: str, filter_dict: dict = None):
+        """ドキュメント数をカウント"""
+        try:
+            if not self.client:
+                await self.connect()
+            
+            collection_obj = self.db[collection]
+            count = await collection_obj.count_documents(filter_dict or {})
+            return count
+            
+        except Exception as e:
+            logger.error(f"count_documents エラー: {e}")
+            return 0
+    
+    async def aggregate(self, collection: str, pipeline: list):
+        """集約クエリを実行"""
+        try:
+            if not self.client:
+                await self.connect()
+            
+            collection_obj = self.db[collection]
+            cursor = collection_obj.aggregate(pipeline)
+            results = await cursor.to_list(length=None)
+            return results
+            
+        except Exception as e:
+            logger.error(f"aggregate エラー: {e}")
+            return []
+    
     async def close(self):
         """データベース接続を閉じる"""
         if self.client:
