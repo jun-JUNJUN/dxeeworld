@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Startup Platform{% end %}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    {% block head %}{% end %}
+</head>
+<body>
+    <div class="app-container">
+        <!-- サイドバーナビゲーション -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1 class="logo">
+                    <span class="logo-icon">🚀</span>
+                    <span class="logo-text">StartupPlatform</span>
+                </h1>
+                <button class="sidebar-toggle" id="sidebar-toggle">
+                    <span class="hamburger"></span>
+                </button>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="/" class="nav-link" title="ホーム">
+                        <span class="nav-icon">🏠</span>
+                        <span class="nav-text">ホーム</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/jobs" class="nav-link" title="求人情報">
+                        <span class="nav-icon">💼</span>
+                        <span class="nav-text">求人情報</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/companies" class="nav-link" title="企業一覧">
+                        <span class="nav-icon">🏢</span>
+                        <span class="nav-text">企業一覧</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/talents" class="nav-link" title="人材情報">
+                        <span class="nav-icon">👥</span>
+                        <span class="nav-text">人材情報</span>
+                    </a>
+                </li>
+                
+                <li class="nav-separator"></li>
+                
+                {% if current_user %}
+                <li class="nav-item">
+                    <a href="/profile" class="nav-link" title="プロフィール">
+                        <span class="nav-icon">👤</span>
+                        <span class="nav-text">プロフィール</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/logout" class="nav-link" title="ログアウト">
+                        <span class="nav-icon">🚪</span>
+                        <span class="nav-text">ログアウト</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a href="/login" class="nav-link" title="ログイン">
+                        <span class="nav-icon">🔑</span>
+                        <span class="nav-text">ログイン</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/register" class="nav-link" title="新規登録">
+                        <span class="nav-icon">✍️</span>
+                        <span class="nav-text">新規登録</span>
+                    </a>
+                </li>
+                {% end %}
+            </ul>
+        </nav>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <div class="content-wrapper">
+                {% block content %}{% end %}
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    {% block scripts %}{% end %}
+</body>
+</html>
