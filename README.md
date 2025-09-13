@@ -87,7 +87,7 @@ pytest
 ## プロジェクト構造
 
 ```
-sustainablee/
+dxeeworld/
 ├── src/                    # ソースコード
 │   ├── app.py             # メインアプリケーション
 │   ├── config.py          # 設定管理

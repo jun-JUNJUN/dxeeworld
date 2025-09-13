@@ -2,9 +2,11 @@
 データベースアクセス基盤
 """
 import logging
-from typing import Optional
+import asyncio
+from typing import Optional, List, Dict, Any, Callable
 import motor.motor_asyncio
-from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
+from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure, OperationFailure
+from pymongo import UpdateOne
 from .config import get_database_connection
 
 logger = logging.getLogger(__name__)
@@ -172,3 +174,173 @@ class DatabaseService:
         if self.client:
             self.client.close()
             logger.info("データベース接続が閉じられました")
+
+    async def connect_with_retry(self, max_retries: int = 3, retry_delay: float = 1.0):
+        """リトライ機能付きデータベース接続"""
+        last_exception = None
+
+        for attempt in range(max_retries):
+            try:
+                return await self.connect()
+            except (ServerSelectionTimeoutError, ConnectionFailure) as e:
+                last_exception = e
+                logger.warning(f"接続失敗 (試行 {attempt + 1}/{max_retries}): {e}")
+
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay * (2 ** attempt))  # 指数バックオフ
+
+        raise last_exception
+
+    async def find_one_with_retry(self, collection: str, filter_dict: dict, max_retries: int = 2):
+        """リトライ機能付き単一ドキュメント検索"""
+        last_exception = None
+
+        for attempt in range(max_retries):
+            try:
+                if not self.client:
+                    await self.connect()
+
+                collection_obj = self.db[collection]
+                result = await collection_obj.find_one(filter_dict)
+                return result
+
+            except OperationFailure as e:
+                last_exception = e
+                logger.warning(f"操作失敗 (試行 {attempt + 1}/{max_retries}): {e}")
+
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(0.5)
+
+        logger.error(f"find_one_with_retry 最終エラー: {last_exception}")
+        return None
+
+    async def bulk_insert(self, collection: str, documents: List[dict]) -> List[str]:
+        """複数ドキュメントの一括挿入"""
+        try:
+            if not self.client:
+                await self.connect()
+
+            collection_obj = self.db[collection]
+            result = await collection_obj.insert_many(documents)
+            return [str(oid) for oid in result.inserted_ids]
+
+        except Exception as e:
+            logger.error(f"bulk_insert エラー: {e}")
+            raise
+
+    async def bulk_update(self, collection: str, updates: List[dict]) -> int:
+        """複数ドキュメントの一括更新"""
+        try:
+            if not self.client:
+                await self.connect()
+
+            collection_obj = self.db[collection]
+
+            # UpdateOneオペレーションのリストを作成
+            operations = []
+            for update in updates:
+                operations.append(
+                    UpdateOne(
+                        filter=update["filter"],
+                        update=update["update"],
+                        upsert=update.get("upsert", False)
+                    )
+                )
+
+            result = await collection_obj.bulk_write(operations)
+            return result.modified_count
+
+        except Exception as e:
+            logger.error(f"bulk_update エラー: {e}")
+            return 0
+
+    async def find_paginated(self, collection: str, filter_dict: dict = None,
+                           page: int = 1, page_size: int = 10,
+                           sort: List = None) -> Dict[str, Any]:
+        """ページネーション付き検索"""
+        try:
+            if not self.client:
+                await self.connect()
+
+            collection_obj = self.db[collection]
+
+            # スキップ数計算
+            skip = (page - 1) * page_size
+
+            # クエリ構築
+            cursor = collection_obj.find(filter_dict or {})
+
+            if sort:
+                cursor = cursor.sort(sort)
+
+            cursor = cursor.skip(skip).limit(page_size)
+
+            # 結果取得
+            items = await cursor.to_list(length=page_size)
+
+            # 総件数取得
+            total_count = await collection_obj.count_documents(filter_dict or {})
+
+            return {
+                "items": items,
+                "page": page,
+                "page_size": page_size,
+                "total_count": total_count,
+                "total_pages": (total_count + page_size - 1) // page_size
+            }
+
+        except Exception as e:
+            logger.error(f"find_paginated エラー: {e}")
+            return {
+                "items": [],
+                "page": page,
+                "page_size": page_size,
+                "total_count": 0,
+                "total_pages": 0
+            }
+
+    async def with_transaction(self, operation: Callable) -> Any:
+        """トランザクション付き操作実行"""
+        if not self.client:
+            await self.connect()
+
+        async with await self.client.start_session() as session:
+            async with session.start_transaction():
+                try:
+                    result = await operation(session)
+                    await session.commit_transaction()
+                    return result
+                except Exception as e:
+                    await session.abort_transaction()
+                    logger.error(f"トランザクションエラー: {e}")
+                    raise
+
+    async def create_index(self, collection: str, index_spec: List, **options) -> str:
+        """インデックス作成"""
+        try:
+            if not self.client:
+                await self.connect()
+
+            collection_obj = self.db[collection]
+            result = await collection_obj.create_index(index_spec, **options)
+            logger.info(f"インデックス作成完了: {result}")
+            return result
+
+        except Exception as e:
+            logger.error(f"create_index エラー: {e}")
+            raise
+
+    async def list_indexes(self, collection: str) -> List[dict]:
+        """インデックス一覧取得"""
+        try:
+            if not self.client:
+                await self.connect()
+
+            collection_obj = self.db[collection]
+            cursor = collection_obj.list_indexes()
+            indexes = await cursor.to_list(length=None)
+            return indexes
+
+        except Exception as e:
+            logger.error(f"list_indexes エラー: {e}")
+            return []

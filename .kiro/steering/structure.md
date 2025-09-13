@@ -3,7 +3,7 @@
 ## Root Directory Organization
 
 ```
-sustainablee/
+dxeeworld/
 ├── .claude/              # Claude Code configuration and commands
 │   └── commands/         # Custom slash commands definitions
 │       └── kiro/         # Kiro workflow command suite
@@ -140,7 +140,7 @@ Claude Code の native capabilities を最大限活用。外部依存を最小�
 
 ### 実装フェーズでの展開予想
 ```
-sustainablee/
+dxeeworld/
 ├── src/                 # ソースコード（言語別）
 ├── tests/              # テスト
 ├── docs/               # プロジェクト文書

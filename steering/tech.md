@@ -79,7 +79,7 @@ claude-code
 ## Environment Variables
 
 ### Project Configuration
-- **Working Directory**: `/Users/jun77/Documents/Dropbox/a_root/code/sustainablee`
+- **Working Directory**: `/Users/jun77/Documents/Dropbox/a_root/code/dxeeworld`
 - **Steering Path**: `.kiro/steering/`
 - **Specs Path**: `.kiro/specs/`
 - **Commands Path**: `.claude/commands/`
