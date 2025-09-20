@@ -53,7 +53,15 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"データベースヘルスチェックエラー: {e}")
             return False
-    
+
+    async def disconnect(self):
+        """データベース接続を切断"""
+        if self.client:
+            self.client.close()
+            self.client = None
+            self.db = None
+            logger.info("データベース接続を切断しました")
+
     async def connect_with_invalid_config(self):
         """テスト用: 無効な設定での接続（例外発生用）"""
         invalid_client = motor.motor_asyncio.AsyncIOMotorClient(
@@ -104,24 +112,27 @@ class DatabaseService:
             logger.error(f"delete_one エラー: {e}")
             return False
     
-    async def find_many(self, collection: str, filter_dict: dict = None, limit: int = None, sort: list = None):
+    async def find_many(self, collection: str, filter_dict: dict = None, limit: int = None, sort: list = None, skip: int = None):
         """複数ドキュメントを検索"""
         try:
             if not self.client:
                 await self.connect()
-            
+
             collection_obj = self.db[collection]
             cursor = collection_obj.find(filter_dict or {})
-            
+
             if sort:
                 cursor = cursor.sort(sort)
-            
+
+            if skip:
+                cursor = cursor.skip(skip)
+
             if limit:
                 cursor = cursor.limit(limit)
-            
+
             results = await cursor.to_list(length=limit)
             return results
-            
+
         except Exception as e:
             logger.error(f"find_many エラー: {e}")
             return []
@@ -344,3 +355,15 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"list_indexes エラー: {e}")
             return []
+
+
+# グローバルDatabaseServiceインスタンス
+_db_service_instance = None
+
+
+def get_db_service() -> DatabaseService:
+    """DatabaseServiceのシングルトンインスタンスを取得"""
+    global _db_service_instance
+    if _db_service_instance is None:
+        _db_service_instance = DatabaseService()
+    return _db_service_instance

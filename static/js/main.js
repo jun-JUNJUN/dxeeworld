@@ -1,4 +1,4 @@
-// Startup Platform - Main JavaScript
+// Startup Platform:Dxee - Main JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
     // Sidebar toggle functionality

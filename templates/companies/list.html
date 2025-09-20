@@ -1,0 +1,492 @@
+{% extends "../base.html" %}
+
+{% block title %}{{ page_title }} - Startup Platform: Dxee{% end %}
+
+{% block head %}
+<style>
+.companies-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-header {
+    margin-bottom: 30px;
+}
+
+.page-header h1 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.companies-stats {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+/* フィルターセクション */
+.filters-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+    border: 1px solid #e9ecef;
+}
+
+.filters-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.filters-header h2 {
+    font-size: 1.2rem;
+    color: #495057;
+    margin: 0;
+}
+
+.filters-toggle {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+}
+
+.filters-toggle:hover {
+    background: #e9ecef;
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.filter-group select,
+.filter-group input {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    background: white;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+    border-color: #545b62;
+}
+
+/* 企業一覧テーブル */
+.companies-table-wrapper {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.companies-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.companies-table th {
+    background: #f8f9fa;
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+    font-size: 0.9rem;
+}
+
+.companies-table td {
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: top;
+}
+
+.companies-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.company-name {
+    font-weight: 600;
+    color: #007bff;
+    text-decoration: none;
+}
+
+.company-name:hover {
+    text-decoration: underline;
+}
+
+.company-description {
+    color: #6c757d;
+    font-size: 0.85rem;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.industry-badge,
+.size-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.industry-badge {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.size-badge {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+/* ページネーション */
+.pagination-section {
+    margin-top: 30px;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.pagination-info {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.pagination {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.pagination .btn {
+    min-width: 40px;
+    text-align: center;
+}
+
+.pagination .btn.active {
+    background: #007bff;
+    color: white;
+}
+
+.pagination .btn:disabled {
+    background: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+    .companies-container {
+        padding: 10px;
+    }
+
+    .filters-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .companies-table-wrapper {
+        overflow-x: auto;
+    }
+
+    .companies-table {
+        min-width: 600px;
+    }
+
+    .pagination-section {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+.no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.no-results-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+</style>
+{% end %}
+
+{% block content %}
+<div class="companies-container">
+    <!-- ページヘッダー -->
+    <div class="page-header">
+        <h1>{{ page_title }}</h1>
+        <div class="companies-stats">
+            総企業数: {{ total_companies }}社
+            {% if filters['industry'] or filters['size'] or filters['location'] or filters['founded_year_min'] or filters['founded_year_max'] or filters['employee_count_min'] or filters['employee_count_max'] %}
+            （フィルター適用中）
+            {% end %}
+        </div>
+    </div>
+
+    <!-- フィルターセクション -->
+    <div class="filters-section">
+        <div class="filters-header">
+            <h2>検索・フィルター</h2>
+        </div>
+
+        <form method="GET" action="/companies" id="filter-form">
+            <div class="filters-grid">
+                <!-- 業界フィルター -->
+                <div class="filter-group">
+                    <label for="industry">業界</label>
+                    <select name="industry" id="industry">
+                        <option value="">すべての業界</option>
+                        {% for option in filter_options['industries'] %}
+                        <option value="{{ option['value'] }}"
+                                {% if filters['industry'] == option['value'] %}selected{% end %}>
+                            {{ option['label'] }} ({{ option['count'] }})
+                        </option>
+                        {% end %}
+                    </select>
+                </div>
+
+                <!-- 企業規模フィルター -->
+                <div class="filter-group">
+                    <label for="size">企業規模</label>
+                    <select name="size" id="size">
+                        <option value="">すべての規模</option>
+                        {% for option in filter_options['sizes'] %}
+                        <option value="{{ option['value'] }}"
+                                {% if filters['size'] == option['value'] %}selected{% end %}>
+                            {{ option['label'] }} ({{ option['count'] }})
+                        </option>
+                        {% end %}
+                    </select>
+                </div>
+
+                <!-- 所在地フィルター -->
+                <div class="filter-group">
+                    <label for="location">所在地</label>
+                    <select name="location" id="location">
+                        <option value="">すべての地域</option>
+                        {% for option in filter_options['locations'] %}
+                        <option value="{{ option['value'] }}"
+                                {% if filters['location'] == option['value'] %}selected{% end %}>
+                            {{ option['label'] }} ({{ option['count'] }})
+                        </option>
+                        {% end %}
+                    </select>
+                </div>
+
+                <!-- 設立年（開始） -->
+                <div class="filter-group">
+                    <label for="founded_year_min">設立年（開始）</label>
+                    <input type="number" name="founded_year_min" id="founded_year_min"
+                           min="1800" max="2024" placeholder="1990"
+                           value="{{ filters['founded_year_min'] or '' }}">
+                </div>
+
+                <!-- 設立年（終了） -->
+                <div class="filter-group">
+                    <label for="founded_year_max">設立年（終了）</label>
+                    <input type="number" name="founded_year_max" id="founded_year_max"
+                           min="1800" max="2024" placeholder="2024"
+                           value="{{ filters['founded_year_max'] or '' }}">
+                </div>
+
+                <!-- 従業員数（最小） -->
+                <div class="filter-group">
+                    <label for="employee_count_min">従業員数（最小）</label>
+                    <input type="number" name="employee_count_min" id="employee_count_min"
+                           min="1" placeholder="10"
+                           value="{{ filters['employee_count_min'] or '' }}">
+                </div>
+
+                <!-- 従業員数（最大） -->
+                <div class="filter-group">
+                    <label for="employee_count_max">従業員数（最大）</label>
+                    <input type="number" name="employee_count_max" id="employee_count_max"
+                           min="1" placeholder="1000"
+                           value="{{ filters['employee_count_max'] or '' }}">
+                </div>
+            </div>
+
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary">検索</button>
+                <a href="/companies" class="btn btn-secondary">フィルターをクリア</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- 企業一覧テーブル -->
+    {% if companies %}
+    <div class="companies-table-wrapper">
+        <table class="companies-table">
+            <thead>
+                <tr>
+                    <th>企業名</th>
+                    <th>業界</th>
+                    <th>規模</th>
+                    <th>所在地</th>
+                    <th>設立年</th>
+                    <th>従業員数</th>
+                    <th>概要</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for company in companies %}
+                <tr>
+                    <td>
+                        <a href="/companies/{{ company['id'] }}" class="company-name">
+                            {{ company['name'] }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="industry-badge">{{ company['industry_label'] }}</span>
+                    </td>
+                    <td>
+                        <span class="size-badge">{{ company['size_label'] }}</span>
+                    </td>
+                    <td>{{ company['location'] or '-' }}</td>
+                    <td>{{ company['founded_year'] or '-' }}</td>
+                    <td>
+                        {% if company['employee_count'] %}
+                        {{ "{:,}".format(company['employee_count']) }}名
+                        {% else %}
+                        -
+                        {% end %}
+                    </td>
+                    <td>
+                        {% if company['description'] %}
+                        <div class="company-description" title="{{ company['description'] }}">
+                            {{ company['description'] }}
+                        </div>
+                        {% else %}
+                        -
+                        {% end %}
+                    </td>
+                </tr>
+                {% end %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ページネーション -->
+    {% if total_pages > 1 %}
+    <div class="pagination-section">
+        <div class="pagination-info">
+            {{ (current_page - 1) * 30 + 1 }}〜{{ min(current_page * 30, total_companies) }}社目
+            （全{{ total_companies }}社中）
+        </div>
+
+        <div class="pagination">
+            {% if has_previous %}
+            <a href="?page={{ previous_page }}{% for key, value in filters.items() %}{% if value %}&{{ key }}={{ value }}{% end %}{% end %}"
+               class="btn btn-secondary">前</a>
+            {% else %}
+            <button class="btn btn-secondary" disabled>前</button>
+            {% end %}
+
+            <span class="btn active">{{ current_page }}</span>
+
+            {% if has_next %}
+            <a href="?page={{ next_page }}{% for key, value in filters.items() %}{% if value %}&{{ key }}={{ value }}{% end %}{% end %}"
+               class="btn btn-secondary">次</a>
+            {% else %}
+            <button class="btn btn-secondary" disabled>次</button>
+            {% end %}
+        </div>
+    </div>
+    {% end %}
+
+    {% else %}
+    <!-- 結果なしの表示 -->
+    <div class="no-results">
+        <div class="no-results-icon">🔍</div>
+        <h3>検索条件に一致する企業が見つかりませんでした</h3>
+        <p>フィルター条件を変更して再度お試しください</p>
+        <a href="/companies" class="btn btn-primary">すべての企業を表示</a>
+    </div>
+    {% end %}
+</div>
+{% end %}
+
+{% block scripts %}
+<script>
+// フィルターフォームの自動送信機能
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filter-form');
+    const selects = filterForm.querySelectorAll('select');
+
+    // セレクトボックス変更時の自動送信（オプション）
+    // selects.forEach(select => {
+    //     select.addEventListener('change', function() {
+    //         filterForm.submit();
+    //     });
+    // });
+});
+</script>
+{% end %}

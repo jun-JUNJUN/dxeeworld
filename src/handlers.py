@@ -10,15 +10,15 @@ logger = logging.getLogger(__name__)
 
 class HomeHandler(BaseHandler):
     """ホームページハンドラー"""
-    
+
     def get(self):
         """ホームページを表示"""
-        self.write("<html><body><h1>Startup Platform</h1><p>Coming Soon...</p></body></html>")
+        self.write("<html><body><h1>Startup Platform: Dxee</h1><p>Coming Soon...</p></body></html>")
 
 
 class HealthCheckHandler(BaseHandler):
     """ヘルスチェックエンドポイント"""
-    
+
     async def get(self):
         """サーバーの健全性をチェック"""
         try:

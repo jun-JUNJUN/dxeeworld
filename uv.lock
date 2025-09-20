@@ -74,6 +74,38 @@ wheels = [
 ]
 
 [[package]]
+name = "dxeeworld"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "bcrypt" },
+    { name = "jinja2" },
+    { name = "motor" },
+    { name = "python-dotenv" },
+    { name = "tornado" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-tornado" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "bcrypt", specifier = "==4.1.2" },
+    { name = "jinja2", specifier = "==3.1.3" },
+    { name = "motor", specifier = ">=3.6.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = "==7.4.4" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = "==0.21.1" },
+    { name = "pytest-tornado", marker = "extra == 'dev'", specifier = "==0.8.1" },
+    { name = "python-dotenv", specifier = "==1.0.0" },
+    { name = "tornado", specifier = "==6.5.2" },
+]
+provides-extras = ["dev"]
+
+[[package]]
 name = "exceptiongroup"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -176,14 +208,14 @@ wheels = [
 
 [[package]]
 name = "motor"
-version = "3.3.2"
+version = "3.7.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pymongo" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e3/e3/f5244c84d7bdc149d99f9baa4313f197f7d14cfa1bfe1a6ac181e10cb3e2/motor-3.3.2.tar.gz", hash = "sha256:d2fc38de15f1c8058f389c1a44a4d4105c0405c48c061cd492a654496f7bc26a", size = 272583, upload-time = "2023-11-14T21:42:47.727Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/93/ae/96b88362d6a84cb372f7977750ac2a8aed7b2053eed260615df08d5c84f4/motor-3.7.1.tar.gz", hash = "sha256:27b4d46625c87928f331a6ca9d7c51c2f518ba0e270939d395bc1ddc89d64526", size = 280997, upload-time = "2025-05-14T18:56:33.653Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3f/9a/1a43a329dffbd1a631c52e64c1e9c036621afdfd7f42096ae4bf2de4132b/motor-3.3.2-py3-none-any.whl", hash = "sha256:6fe7e6f0c4f430b9e030b9d22549b732f7c2226af3ab71ecc309e4a1b7d19953", size = 70598, upload-time = "2023-11-14T21:42:45.73Z" },
+    { url = "https://files.pythonhosted.org/packages/01/9a/35e053d4f442addf751ed20e0e922476508ee580786546d699b0567c4c67/motor-3.7.1-py3-none-any.whl", hash = "sha256:8a63b9049e38eeeb56b4fdd57c3312a6d1f25d01db717fe7d82222393c410298", size = 74996, upload-time = "2025-05-14T18:56:31.665Z" },
 ]
 
 [[package]]
@@ -332,38 +364,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/18/5d/3bf57dcd21979b887
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl", hash = "sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922", size = 1201486, upload-time = "2025-05-27T00:56:49.664Z" },
 ]
-
-[[package]]
-name = "startup-platform"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "bcrypt" },
-    { name = "jinja2" },
-    { name = "motor" },
-    { name = "python-dotenv" },
-    { name = "tornado" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-tornado" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "bcrypt", specifier = "==4.1.2" },
-    { name = "jinja2", specifier = "==3.1.3" },
-    { name = "motor", specifier = "==3.3.2" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = "==7.4.4" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = "==0.21.1" },
-    { name = "pytest-tornado", marker = "extra == 'dev'", specifier = "==0.8.1" },
-    { name = "python-dotenv", specifier = "==1.0.0" },
-    { name = "tornado", specifier = "==6.5.2" },
-]
-provides-extras = ["dev"]
 
 [[package]]
 name = "tomli"

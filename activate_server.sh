@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Startup Platform Server Activation Script
+# DXEEWorld Server Activation Script
 # This script sets up and runs the server using uv
 
 set -e  # Exit on any error
 
-echo "🚀 Starting Startup Platform Server..."
+echo "🚀 Starting DXEEWorld Server..."
 
 # Check if uv is installed
 if ! command -v uv &> /dev/null; then
@@ -84,7 +84,7 @@ case "${1:-server}" in
         echo "✅ Dependencies installed successfully!"
         ;;
     "help"|"-h"|"--help")
-        echo "Startup Platform Server Activation Script"
+        echo "DXEEWorld Server Activation Script"
         echo ""
         echo "Usage: $0 [command]"
         echo ""

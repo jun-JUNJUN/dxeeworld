@@ -18,6 +18,7 @@ class IndustryType(Enum):
     CONSULTING = "consulting"
     MEDIA = "media"
     REAL_ESTATE = "real_estate"
+    CONSTRUCTION = "construction"
     OTHER = "other"
 
 
@@ -37,6 +38,7 @@ class Company:
     name: str
     industry: IndustryType
     size: CompanySize
+    country: str  # 国名は必須フィールド
     description: Optional[str] = None
     website: Optional[str] = None
     location: Optional[str] = None
@@ -45,6 +47,10 @@ class Company:
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     is_active: bool = True
+    name_original: Optional[str] = None
+    source_files: Optional[List[str]] = None
+    foreign_company_data: Optional[dict] = None
+    construction_data: Optional[dict] = None
 
     @classmethod
     def from_dict(cls, data: dict) -> 'Company':
@@ -54,6 +60,7 @@ class Company:
             name=data['name'],
             industry=IndustryType(data['industry']),
             size=CompanySize(data['size']),
+            country=data['country'],  # 必須フィールド
             description=data.get('description'),
             website=data.get('website'),
             location=data.get('location'),
@@ -61,7 +68,11 @@ class Company:
             employee_count=data.get('employee_count'),
             created_at=data.get('created_at'),
             updated_at=data.get('updated_at'),
-            is_active=data.get('is_active', True)
+            is_active=data.get('is_active', True),
+            name_original=data.get('name_original'),
+            source_files=data.get('source_files', []),
+            foreign_company_data=data.get('foreign_company_data', {}),
+            construction_data=data.get('construction_data', {})
         )
 
     def to_dict(self) -> dict:
@@ -70,6 +81,7 @@ class Company:
             'name': self.name,
             'industry': self.industry.value,
             'size': self.size.value,
+            'country': self.country,
             'description': self.description,
             'website': self.website,
             'location': self.location,
@@ -77,5 +89,9 @@ class Company:
             'employee_count': self.employee_count,
             'created_at': self.created_at,
             'updated_at': self.updated_at,
-            'is_active': self.is_active
+            'is_active': self.is_active,
+            'name_original': self.name_original,
+            'source_files': self.source_files or [],
+            'foreign_company_data': self.foreign_company_data or {},
+            'construction_data': self.construction_data or {}
         }

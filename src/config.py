@@ -18,7 +18,7 @@ class Config:
     
     # MongoDB設定
     MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017')
-    MONGODB_DB_NAME = os.getenv('MONGODB_DB_NAME', 'startup_platform')
+    MONGODB_DB_NAME = os.getenv('MONGODB_DB_NAME', 'dxeeworld')
     
     # セキュリティ設定
     SECRET_KEY = os.getenv('SECRET_KEY', 'development-secret-key-change-in-production')

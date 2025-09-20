@@ -5,7 +5,7 @@
 
 set -e  # Exit on any error
 
-echo "🚀 Starting Startup Platform Server with uv..."
+echo "🚀 Starting DXEEWorld Server with uv..."
 
 # Check if uv is installed
 if ! command -v uv &> /dev/null; then

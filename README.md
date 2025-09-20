@@ -1,4 +1,4 @@
-# Startup Platform
+# DXEEWorld
 
 Kaggle ライクな UI/UX を持つスタートアップエコシステムプラットフォーム
 
