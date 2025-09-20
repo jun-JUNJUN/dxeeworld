@@ -17,6 +17,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 ### Active Specifications
 - **startup-platform**: Kaggle-like startup platform with home page and talent resources (Phase: initialized)
 - **company-listing**: Company database with CSV import, filtering, pagination, and detail pages (Phase: initialized)
+- **company-reviews**: Company employee review system with 7-criteria rating and search functionality (Phase: initialized)
 - Check `.kiro/specs/` for active specifications
 - Use `/kiro:spec-status [feature-name]` to check progress
 
