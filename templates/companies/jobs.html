@@ -1,0 +1,369 @@
+{% extends "../base.html" %}
+
+{% block title %}{{ page_title }} - Startup Platform: Dxee{% end %}
+
+{% block head %}
+<style>
+.jobs-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.breadcrumb {
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.breadcrumb a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.company-header {
+    background: white;
+    border-radius: 8px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.company-title {
+    font-size: 2.5rem;
+    color: #2c3e50;
+    margin-bottom: 15px;
+}
+
+.company-meta {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.meta-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.industry-badge {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.jobs-section {
+    background: white;
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.jobs-section h2 {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.job-item {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: #fafafa;
+    transition: box-shadow 0.2s;
+}
+
+.job-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.job-header {
+    display: flex;
+    justify-content: between;
+    align-items: start;
+    margin-bottom: 15px;
+    gap: 20px;
+}
+
+.job-title {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.3rem;
+    flex: 1;
+}
+
+.job-title a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.job-title a:hover {
+    text-decoration: underline;
+}
+
+.job-badges {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.badge {
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.job-type-badge {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.experience-badge {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.remote-badge {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.job-details {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.job-description {
+    color: #495057;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+.view-job-btn {
+    display: inline-block;
+    background: #007bff;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.view-job-btn:hover {
+    background: #0056b3;
+    color: white;
+    text-decoration: none;
+}
+
+/* ページネーション */
+.pagination-section {
+    margin-top: 30px;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.pagination-info {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.pagination {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.pagination .btn {
+    min-width: 40px;
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+    background: white;
+}
+
+.pagination .btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.pagination .btn:hover:not(.active):not(:disabled) {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.pagination .btn:disabled {
+    background: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+.no-jobs {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.no-jobs-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+    .jobs-container {
+        padding: 10px;
+    }
+
+    .company-header {
+        padding: 20px;
+    }
+
+    .company-title {
+        font-size: 2rem;
+    }
+
+    .job-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .job-badges {
+        align-self: flex-start;
+    }
+
+    .job-details {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .pagination-section {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+</style>
+{% end %}
+
+{% block content %}
+<div class="jobs-container">
+    <!-- パンくずリスト -->
+    <div class="breadcrumb">
+        <a href="/">ホーム</a> > <a href="/companies">企業一覧</a> > <a href="/companies/{{ company['id'] }}">{{ company['name'] }}</a> > 求人情報
+    </div>
+
+    <!-- 企業ヘッダー -->
+    <div class="company-header">
+        <h1 class="company-title">{{ company['name'] }}</h1>
+        <div class="company-meta">
+            <span class="meta-badge industry-badge">{{ company['industry_label'] }}</span>
+        </div>
+    </div>
+
+    <!-- 求人一覧 -->
+    <div class="jobs-section">
+        <h2>{{ company['name'] }}の求人情報</h2>
+
+        {% if jobs %}
+        <div class="jobs-stats" style="margin-bottom: 20px; color: #6c757d; font-size: 0.9rem;">
+            全{{ total_jobs }}件の求人情報
+        </div>
+
+        {% for job in jobs %}
+        <div class="job-item">
+            <div class="job-header">
+                <h3 class="job-title">
+                    <a href="#">{{ job['title'] }}</a>
+                </h3>
+                <div class="job-badges">
+                    <span class="badge job-type-badge">{{ job['job_type'] }}</span>
+                    <span class="badge experience-badge">{{ job['experience_level'] }}</span>
+                    {% if job['remote_work'] %}
+                    <span class="badge remote-badge">リモート可</span>
+                    {% end %}
+                </div>
+            </div>
+
+            <div class="job-details">
+                <span>📍 {{ job['location'] }}</span>
+                {% if job['salary_range'] %}
+                <span>💰 {{ "{:,}".format(job['salary_range']['min_amount']) }} - {{ "{:,}".format(job['salary_range']['max_amount']) }} 円</span>
+                {% end %}
+                <span>📅 掲載日: {{ job['posted_at'][:10] if job['posted_at'] else '不明' }}</span>
+                <span>⏰ 締切日: {{ job['expires_at'][:10] if job['expires_at'] else 'なし' }}</span>
+            </div>
+
+            {% if job['description'] %}
+            <div class="job-description">
+                {{ job['description'] }}
+            </div>
+            {% end %}
+
+            <div style="text-align: right;">
+                <a href="#" class="view-job-btn">詳細を見る</a>
+            </div>
+        </div>
+        {% end %}
+
+        <!-- ページネーション -->
+        {% if total_pages > 1 %}
+        <div class="pagination-section">
+            <div class="pagination-info">
+                {{ (current_page - 1) * 10 + 1 }}〜{{ min(current_page * 10, total_jobs) }}件目
+                （全{{ total_jobs }}件中）
+            </div>
+
+            <div class="pagination">
+                {% if has_previous %}
+                <a href="?page={{ previous_page }}" class="btn">前</a>
+                {% else %}
+                <button class="btn" disabled>前</button>
+                {% end %}
+
+                <span class="btn active">{{ current_page }}</span>
+
+                {% if has_next %}
+                <a href="?page={{ next_page }}" class="btn">次</a>
+                {% else %}
+                <button class="btn" disabled>次</button>
+                {% end %}
+            </div>
+        </div>
+        {% end %}
+
+        {% else %}
+        <!-- 求人情報なし -->
+        <div class="no-jobs">
+            <div class="no-jobs-icon">💼</div>
+            <h3>求人情報が見つかりませんでした</h3>
+            <p>現在、この企業で募集中の求人情報はありません</p>
+            <a href="/companies/{{ company['id'] }}" class="btn" style="background: #6c757d; color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none; display: inline-block; margin-top: 15px;">
+                企業詳細に戻る
+            </a>
+        </div>
+        {% end %}
+    </div>
+</div>
+{% end %}

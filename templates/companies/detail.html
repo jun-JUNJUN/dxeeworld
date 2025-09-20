@@ -350,12 +350,56 @@
         </div>
     </div>
 
-    <!-- 関連求人情報セクション（今後実装予定） -->
+    <!-- 関連求人情報セクション -->
     <div class="detail-section">
         <h3>関連求人情報</h3>
-        <div class="detail-value empty">
-            求人情報機能は準備中です
+
+        {% if related_jobs %}
+        <div class="jobs-list">
+            {% for job in related_jobs %}
+            <div class="job-item" style="border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-bottom: 15px; background: #fafafa;">
+                <div class="job-header" style="display: flex; justify-content: between; align-items: start; margin-bottom: 10px;">
+                    <h4 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">
+                        <a href="#" style="color: #007bff; text-decoration: none;">{{ job['title'] }}</a>
+                    </h4>
+                    <div class="job-badges" style="display: flex; gap: 8px;">
+                        <span class="badge" style="background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">
+                            {{ job['job_type'] }}
+                        </span>
+                        <span class="badge" style="background: #f3e5f5; color: #7b1fa2; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">
+                            {{ job['experience_level'] }}
+                        </span>
+                        {% if job['remote_work'] %}
+                        <span class="badge" style="background: #e8f5e8; color: #2e7d32; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">
+                            リモート可
+                        </span>
+                        {% end %}
+                    </div>
+                </div>
+
+                <div class="job-details" style="color: #6c757d; font-size: 0.9rem; margin-bottom: 8px;">
+                    <span style="margin-right: 15px;">📍 {{ job['location'] }}</span>
+                    {% if job['salary_range'] %}
+                    <span style="margin-right: 15px;">💰 {{ "{:,}".format(job['salary_range']['min_amount']) }} - {{ "{:,}".format(job['salary_range']['max_amount']) }} 円</span>
+                    {% end %}
+                    <span>📅 掲載日: {{ job['posted_at'][:10] if job['posted_at'] else '不明' }}</span>
+                </div>
+            </div>
+            {% end %}
+
+            {% if related_jobs|length >= 3 %}
+            <div class="view-all-jobs" style="text-align: center; margin-top: 20px;">
+                <a href="{{ jobs_url }}" class="btn btn-primary" style="display: inline-block;">
+                    すべての求人情報を見る ({{ related_jobs|length }}件)
+                </a>
+            </div>
+            {% end %}
         </div>
+        {% else %}
+        <div class="detail-value empty">
+            現在、この企業の求人情報はありません
+        </div>
+        {% end %}
     </div>
 </div>
 {% end %}

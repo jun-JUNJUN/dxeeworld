@@ -10,7 +10,7 @@ from .config import get_app_config
 from .handlers.home_handler import HomeHandler
 from .handlers.health_handler import HealthCheckHandler
 from .handlers.auth_handler import RegisterHandler, LoginHandler, LogoutHandler
-from .handlers.company_handler import CompanyListHandler, CompanyDetailHandler
+from .handlers.company_handler import CompanyListHandler, CompanyDetailHandler, CompanyJobsHandler, JobsListHandler
 
 # ログ設定
 logging.basicConfig(
@@ -37,8 +37,10 @@ def create_app():
         (r"/login", LoginHandler),
         (r"/logout", LogoutHandler),
         (r"/health", HealthCheckHandler),
+        (r"/jobs", JobsListHandler),
         (r"/companies", CompanyListHandler),
         (r"/companies/([^/]+)", CompanyDetailHandler),
+        (r"/companies/([^/]+)/jobs", CompanyJobsHandler),
         (r"/static/(.*)", tornado.web.StaticFileHandler, {
             "path": static_path,
             "default_filename": None

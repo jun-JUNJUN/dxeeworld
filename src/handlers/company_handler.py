@@ -6,6 +6,7 @@ from typing import Optional
 from tornado.web import HTTPError
 from .base_handler import BaseHandler
 from ..services.company_service import CompanyService
+from ..services.job_service import JobService
 from ..database import get_db_service
 
 logger = logging.getLogger(__name__)
@@ -241,6 +242,101 @@ class CompanyListHandler(BaseHandler):
         }
         return industry_labels.get(industry_value, industry_value)
 
+
+class JobsListHandler(BaseHandler):
+    """全求人一覧表示ハンドラー"""
+
+    def initialize(self):
+        """ハンドラー初期化"""
+        self.db_service = get_db_service()
+        self.company_service = CompanyService(self.db_service)
+        self.job_service = JobService(self.db_service)
+
+    async def get(self):
+        """全求人一覧ページ表示"""
+        try:
+            # ページネーション設定
+            page = int(self.get_query_argument('page', '1'))
+            page_size = 20  # 1ページあたり20件の求人
+            skip = (page - 1) * page_size
+
+            # 検索条件の取得
+            keyword = self.get_query_argument('keyword', None)
+            company_id = self.get_query_argument('company_id', None)
+            location = self.get_query_argument('location', None)
+            job_type = self.get_query_argument('job_type', None)
+            experience_level = self.get_query_argument('experience_level', None)
+            remote_work = self.get_query_argument('remote_work', None)
+
+            # 検索条件を辞書にまとめる
+            filters = {}
+            if keyword:
+                filters['keyword'] = keyword
+            if company_id:
+                filters['company_id'] = company_id
+            if location:
+                filters['location'] = location
+            if job_type:
+                filters['job_type'] = job_type
+            if experience_level:
+                filters['experience_level'] = experience_level
+            if remote_work:
+                filters['remote_work'] = remote_work.lower() == 'true'
+
+            # 求人データの取得
+            all_jobs = await self.job_service.search_jobs_paginated(
+                filters=filters if filters else None,
+                page=page,
+                page_size=page_size
+            )
+
+            # 求人情報を表示用に変換
+            jobs_data = []
+            for job in all_jobs.get('items', []):
+                jobs_data.append({
+                    'id': job.id,
+                    'title': job.title,
+                    'company_name': job.company_name,
+                    'job_type': job.job_type.value if hasattr(job.job_type, 'value') else str(job.job_type),
+                    'experience_level': job.experience_level.value if hasattr(job.experience_level, 'value') else str(job.experience_level),
+                    'location': job.location,
+                    'remote_work': job.remote_work,
+                    'salary_range': job.salary_range.to_dict() if job.salary_range else None,
+                    'posted_at': job.posted_at.isoformat() if job.posted_at else None,
+                    'expires_at': job.expires_at.isoformat() if job.expires_at else None,
+                    'description': job.description[:150] + '...' if job.description and len(job.description) > 150 else job.description,
+                })
+
+            # ページネーション情報の計算
+            total_jobs = all_jobs.get('total_count', 0)
+            total_pages = (total_jobs + page_size - 1) // page_size
+            has_previous = page > 1
+            has_next = page < total_pages
+
+            template_data = {
+                'jobs': jobs_data,
+                'current_page': page,
+                'total_pages': total_pages,
+                'total_jobs': total_jobs,
+                'has_previous': has_previous,
+                'has_next': has_next,
+                'previous_page': page - 1 if has_previous else None,
+                'next_page': page + 1 if has_next else None,
+                'filters': filters,
+                'page_title': '求人情報一覧',
+            }
+
+            self.render('jobs/list.html', **template_data)
+
+        except ValueError as e:
+            logger.error(f"Invalid parameter error: {e}")
+            raise HTTPError(400, "無効なパラメータが指定されました")
+        except Exception as e:
+            import traceback
+            logger.error(f"Jobs list display error: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise HTTPError(500, "求人一覧の表示でエラーが発生しました")
+
     def _get_size_label(self, size_value: str) -> str:
         """企業規模値から表示ラベルを取得"""
         size_labels = {
@@ -254,6 +350,104 @@ class CompanyListHandler(BaseHandler):
         return size_labels.get(size_value, size_value)
 
 
+class CompanyJobsHandler(BaseHandler):
+    """企業別求人一覧表示ハンドラー"""
+
+    def initialize(self):
+        """ハンドラー初期化"""
+        self.db_service = get_db_service()
+        self.company_service = CompanyService(self.db_service)
+        self.job_service = JobService(self.db_service)
+
+    async def get(self, company_id: str):
+        """企業別求人一覧ページ表示"""
+        try:
+            # 企業データの取得
+            company = await self.company_service.get_company(company_id)
+
+            if not company:
+                raise HTTPError(404, "企業が見つかりません")
+
+            # ページネーション設定
+            page = int(self.get_query_argument('page', '1'))
+            page_size = 10  # 1ページあたり10件の求人
+            skip = (page - 1) * page_size
+
+            # 該当企業の全求人情報を取得
+            all_jobs = await self.job_service.search_jobs_paginated(
+                filters={'company_id': company_id},
+                page=page,
+                page_size=page_size
+            )
+
+            # 求人情報を表示用に変換
+            jobs_data = []
+            for job in all_jobs.get('items', []):
+                jobs_data.append({
+                    'id': job.id,
+                    'title': job.title,
+                    'job_type': job.job_type.value if hasattr(job.job_type, 'value') else str(job.job_type),
+                    'experience_level': job.experience_level.value if hasattr(job.experience_level, 'value') else str(job.experience_level),
+                    'location': job.location,
+                    'remote_work': job.remote_work,
+                    'salary_range': job.salary_range.to_dict() if job.salary_range else None,
+                    'posted_at': job.posted_at.isoformat() if job.posted_at else None,
+                    'expires_at': job.expires_at.isoformat() if job.expires_at else None,
+                    'description': job.description[:200] + '...' if job.description and len(job.description) > 200 else job.description,
+                })
+
+            # ページネーション情報の計算
+            total_jobs = all_jobs.get('total_count', 0)
+            total_pages = (total_jobs + page_size - 1) // page_size
+            has_previous = page > 1
+            has_next = page < total_pages
+
+            template_data = {
+                'company': {
+                    'id': company.id,
+                    'name': company.name,
+                    'industry': company.industry.value,
+                    'industry_label': self._get_industry_label(company.industry.value),
+                },
+                'jobs': jobs_data,
+                'current_page': page,
+                'total_pages': total_pages,
+                'total_jobs': total_jobs,
+                'has_previous': has_previous,
+                'has_next': has_next,
+                'previous_page': page - 1 if has_previous else None,
+                'next_page': page + 1 if has_next else None,
+                'page_title': f'{company.name} - 求人情報',
+            }
+
+            self.render('companies/jobs.html', **template_data)
+
+        except HTTPError:
+            raise
+        except Exception as e:
+            import traceback
+            logger.error(f"Company jobs display error: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise HTTPError(500, "求人情報の表示でエラーが発生しました")
+
+    def _get_industry_label(self, industry_value: str) -> str:
+        """業界値から表示ラベルを取得"""
+        industry_labels = {
+            'technology': 'テクノロジー',
+            'finance': '金融',
+            'healthcare': 'ヘルスケア',
+            'education': '教育',
+            'retail': '小売',
+            'manufacturing': '製造業',
+            'consulting': 'コンサルティング',
+            'media': 'メディア',
+            'real_estate': '不動産',
+            'construction': '建設業',
+            'other': 'その他'
+        }
+        return industry_labels.get(industry_value, industry_value)
+
+
 class CompanyDetailHandler(BaseHandler):
     """企業詳細表示ハンドラー"""
 
@@ -261,6 +455,7 @@ class CompanyDetailHandler(BaseHandler):
         """ハンドラー初期化"""
         self.db_service = get_db_service()
         self.company_service = CompanyService(self.db_service)
+        self.job_service = JobService(self.db_service)
 
     async def get(self, company_id: str):
         """企業詳細ページ表示"""
@@ -290,8 +485,34 @@ class CompanyDetailHandler(BaseHandler):
                 'source_files': company.source_files or [],
             }
 
+            # 関連求人情報を取得（最大3件）
+            related_jobs = await self.job_service.search_jobs(
+                company_id=company_id,
+                limit=3
+            )
+
+            # 求人情報を表示用に変換
+            jobs_data = []
+            for job in related_jobs:
+                jobs_data.append({
+                    'id': job.id,
+                    'title': job.title,
+                    'job_type': job.job_type.value if hasattr(job.job_type, 'value') else str(job.job_type),
+                    'experience_level': job.experience_level.value if hasattr(job.experience_level, 'value') else str(job.experience_level),
+                    'location': job.location,
+                    'remote_work': job.remote_work,
+                    'salary_range': job.salary_range.to_dict() if job.salary_range else None,
+                    'posted_at': job.posted_at.isoformat() if job.posted_at else None,
+                    'expires_at': job.expires_at.isoformat() if job.expires_at else None,
+                })
+
+            # 追加求人情報へのリンク用URL
+            jobs_url = f"/companies/{company_id}/jobs"
+
             template_data = {
                 'company': company_data,
+                'related_jobs': jobs_data,
+                'jobs_url': jobs_url,
                 'page_title': f'{company_data["name"]} - 企業詳細',
             }
 

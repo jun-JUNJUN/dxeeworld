@@ -10,21 +10,21 @@ from src.config import get_database_connection
 class TestMongoDBConnection:
     """MongoDB接続とデータベース基盤のテスト"""
 
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_database_connection_can_be_established(self):
         """データベース接続が確立できることを確認"""
         db_service = DatabaseService()
         connection = await db_service.connect()
         assert connection is not None
 
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_database_health_check(self):
         """データベース接続の健全性チェックができることを確認"""
         db_service = DatabaseService()
         is_healthy = await db_service.health_check()
         assert isinstance(is_healthy, bool)
 
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_database_error_handling(self):
         """データベースエラーが適切に処理されることを確認"""
         db_service = DatabaseService()

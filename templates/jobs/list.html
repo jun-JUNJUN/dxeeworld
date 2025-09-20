@@ -1,0 +1,445 @@
+{% extends "../base.html" %}
+
+{% block title %}{{ page_title }} - Startup Platform: Dxee{% end %}
+
+{% block head %}
+<style>
+.jobs-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-header {
+    margin-bottom: 30px;
+}
+
+.page-header h1 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.jobs-stats {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+/* 検索フィルターセクション */
+.search-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+    border: 1px solid #e9ecef;
+}
+
+.search-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.search-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.search-group label {
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.search-group input,
+.search-group select {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    background: white;
+}
+
+.search-group input:focus,
+.search-group select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.search-actions {
+    display: flex;
+    gap: 10px;
+    align-items: end;
+}
+
+/* 求人一覧テーブル */
+.jobs-table-wrapper {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.jobs-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.jobs-table th {
+    background: #f8f9fa;
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+    font-size: 0.9rem;
+}
+
+.jobs-table td {
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: top;
+}
+
+.jobs-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.job-title {
+    font-weight: 600;
+    color: #007bff;
+    text-decoration: none;
+    font-size: 1.1rem;
+}
+
+.job-title:hover {
+    text-decoration: underline;
+}
+
+.company-name {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.job-description {
+    color: #6c757d;
+    font-size: 0.85rem;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.job-badges {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 8px;
+}
+
+.job-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.job-type-badge {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.experience-badge {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.remote-badge {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+/* ページネーション */
+.pagination-section {
+    margin-top: 30px;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.pagination-info {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.pagination {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.pagination .btn {
+    min-width: 40px;
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+    background: white;
+}
+
+.pagination .btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.pagination .btn:hover:not(.active):not(:disabled) {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.pagination .btn:disabled {
+    background: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+    .jobs-container {
+        padding: 10px;
+    }
+
+    .search-form {
+        grid-template-columns: 1fr;
+    }
+
+    .search-actions {
+        justify-content: center;
+    }
+
+    .jobs-table-wrapper {
+        overflow-x: auto;
+    }
+
+    .jobs-table {
+        min-width: 800px;
+    }
+
+    .pagination-section {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .job-badges {
+        flex-wrap: wrap;
+    }
+}
+
+.no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.no-results-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+</style>
+{% end %}
+
+{% block content %}
+<div class="jobs-container">
+    <!-- ページヘッダー -->
+    <div class="page-header">
+        <h1>{{ page_title }}</h1>
+        <div class="jobs-stats">
+            全{{ total_jobs }}件の求人情報
+            {% if filters %}
+            （検索条件適用中）
+            {% end %}
+        </div>
+    </div>
+
+    <!-- 検索フィルター -->
+    <div class="search-section">
+        <form method="GET" action="/jobs" id="search-form">
+            <div class="search-form">
+                <!-- キーワード検索 -->
+                <div class="search-group">
+                    <label for="keyword">キーワード</label>
+                    <input type="text" name="keyword" id="keyword" placeholder="職種、会社名、スキルなど"
+                           value="{{ filters.get('keyword', '') }}">
+                </div>
+
+                <!-- 勤務地 -->
+                <div class="search-group">
+                    <label for="location">勤務地</label>
+                    <input type="text" name="location" id="location" placeholder="東京、大阪など"
+                           value="{{ filters.get('location', '') }}">
+                </div>
+
+                <!-- 雇用形態 -->
+                <div class="search-group">
+                    <label for="job_type">雇用形態</label>
+                    <select name="job_type" id="job_type">
+                        <option value="">すべて</option>
+                        <option value="full_time" {% if filters.get('job_type') == 'full_time' %}selected{% end %}>正社員</option>
+                        <option value="part_time" {% if filters.get('job_type') == 'part_time' %}selected{% end %}>パート・アルバイト</option>
+                        <option value="contract" {% if filters.get('job_type') == 'contract' %}selected{% end %}>契約社員</option>
+                        <option value="internship" {% if filters.get('job_type') == 'internship' %}selected{% end %}>インターン</option>
+                        <option value="other" {% if filters.get('job_type') == 'other' %}selected{% end %}>その他</option>
+                    </select>
+                </div>
+
+                <!-- 経験レベル -->
+                <div class="search-group">
+                    <label for="experience_level">経験レベル</label>
+                    <select name="experience_level" id="experience_level">
+                        <option value="">すべて</option>
+                        <option value="entry" {% if filters.get('experience_level') == 'entry' %}selected{% end %}>新卒・未経験</option>
+                        <option value="junior" {% if filters.get('experience_level') == 'junior' %}selected{% end %}>ジュニア</option>
+                        <option value="mid" {% if filters.get('experience_level') == 'mid' %}selected{% end %}>ミドル</option>
+                        <option value="senior" {% if filters.get('experience_level') == 'senior' %}selected{% end %}>シニア</option>
+                        <option value="lead" {% if filters.get('experience_level') == 'lead' %}selected{% end %}>リード</option>
+                        <option value="executive" {% if filters.get('experience_level') == 'executive' %}selected{% end %}>エグゼクティブ</option>
+                    </select>
+                </div>
+
+                <!-- リモートワーク -->
+                <div class="search-group">
+                    <label for="remote_work">リモートワーク</label>
+                    <select name="remote_work" id="remote_work">
+                        <option value="">すべて</option>
+                        <option value="true" {% if filters.get('remote_work') == True %}selected{% end %}>可</option>
+                        <option value="false" {% if filters.get('remote_work') == False %}selected{% end %}>不可</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="search-actions">
+                <button type="submit" class="btn btn-primary">検索</button>
+                <a href="/jobs" class="btn btn-secondary">条件をクリア</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- 求人一覧テーブル -->
+    {% if jobs %}
+    <div class="jobs-table-wrapper">
+        <table class="jobs-table">
+            <thead>
+                <tr>
+                    <th>求人情報</th>
+                    <th>会社名</th>
+                    <th>雇用形態</th>
+                    <th>経験レベル</th>
+                    <th>勤務地</th>
+                    <th>給与</th>
+                    <th>掲載日</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr>
+                    <td>
+                        <div class="job-badges">
+                            <span class="job-badge job-type-badge">{{ job['job_type'] }}</span>
+                            {% if job['remote_work'] %}
+                            <span class="job-badge remote-badge">リモート可</span>
+                            {% end %}
+                        </div>
+                        <a href="#" class="job-title">{{ job['title'] }}</a>
+                        {% if job['description'] %}
+                        <div class="job-description" title="{{ job['description'] }}">
+                            {{ job['description'] }}
+                        </div>
+                        {% end %}
+                    </td>
+                    <td>
+                        <div class="company-name">{{ job['company_name'] }}</div>
+                    </td>
+                    <td>
+                        <span class="job-badge experience-badge">{{ job['experience_level'] }}</span>
+                    </td>
+                    <td>{{ job['location'] }}</td>
+                    <td>
+                        {% if job['salary_range'] %}
+                        {{ "{:,}".format(job['salary_range']['min_amount']) }} - {{ "{:,}".format(job['salary_range']['max_amount']) }} 円
+                        {% else %}
+                        応相談
+                        {% end %}
+                    </td>
+                    <td>{{ job['posted_at'][:10] if job['posted_at'] else '不明' }}</td>
+                </tr>
+                {% end %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ページネーション -->
+    {% if total_pages > 1 %}
+    <div class="pagination-section">
+        <div class="pagination-info">
+            {{ (current_page - 1) * 20 + 1 }}〜{{ min(current_page * 20, total_jobs) }}件目
+            （全{{ total_jobs }}件中）
+        </div>
+
+        <div class="pagination">
+            {% if has_previous %}
+            <a href="?page={{ previous_page }}{% for key, value in filters.items() %}{% if value %}&{{ key }}={{ value }}{% end %}{% end %}"
+               class="btn">前</a>
+            {% else %}
+            <button class="btn" disabled>前</button>
+            {% end %}
+
+            <span class="btn active">{{ current_page }}</span>
+
+            {% if has_next %}
+            <a href="?page={{ next_page }}{% for key, value in filters.items() %}{% if value %}&{{ key }}={{ value }}{% end %}{% end %}"
+               class="btn">次</a>
+            {% else %}
+            <button class="btn" disabled>次</button>
+            {% end %}
+        </div>
+    </div>
+    {% end %}
+
+    {% else %}
+    <!-- 検索結果なし -->
+    <div class="no-results">
+        <div class="no-results-icon">🔍</div>
+        <h3>検索条件に一致する求人が見つかりませんでした</h3>
+        <p>条件を変更して再度お試しください</p>
+        <a href="/jobs" class="btn btn-primary">すべての求人を表示</a>
+    </div>
+    {% end %}
+</div>
+{% end %}
+
+{% block scripts %}
+<script>
+// 検索フォームのEnterキー対応
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('search-form');
+    const keywordInput = document.getElementById('keyword');
+
+    if (keywordInput) {
+        keywordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchForm.submit();
+            }
+        });
+    }
+});
+</script>
+{% end %}
