@@ -11,7 +11,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 
 ### Steering vs Specification
 
-**Steering** (`.kiro/steering/`) - Guide AI with project-wide rules and context  
+**Steering** (`.kiro/steering/`) - Guide AI with project-wide rules and context
 **Specs** (`.kiro/specs/`) - Formalize development process for individual features
 
 ### Active Specifications
@@ -30,12 +30,12 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 `/kiro:steering` - Create/update steering documents
 `/kiro:steering-custom` - Create custom steering for specialized contexts
 
-**Note**: Optional for new features or small additions. Can proceed directly to spec-init.
+Note: Optional for new features or small additions. You can proceed directly to spec-init.
 
 ### Phase 1: Specification Creation
 1. `/kiro:spec-init [detailed description]` - Initialize spec with detailed project description
 2. `/kiro:spec-requirements [feature]` - Generate requirements document
-3. `/kiro:spec-design [feature]` - Interactive: "requirements.mdをレビューしましたか？ [y/N]"
+3. `/kiro:spec-design [feature]` - Interactive: "Have you reviewed requirements.md? [y/N]"
 4. `/kiro:spec-tasks [feature]` - Interactive: Confirms both requirements and design review
 
 ### Phase 2: Progress Tracking
@@ -62,7 +62,7 @@ Managed by `/kiro:steering` command. Updates here reflect command changes.
 
 ### Custom Steering Files
 <!-- Added by /kiro:steering-custom command -->
-<!-- Format: 
+<!-- Format:
 - `filename.md`: Mode - Pattern(s) - Description
   Mode: Always|Conditional|Manual
   Pattern: File patterns for Conditional mode
@@ -70,5 +70,6 @@ Managed by `/kiro:steering` command. Updates here reflect command changes.
 
 ### Inclusion Modes
 - **Always**: Loaded in every interaction (default)
-- **Conditional**: Loaded for specific file patterns (e.g., `"*.test.js"`)
+- **Conditional**: Loaded for specific file patterns (e.g., "*.test.js")
 - **Manual**: Reference with `@filename.md` syntax
+
