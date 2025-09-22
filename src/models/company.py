@@ -6,6 +6,11 @@ from typing import Optional, List
 from datetime import datetime
 from enum import Enum
 
+# レビュー関連の型をインポート
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .review import ReviewSummary
+
 
 class IndustryType(Enum):
     """業界種別"""
@@ -51,10 +56,17 @@ class Company:
     source_files: Optional[List[str]] = None
     foreign_company_data: Optional[dict] = None
     construction_data: Optional[dict] = None
+    review_summary: Optional['ReviewSummary'] = None  # レビューサマリー追加
 
     @classmethod
     def from_dict(cls, data: dict) -> 'Company':
         """辞書からCompanyオブジェクトを作成"""
+        # レビューサマリーの処理
+        review_summary = None
+        if 'review_summary' in data and data['review_summary'] is not None:
+            from .review import ReviewSummary
+            review_summary = ReviewSummary.from_dict(data['review_summary'])
+
         return cls(
             id=str(data.get('_id', data.get('id'))),
             name=data['name'],
@@ -72,12 +84,13 @@ class Company:
             name_original=data.get('name_original'),
             source_files=data.get('source_files', []),
             foreign_company_data=data.get('foreign_company_data', {}),
-            construction_data=data.get('construction_data', {})
+            construction_data=data.get('construction_data', {}),
+            review_summary=review_summary
         )
 
     def to_dict(self) -> dict:
         """辞書形式に変換"""
-        return {
+        result = {
             'name': self.name,
             'industry': self.industry.value,
             'size': self.size.value,
@@ -95,3 +108,9 @@ class Company:
             'foreign_company_data': self.foreign_company_data or {},
             'construction_data': self.construction_data or {}
         }
+
+        # レビューサマリーがある場合のみ追加
+        if self.review_summary is not None:
+            result['review_summary'] = self.review_summary.to_dict()
+
+        return result
