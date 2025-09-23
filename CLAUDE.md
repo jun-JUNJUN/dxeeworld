@@ -19,6 +19,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - **company-listing**: Company database with CSV import, filtering, pagination, and detail pages (Phase: initialized)
 - **company-reviews**: Company employee review system with 7-criteria rating and search functionality (Phase: initialized)
 - **oauth-authentication**: OAuth認証サービス (Google, Facebook, メール認証) with session management (Phase: initialized)
+- **ui-navigation-redesign**: UI navigation menu cleanup and company detail page responsive redesign (Phase: initialized)
 - Check `.kiro/specs/` for active specifications
 - Use `/kiro:spec-status [feature-name]` to check progress
 
