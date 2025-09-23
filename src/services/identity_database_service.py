@@ -144,3 +144,27 @@ class IdentityDatabaseService:
         except Exception as e:
             logger.error(f"Failed to list indexes: {e}")
             return []
+
+    async def update_identity(self, identity_id: str, updated_data: Dict[str, Any]) -> Optional[str]:
+        """Update existing identity document"""
+        try:
+            # Validate updated document before updating
+            await self.validate_identity_document(updated_data)
+
+            # Add updated timestamp
+            updated_data["updated_at"] = datetime.now(timezone.utc)
+
+            # Update document
+            filter_dict = {"_id": ObjectId(identity_id)}
+            result = await self.db_service.update_one(self.COLLECTION_NAME, filter_dict, {"$set": updated_data})
+
+            if result and result.modified_count > 0:
+                logger.info(f"Identity updated: {identity_id}")
+                return identity_id
+            else:
+                logger.warning(f"No identity updated for ID: {identity_id}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to update identity: {e}")
+            raise
