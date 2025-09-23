@@ -44,9 +44,16 @@ build-backend = "hatchling.build"
 EOF
 fi
 
-# Install dependencies using uv
-echo "📦 Installing dependencies with uv..."
-uv sync --no-install-project
+# Check and create virtual environment if needed
+if [ ! -d ".venv" ]; then
+    echo "📦 Creating virtual environment and installing dependencies..."
+    uv venv
+    uv sync --no-install-project
+else
+    echo "✅ Virtual environment already exists"
+    echo "📦 Installing/updating dependencies with uv..."
+    uv sync --no-install-project
+fi
 
 # Create .env file if it doesn't exist
 if [ ! -f ".env" ]; then
