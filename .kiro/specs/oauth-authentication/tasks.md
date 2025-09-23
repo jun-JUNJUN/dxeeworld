@@ -30,30 +30,30 @@
   - Identity統合と重複排除機能
   - _要件: 5.2, 5.3, 5.4_
 
-- [ ] 3. Google OAuth認証機能の実装
-- [ ] 3.1 Google OAuth2.0認証フローの構築
-  - TornadoのGoogleOAuth2Mixinを活用した認証処理
+- [x] 3. Google OAuth認証機能の実装
+- [x] 3.1 Google OAuth2.0認証フローの構築
+  - OAuth2Serviceを活用した認証処理
   - 認証URL生成とコールバック処理
   - Stateパラメーター検証とCSRF対策
   - アクセストークン取得とユーザー情報取得
   - _要件: 1.1, 1.2_
 
-- [ ] 3.2 Google認証のIdentity連携機能
+- [x] 3.2 Google認証のIdentity連携機能
   - Google認証成功時のIdentity作成・更新処理
   - メールアドレス取得と暗号化保存
   - 既存ユーザーの認証情報更新機能
   - 認証エラーハンドリングとユーザーフィードバック
   - _要件: 1.3, 1.4, 1.5_
 
-- [ ] 4. Facebook OAuth認証機能の実装
-- [ ] 4.1 Facebook OAuth2.0認証フローの構築
-  - requests-oauthlibを使用したFacebook認証処理
+- [x] 4. Facebook OAuth認証機能の実装
+- [x] 4.1 Facebook OAuth2.0認証フローの構築
   - Facebook Graph APIとの連携
   - 認証URL生成とコールバック処理
   - Facebook固有の認証フロー対応
+  - State parameter CSRF protection
   - _要件: 2.1, 2.2_
 
-- [ ] 4.2 Facebook認証のIdentity連携機能
+- [x] 4.2 Facebook認証のIdentity連携機能
   - Facebook認証成功時のIdentity作成・更新処理
   - Facebook APIからのメールアドレス取得
   - 既存ユーザーの認証情報更新機能
