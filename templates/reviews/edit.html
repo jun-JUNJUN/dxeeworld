@@ -1,0 +1,282 @@
+{% extends "../base.html" %}
+
+{% block title %}レビュー編集 - {{ company.name }}{% end %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">レビュー編集</h2>
+                </div>
+                <div class="card-body">
+                    <!-- 企業情報 -->
+                    <div class="bg-light p-3 rounded mb-4">
+                        <h4>{{ company.name }}</h4>
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-geo-alt"></i> {{ company.location }}
+                        </p>
+                    </div>
+
+                    <!-- 投稿情報 -->
+                    <div class="alert alert-info mb-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">投稿日時</small><br>
+                                <span>{{ review.created_at.strftime('%Y年%m月%d日') }}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">現在のレビュー点数</small><br>
+                                <span class="h5 text-warning">{{ "%.1f"|format(review.individual_average) }}</span>
+                                <small class="text-muted">（{{ review.answered_count }}項目回答）</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 編集フォーム -->
+                    <form method="post" id="editForm">
+                        {% module xsrf_form_html() %}
+                        <input type="hidden" name="_method" value="PUT">
+
+                        <!-- 在職状況 -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">在職状況 <span class="text-danger">*</span></label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="employment_status"
+                                               id="current" value="current"
+                                               {% if review.employment_status == 'current' %}checked{% end %} required>
+                                        <label class="form-check-label" for="current">
+                                            現従業員
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="employment_status"
+                                               id="former" value="former"
+                                               {% if review.employment_status == 'former' %}checked{% end %} required>
+                                        <label class="form-check-label" for="former">
+                                            元従業員
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 評価項目 -->
+                        {% for category in categories %}
+                        <div class="mb-4 border rounded p-3">
+                            <h5 class="mb-3">{{ loop.index }}. {{ category.title }}</h5>
+                            <p class="text-muted mb-3">{{ category.question }}</p>
+
+                            <!-- 評価選択 -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">評価</label>
+                                <div class="row">
+                                    {% for score in range(1, 6) %}
+                                    <div class="col-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio"
+                                                   name="ratings[{{ category.key }}]"
+                                                   id="{{ category.key }}_{{ score }}"
+                                                   value="{{ score }}"
+                                                   {% if review.ratings.get(category.key) == score %}checked{% end %}>
+                                            <label class="form-check-label" for="{{ category.key }}_{{ score }}">
+                                                {{ score }}点
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% end %}
+                                    <div class="col-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio"
+                                                   name="ratings[{{ category.key }}]"
+                                                   id="{{ category.key }}_no_answer"
+                                                   value="no_answer"
+                                                   {% if review.ratings.get(category.key) is None %}checked{% end %}>
+                                            <label class="form-check-label" for="{{ category.key }}_no_answer">
+                                                回答しない
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- コメント入力 -->
+                            <div class="mb-2">
+                                <label for="comment_{{ category.key }}" class="form-label fw-bold">
+                                    コメント（任意）
+                                </label>
+                                <textarea class="form-control" id="comment_{{ category.key }}"
+                                          name="comments[{{ category.key }}]"
+                                          rows="3" maxlength="1000"
+                                          placeholder="具体的な経験やエピソードがあれば教えてください（最大1000文字）">{{ review.comments.get(category.key, '') }}</textarea>
+                                <div class="form-text">
+                                    <span id="count_{{ category.key }}">{{ (review.comments.get(category.key, '') | length) }}</span>/1000文字
+                                </div>
+                            </div>
+                        </div>
+                        {% end %}
+
+                        <!-- 更新プレビュー表示 -->
+                        <div class="mb-4">
+                            <h5>更新後のレビュー点数プレビュー</h5>
+                            <div class="bg-light p-3 rounded">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <span class="fw-bold">更新後のレビュー点数: </span>
+                                        <span id="previewRating" class="h4 text-warning">{{ "%.1f"|format(review.individual_average) }}</span>
+                                        <small class="text-muted">（<span id="answeredCount">{{ review.answered_count }}</span>項目回答）</small>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <small class="text-muted">回答した項目の平均点</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 更新ボタン -->
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <a href="/companies/{{ company.id }}" class="btn btn-secondary">キャンセル</a>
+                                <a href="/reviews/{{ review.id }}" class="btn btn-outline-secondary">詳細に戻る</a>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-lg" id="updateBtn">
+                                レビューを更新
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- 削除オプション -->
+                    <div class="mt-4 pt-4 border-top">
+                        <h6 class="text-muted">危険な操作</h6>
+                        <p class="text-muted small">レビューを削除すると復旧できません。</p>
+                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            レビューを削除
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 編集に関する注意事項 -->
+            <div class="mt-4">
+                <div class="alert alert-warning">
+                    <h6><i class="bi bi-exclamation-triangle"></i> 編集に関する注意事項</h6>
+                    <ul class="mb-0">
+                        <li>投稿から1年以内のレビューのみ編集可能です</li>
+                        <li>編集履歴は管理者によって記録されます</li>
+                        <li>企業の平均点は自動的に再計算されます</li>
+                        <li>他のユーザーがすでに参考にしている可能性があるため、慎重に編集してください</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 削除確認モーダル -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">レビュー削除の確認</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="fw-bold">本当にこのレビューを削除しますか？</p>
+                <p class="text-muted">この操作は取り消すことができません。削除されたレビューは復旧できません。</p>
+                <p class="text-danger">企業の平均点も再計算されます。</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <form method="post" class="d-inline">
+                    {% module xsrf_form_html() %}
+                    <input type="hidden" name="_method" value="DELETE">
+                    <button type="submit" class="btn btn-danger">削除する</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editForm');
+    const updateBtn = document.getElementById('updateBtn');
+    const previewRating = document.getElementById('previewRating');
+    const answeredCount = document.getElementById('answeredCount');
+
+    // 文字カウント機能
+    document.querySelectorAll('textarea[name^="comments"]').forEach(textarea => {
+        const category = textarea.name.match(/comments\[(\w+)\]/)[1];
+        const counter = document.getElementById(`count_${category}`);
+
+        textarea.addEventListener('input', function() {
+            counter.textContent = this.value.length;
+        });
+    });
+
+    // リアルタイムプレビュー計算
+    function updatePreview() {
+        const ratings = [];
+        let hasEmploymentStatus = false;
+
+        // 在職状況チェック
+        const employmentStatus = form.querySelector('input[name="employment_status"]:checked');
+        hasEmploymentStatus = !!employmentStatus;
+
+        // 評価点数を収集
+        document.querySelectorAll('input[name^="ratings"]:checked').forEach(radio => {
+            if (radio.value !== 'no_answer') {
+                ratings.push(parseInt(radio.value));
+            }
+        });
+
+        // 平均点計算
+        if (ratings.length > 0) {
+            const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+            previewRating.textContent = average.toFixed(1);
+            answeredCount.textContent = ratings.length;
+        } else {
+            previewRating.textContent = '-.-';
+            answeredCount.textContent = '0';
+        }
+
+        // 更新ボタンの有効/無効制御
+        updateBtn.disabled = !hasEmploymentStatus || ratings.length === 0;
+    }
+
+    // イベントリスナー設定
+    form.addEventListener('change', updatePreview);
+
+    // 初期プレビュー更新
+    updatePreview();
+
+    // フォーム送信前のバリデーション
+    form.addEventListener('submit', function(e) {
+        const employmentStatus = form.querySelector('input[name="employment_status"]:checked');
+        const hasAnyRating = form.querySelectorAll('input[name^="ratings"]:checked').length > 0;
+
+        if (!employmentStatus) {
+            alert('在職状況を選択してください');
+            e.preventDefault();
+            return;
+        }
+
+        if (!hasAnyRating) {
+            alert('少なくとも1つの項目に評価をつけてください');
+            e.preventDefault();
+            return;
+        }
+
+        // 確認ダイアログ
+        if (!confirm('レビューを更新しますか？企業の平均点も再計算されます。')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% end %}

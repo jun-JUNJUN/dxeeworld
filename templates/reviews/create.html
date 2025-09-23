@@ -1,0 +1,220 @@
+{% extends "../base.html" %}
+
+{% block title %}レビュー投稿 - {{ company.name }}{% end %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">レビュー投稿</h2>
+                </div>
+                <div class="card-body">
+                    <!-- 企業情報 -->
+                    <div class="bg-light p-3 rounded mb-4">
+                        <h4>{{ company.name }}</h4>
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-geo-alt"></i> {{ company.location }}
+                        </p>
+                    </div>
+
+                    <!-- レビューフォーム -->
+                    <form method="post" id="reviewForm">
+                        {% module xsrf_form_html() %}
+
+                        <!-- 在職状況 -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">在職状況 <span class="text-danger">*</span></label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="employment_status"
+                                               id="current" value="current" required>
+                                        <label class="form-check-label" for="current">
+                                            現従業員
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="employment_status"
+                                               id="former" value="former" required>
+                                        <label class="form-check-label" for="former">
+                                            元従業員
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 評価項目 -->
+                        {% for category in categories %}
+                        <div class="mb-4 border rounded p-3">
+                            <h5 class="mb-3">{{ loop.index }}. {{ category.title }}</h5>
+                            <p class="text-muted mb-3">{{ category.question }}</p>
+
+                            <!-- 評価選択 -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">評価</label>
+                                <div class="row">
+                                    {% for score in range(1, 6) %}
+                                    <div class="col-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio"
+                                                   name="ratings[{{ category.key }}]"
+                                                   id="{{ category.key }}_{{ score }}"
+                                                   value="{{ score }}">
+                                            <label class="form-check-label" for="{{ category.key }}_{{ score }}">
+                                                {{ score }}点
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% end %}
+                                    <div class="col-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio"
+                                                   name="ratings[{{ category.key }}]"
+                                                   id="{{ category.key }}_no_answer"
+                                                   value="no_answer">
+                                            <label class="form-check-label" for="{{ category.key }}_no_answer">
+                                                回答しない
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- コメント入力 -->
+                            <div class="mb-2">
+                                <label for="comment_{{ category.key }}" class="form-label fw-bold">
+                                    コメント（任意）
+                                </label>
+                                <textarea class="form-control" id="comment_{{ category.key }}"
+                                          name="comments[{{ category.key }}]"
+                                          rows="3" maxlength="1000"
+                                          placeholder="具体的な経験やエピソードがあれば教えてください（最大1000文字）"></textarea>
+                                <div class="form-text">
+                                    <span id="count_{{ category.key }}">0</span>/1000文字
+                                </div>
+                            </div>
+                        </div>
+                        {% end %}
+
+                        <!-- プレビュー表示 -->
+                        <div class="mb-4">
+                            <h5>レビュー点数プレビュー</h5>
+                            <div class="bg-light p-3 rounded">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <span class="fw-bold">あなたのレビュー点数: </span>
+                                        <span id="previewRating" class="h4 text-warning">-.-</span>
+                                        <small class="text-muted">（<span id="answeredCount">0</span>項目回答）</small>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <small class="text-muted">回答した項目の平均点</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 投稿ボタン -->
+                        <div class="d-flex justify-content-between">
+                            <a href="/companies/{{ company.id }}" class="btn btn-secondary">キャンセル</a>
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
+                                レビューを投稿
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 注意事項 -->
+            <div class="mt-4">
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> 投稿に関する注意事項</h6>
+                    <ul class="mb-0">
+                        <li>同じ会社への投稿は1年間に1回までです</li>
+                        <li>投稿から1年以内であれば、内容を編集できます</li>
+                        <li>すべての項目への回答は必須ではありません</li>
+                        <li>具体的で建設的なコメントをお願いします</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('reviewForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const previewRating = document.getElementById('previewRating');
+    const answeredCount = document.getElementById('answeredCount');
+
+    // 文字カウント機能
+    document.querySelectorAll('textarea[name^="comments"]').forEach(textarea => {
+        const category = textarea.name.match(/comments\[(\w+)\]/)[1];
+        const counter = document.getElementById(`count_${category}`);
+
+        textarea.addEventListener('input', function() {
+            counter.textContent = this.value.length;
+        });
+    });
+
+    // リアルタイムプレビュー計算
+    function updatePreview() {
+        const ratings = [];
+        let hasEmploymentStatus = false;
+
+        // 在職状況チェック
+        const employmentStatus = form.querySelector('input[name="employment_status"]:checked');
+        hasEmploymentStatus = !!employmentStatus;
+
+        // 評価点数を収集
+        document.querySelectorAll('input[name^="ratings"]:checked').forEach(radio => {
+            if (radio.value !== 'no_answer') {
+                ratings.push(parseInt(radio.value));
+            }
+        });
+
+        // 平均点計算
+        if (ratings.length > 0) {
+            const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+            previewRating.textContent = average.toFixed(1);
+            answeredCount.textContent = ratings.length;
+        } else {
+            previewRating.textContent = '-.-';
+            answeredCount.textContent = '0';
+        }
+
+        // 投稿ボタンの有効/無効制御
+        submitBtn.disabled = !hasEmploymentStatus || ratings.length === 0;
+    }
+
+    // イベントリスナー設定
+    form.addEventListener('change', updatePreview);
+
+    // 初期プレビュー更新
+    updatePreview();
+
+    // フォーム送信前のバリデーション
+    form.addEventListener('submit', function(e) {
+        const employmentStatus = form.querySelector('input[name="employment_status"]:checked');
+        const hasAnyRating = form.querySelectorAll('input[name^="ratings"]:checked').length > 0;
+
+        if (!employmentStatus) {
+            alert('在職状況を選択してください');
+            e.preventDefault();
+            return;
+        }
+
+        if (!hasAnyRating) {
+            alert('少なくとも1つの項目に評価をつけてください');
+            e.preventDefault();
+            return;
+        }
+    });
+});
+</script>
+{% end %}

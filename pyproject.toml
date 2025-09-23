@@ -32,3 +32,102 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
 addopts = ["-v", "--tb=short"]
+
+# Ruff - Fast Python linter and formatter
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "B",   # bugbear (common bug patterns)
+    "I",   # isort (import sorting)
+    "UP",  # pyupgrade (modern Python syntax)
+    "NPY", # NumPy-specific rules
+    "S",   # bandit (security issues)
+    "C4",  # comprehensions
+    "SIM", # simplify
+    "PIE", # flake8-pie
+    "T20", # flake8-print (avoid print statements)
+    "RET", # flake8-return
+    "LOG", # flake8-logging
+]
+ignore = [
+    "S101", # Allow assert statements in tests
+    "S301", # Allow pickle usage (if needed)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "T20"]  # Allow asserts and prints in tests
+
+# Black - Code formatter
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311", "py312"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    # directories
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+# MyPy - Static type checker
+[tool.mypy]
+python_version = "3.9"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+disallow_untyped_calls = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+# Per-module options
+[[tool.mypy.overrides]]
+module = [
+    "tornado.*",
+    "motor.*",
+    "bcrypt.*",
+]
+ignore_missing_imports = true
+
+# Coverage - Test coverage reporting
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]

@@ -1,0 +1,206 @@
+{% extends "../base.html" %}
+
+{% block title %}企業レビュー一覧{% end %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">企業レビュー検索</h1>
+
+            <!-- 検索フォーム -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" action="/review">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="name" class="form-label">企業名</label>
+                                <input type="text" class="form-control" id="name" name="name"
+                                       value="{{ search_params.get('name', '') }}" placeholder="企業名で検索">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="location" class="form-label">所在地</label>
+                                <input type="text" class="form-control" id="location" name="location"
+                                       value="{{ search_params.get('location', '') }}" placeholder="東京都">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label for="min_rating" class="form-label">最低評価</label>
+                                <select class="form-select" id="min_rating" name="min_rating">
+                                    <option value="">指定なし</option>
+                                    {% for i in range(1, 6) %}
+                                    <option value="{{ i }}"
+                                        {% if search_params.get('min_rating') == i %}selected{% end %}>
+                                        {{ i }}.0以上
+                                    </option>
+                                    {% end %}
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label for="max_rating" class="form-label">最高評価</label>
+                                <select class="form-select" id="max_rating" name="max_rating">
+                                    <option value="">指定なし</option>
+                                    {% for i in range(1, 6) %}
+                                    <option value="{{ i }}"
+                                        {% if search_params.get('max_rating') == i %}selected{% end %}>
+                                        {{ i }}.0以下
+                                    </option>
+                                    {% end %}
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label for="sort" class="form-label">並び順</label>
+                                <select class="form-select" id="sort" name="sort">
+                                    <option value="rating_high"
+                                        {% if search_params.get('sort') == 'rating_high' %}selected{% end %}>
+                                        評価順（高）
+                                    </option>
+                                    <option value="rating_low"
+                                        {% if search_params.get('sort') == 'rating_low' %}selected{% end %}>
+                                        評価順（低）
+                                    </option>
+                                    <option value="review_count"
+                                        {% if search_params.get('sort') == 'review_count' %}selected{% end %}>
+                                        レビュー数順
+                                    </option>
+                                    <option value="name"
+                                        {% if search_params.get('sort') == 'name' %}selected{% end %}>
+                                        企業名順
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">検索</button>
+                        <a href="/review" class="btn btn-secondary">リセット</a>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 検索結果 -->
+            <div class="search-results">
+                {% if companies %}
+                    <p class="text-muted">{{ pagination.total }}件の企業が見つかりました</p>
+
+                    <div class="row">
+                        {% for company in companies %}
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="card-title">
+                                            <a href="/companies/{{ company.id }}" class="text-decoration-none">
+                                                {{ company.name }}
+                                            </a>
+                                        </h5>
+                                        <div class="text-end">
+                                            <div class="h4 text-warning mb-0">
+                                                ★{{ "%.1f"|format(company.overall_average) }}
+                                            </div>
+                                            <small class="text-muted">{{ company.total_reviews }}件のレビュー</small>
+                                        </div>
+                                    </div>
+
+                                    <p class="text-muted mb-2">
+                                        <i class="bi bi-geo-alt"></i> {{ company.location }}
+                                    </p>
+
+                                    <!-- 項目別評価 -->
+                                    {% if company.get('category_averages') %}
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <small class="text-muted">推薦度</small><br>
+                                            <span class="badge bg-secondary">
+                                                {{ "%.1f"|format(company.category_averages.get('recommendation', 0)) }}
+                                            </span>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-muted">受入制度</small><br>
+                                            <span class="badge bg-secondary">
+                                                {{ "%.1f"|format(company.category_averages.get('foreign_support', 0)) }}
+                                            </span>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-muted">会社風土</small><br>
+                                            <span class="badge bg-secondary">
+                                                {{ "%.1f"|format(company.category_averages.get('company_culture', 0)) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="row text-center mt-2">
+                                        <div class="col-4">
+                                            <small class="text-muted">関係性</small><br>
+                                            <span class="badge bg-secondary">
+                                                {{ "%.1f"|format(company.category_averages.get('employee_relations', 0)) }}
+                                            </span>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-muted">評価制度</small><br>
+                                            <span class="badge bg-secondary">
+                                                {{ "%.1f"|format(company.category_averages.get('evaluation_system', 0)) }}
+                                            </span>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-muted">昇進待遇</small><br>
+                                            <span class="badge bg-secondary">
+                                                {{ "%.1f"|format(company.category_averages.get('promotion_treatment', 0)) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {% end %}
+                                </div>
+                                <div class="card-footer">
+                                    <div class="d-flex justify-content-between">
+                                        <a href="/companies/{{ company.id }}" class="btn btn-sm btn-outline-primary">
+                                            詳細を見る
+                                        </a>
+                                        <a href="/companies/{{ company.id }}/reviews/new" class="btn btn-sm btn-primary">
+                                            レビューを書く
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% end %}
+                    </div>
+
+                    <!-- ページネーション -->
+                    {% if pagination.pages > 1 %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if pagination.page > 1 %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ pagination.page - 1 }}&{{ '&'.join(['%s=%s' % (k,v) for k,v in search_params.items() if k != 'page' and v]) }}">
+                                    前へ
+                                </a>
+                            </li>
+                            {% end %}
+
+                            {% for page_num in range(max(1, pagination.page - 2), min(pagination.pages + 1, pagination.page + 3)) %}
+                            <li class="page-item {% if page_num == pagination.page %}active{% end %}">
+                                <a class="page-link" href="?page={{ page_num }}&{{ '&'.join(['%s=%s' % (k,v) for k,v in search_params.items() if k != 'page' and v]) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                            {% end %}
+
+                            {% if pagination.page < pagination.pages %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ pagination.page + 1 }}&{{ '&'.join(['%s=%s' % (k,v) for k,v in search_params.items() if k != 'page' and v]) }}">
+                                    次へ
+                                </a>
+                            </li>
+                            {% end %}
+                        </ul>
+                    </nav>
+                    {% end %}
+
+                {% else %}
+                    <div class="text-center py-5">
+                        <h4 class="text-muted">該当する企業が見つかりませんでした</h4>
+                        <p class="text-muted">検索条件を変更してお試しください</p>
+                    </div>
+                {% end %}
+            </div>
+        </div>
+    </div>
+</div>
+{% end %}
