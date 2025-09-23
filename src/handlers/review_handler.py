@@ -90,9 +90,8 @@ class ReviewCreateHandler(BaseHandler):
     async def post(self, company_id):
         """レビュー投稿処理"""
         try:
-            user_id = self.get_current_user_id()
-            if not user_id:
-                raise tornado.web.HTTPError(401, "Authentication required")
+            # 認証必須
+            user_id = await self.require_authentication()
 
             # フォームデータを解析
             review_data = self._parse_review_form()
@@ -204,8 +203,17 @@ class ReviewCreateHandler(BaseHandler):
 
     def get_current_user_id(self):
         """現在のユーザーIDを取得"""
-        # セッション管理実装後に実装
-        return "test_user_id"
+        user_id = self.get_secure_cookie("user_id")
+        if user_id:
+            return user_id.decode('utf-8')
+        return None
+
+    async def require_authentication(self):
+        """認証を要求し、ユーザー情報を返す"""
+        user_id = self.get_current_user_id()
+        if not user_id:
+            raise tornado.web.HTTPError(401, "Authentication required")
+        return user_id
 
 
 class ReviewEditHandler(BaseHandler):
@@ -218,9 +226,8 @@ class ReviewEditHandler(BaseHandler):
     async def get(self, review_id):
         """レビュー編集フォーム表示"""
         try:
-            user_id = self.get_current_user_id()
-            if not user_id:
-                raise tornado.web.HTTPError(401, "Authentication required")
+            # 認証必須
+            user_id = await self.require_authentication()
 
             # 編集権限チェック
             has_permission = await self.review_service.check_edit_permission(user_id, review_id)
@@ -247,12 +254,11 @@ class ReviewEditHandler(BaseHandler):
             logger.error(f"Review edit form error: {e}")
             raise tornado.web.HTTPError(500, "Internal server error")
 
-    async def put(self, review_id):
+    async def post(self, review_id):
         """レビュー更新処理"""
         try:
-            user_id = self.get_current_user_id()
-            if not user_id:
-                raise tornado.web.HTTPError(401, "Authentication required")
+            # 認証必須
+            user_id = await self.require_authentication()
 
             # 編集権限チェック
             has_permission = await self.review_service.check_edit_permission(user_id, review_id)
@@ -361,5 +367,14 @@ class ReviewEditHandler(BaseHandler):
 
     def get_current_user_id(self):
         """現在のユーザーIDを取得"""
-        # セッション管理実装後に実装
-        return "test_user_id"
+        user_id = self.get_secure_cookie("user_id")
+        if user_id:
+            return user_id.decode('utf-8')
+        return None
+
+    async def require_authentication(self):
+        """認証を要求し、ユーザー情報を返す"""
+        user_id = self.get_current_user_id()
+        if not user_id:
+            raise tornado.web.HTTPError(401, "Authentication required")
+        return user_id

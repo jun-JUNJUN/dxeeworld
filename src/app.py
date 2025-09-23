@@ -12,6 +12,10 @@ from .handlers.health_handler import HealthCheckHandler
 from .handlers.auth_handler import RegisterHandler, LoginHandler, LogoutHandler
 from .handlers.company_handler import CompanyListHandler, CompanyDetailHandler, CompanyJobsHandler, JobsListHandler
 from .handlers.review_handler import ReviewListHandler, ReviewCreateHandler, ReviewEditHandler
+from .handlers.email_auth_handler import (
+    EmailRegistrationHandler, EmailVerificationHandler, EmailLoginHandler,
+    EmailCodeVerificationHandler, EmailCodeResendHandler
+)
 
 # ログ設定
 logging.basicConfig(
@@ -46,6 +50,12 @@ def create_app():
         (r"/review", ReviewListHandler),
         (r"/companies/([^/]+)/reviews/new", ReviewCreateHandler),
         (r"/reviews/([^/]+)/edit", ReviewEditHandler),
+        # メール認証関連ルート (Task 5.3, 5.4)
+        (r"/auth/email/register", EmailRegistrationHandler),
+        (r"/auth/email/verify", EmailVerificationHandler),
+        (r"/auth/email/login", EmailLoginHandler),
+        (r"/auth/email/verify-code", EmailCodeVerificationHandler),
+        (r"/auth/email/resend-code", EmailCodeResendHandler),
         (r"/static/(.*)", tornado.web.StaticFileHandler, {
             "path": static_path,
             "default_filename": None

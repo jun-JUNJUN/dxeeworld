@@ -108,3 +108,39 @@ class AuthMiddleware:
             'is_recruiter': user.user_type == UserType.RECRUITER,
             'is_job_seeker': user.user_type == UserType.JOB_SEEKER
         }
+
+    async def get_user_from_session_dict(self, session_data: dict) -> dict:
+        """セッション辞書からユーザー情報を取得（テスト用）"""
+        if not session_data or "user_id" not in session_data:
+            return None
+
+        user_doc = await self.user_service.db_service.find_one(
+            'users',
+            {'_id': session_data["user_id"]}
+        )
+
+        if not user_doc or not user_doc.get('is_active', True):
+            return None
+
+        return {
+            'user_id': user_doc['_id'],
+            'email': user_doc.get('email'),
+            'name': user_doc.get('name'),
+            'user_type': user_doc.get('user_type'),
+            'company_id': user_doc.get('company_id'),
+            'position': user_doc.get('position')
+        }
+
+    async def validate_session_token(self, token: str) -> bool:
+        """セッショントークンの検証"""
+        try:
+            if not token:
+                return False
+
+            # セッション検証
+            session_result = await self.session_service.validate_session(token)
+            return session_result.is_success
+
+        except Exception as e:
+            logger.error(f"Session token validation error: {e}")
+            return False
