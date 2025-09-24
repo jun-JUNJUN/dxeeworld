@@ -242,6 +242,18 @@ class CompanyListHandler(BaseHandler):
         }
         return industry_labels.get(industry_value, industry_value)
 
+    def _get_size_label(self, size_value: str) -> str:
+        """企業規模値から表示ラベルを取得"""
+        size_labels = {
+            'startup': 'スタートアップ (1-10名)',
+            'small': '小企業 (11-50名)',
+            'medium': '中企業 (51-200名)',
+            'large': '大企業 (201-1000名)',
+            'enterprise': '大企業 (1000名以上)',
+            'other': 'その他'
+        }
+        return size_labels.get(size_value, size_value)
+
 
 class JobsListHandler(BaseHandler):
     """全求人一覧表示ハンドラー"""

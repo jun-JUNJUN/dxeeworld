@@ -11,6 +11,7 @@
 - ナビゲーションメニューから不要な項目（求人情報、ログイン、新規登録、人材情報）を削除
 - 企業一覧表示の機能復旧とcompany-reviews機能との統合修正
 - PC・モバイル環境に最適化された企業詳細ページのレスポンシブレイアウト実装
+- モバイル環境での固定タブバーナビゲーション実装（画面下部固定、3つのアイコン）
 
 ### 非ゴール
 - 既存のレビュー機能の変更や拡張
@@ -59,6 +60,14 @@
 - **根拠**: サーバーサイドレンダリング維持、SEO最適化、既存テンプレートパターン継続
 - **トレードオフ**: リアルタイム更新機能を犠牲にしてサーバーサイド一貫性を確保
 
+**決定4: モバイル専用タブバーナビゲーション実装**
+- **判断**: 画面下部固定タブバー形式の採用、既存サイドバーの無効化
+- **コンテキスト**: モバイルユーザビリティ向上のため、タッチ操作に最適化されたナビゲーションが必要
+- **代替案**: ハンバーガーメニュー維持、ドロップダウンナビゲーション、スワイプベースナビゲーション
+- **選択したアプローチ**: CSS `position: fixed; bottom: 0`による下部固定 + 3つのアイコンタブ（Home, Reviews, Companies）
+- **根拠**: モバイルアプリケーションの標準UXパターン、親指操作領域での操作性向上、視覚的分離の明確化
+- **トレードオフ**: 追加のCSS実装コストと引き換えにユーザビリティを大幅改善
+
 ## システムフロー
 
 ```mermaid
@@ -89,10 +98,13 @@ sequenceDiagram
     Browser->>Browser: レスポンシブレイアウト判定（768px breakpoint）
 
     alt PC環境（>=768px）
-        Browser-->>User: 左右分割レイアウト表示
+        Browser-->>User: サイドバーナビゲーション + 左右分割レイアウト表示
     else モバイル環境（<768px）
-        Browser-->>User: 縦方向レイアウト + 詳細トグル機能
-        User->>Browser: 詳細ボタンクリック
+        Browser-->>User: 下部固定タブバー + 縦方向レイアウト + 詳細トグル機能
+        User->>Browser: タブバーアイコンクリック（Home/Reviews/Companies）
+        Browser->>Browser: ページ遷移処理
+        Browser-->>User: 対応するページ表示
+        User->>Browser: 詳細ボタンクリック（企業詳細ページ内）
         Browser->>Browser: JavaScript詳細表示切り替え
         Browser-->>User: 企業属性情報表示/非表示
     end
@@ -242,6 +254,82 @@ interface CompanyDetail {
   // ... その他企業属性
 }
 ```
+
+### Mobile Tab Navigation System
+
+#### MobileTabBarComponent
+
+**責任と境界**
+- **主要責任**: モバイル環境での下部固定タブバーナビゲーション制御
+- **ドメイン境界**: モバイルUI専用ナビゲーション層
+- **データ所有権**: タブ選択状態とアクティブページ管理
+- **トランザクション境界**: フロントエンド状態管理のみ
+
+**依存関係**
+- **インバウンド**: base.htmlテンプレートから条件分岐により呼び出し（モバイル時のみ）
+- **アウトバウンド**: Tornadoルーティングシステム、CSS Media Queries
+- **外部**: ブラウザのViewport API、タッチイベント
+
+**契約定義**
+
+**HTMLコントラクト**:
+```html
+<!-- モバイル専用下部固定タブバー -->
+<nav class="mobile-tab-bar" style="display: none;">
+    <a href="/" class="tab-item" data-page="home">
+        <span class="tab-icon">🏠</span>
+        <span class="tab-label">Home</span>
+    </a>
+    <a href="/review" class="tab-item" data-page="reviews">
+        <span class="tab-icon">⭐</span>
+        <span class="tab-label">Reviews</span>
+    </a>
+    <a href="/companies" class="tab-item" data-page="companies">
+        <span class="tab-icon">🏢</span>
+        <span class="tab-label">Companies</span>
+    </a>
+</nav>
+```
+
+**CSSコントラクト**:
+```css
+/* モバイル専用タブバー */
+@media (max-width: 767px) {
+    .mobile-tab-bar {
+        display: flex !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        border-top: 1px solid #e9ecef;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        height: 60px;
+    }
+
+    .sidebar {
+        display: none; /* サイドバー非表示 */
+    }
+
+    .main-content {
+        margin-left: 0; /* サイドバー分のマージン削除 */
+        padding-bottom: 60px; /* タブバー分のパディング追加 */
+    }
+}
+
+/* PC環境では従来のサイドバー表示 */
+@media (min-width: 768px) {
+    .mobile-tab-bar {
+        display: none !important;
+    }
+}
+```
+
+**統合戦略**:
+- **表示制御**: CSS Media Queriesによるレスポンシブ切り替え
+- **状態管理**: 現在のページに基づくアクティブタブ表示
+- **アクセシビリティ**: タッチ操作最適化（44px以上のタッチターゲット）
 
 ### Responsive Layout System
 
@@ -435,7 +523,9 @@ const NavigationConfig: NavigationItem[] = [
 - **レスポンシブデザイン**: 768px breakpointでの正確なレイアウト切り替え
 - **モバイル詳細トグル**: タッチ操作による属性情報の表示・非表示
 - **PC左右分割表示**: 企業情報とレビューの適切な配置
-- **ナビゲーションメニュー**: 削除後の3項目のみ表示確認
+- **ナビゲーションメニュー**: PC環境でのサイドバー表示確認
+- **モバイルタブバー**: 下部固定タブバーの表示・操作・アクティブ状態表示確認
+- **ナビゲーション切り替え**: PC・モバイル間でのナビゲーション表示切り替え確認
 
 ### パフォーマンステスト
 - **レスポンシブ切り替え速度**: Media Query適用の応答性能
@@ -474,7 +564,8 @@ graph TB
 
     D --> D1[レスポンシブCSS実装]
     D1 --> D2[JavaScriptトグル機能]
-    D2 --> D3[モバイル表示検証]
+    D2 --> D3[モバイルタブバー実装]
+    D3 --> D4[モバイル表示検証]
 
     E --> E1[全機能回帰テスト]
     E1 --> E2[パフォーマンス確認]

@@ -152,8 +152,26 @@
     margin-bottom: 4px;
 }
 
-/* レスポンシブデザイン */
-@media (max-width: 768px) {
+/* PC表示レイアウト (>=768px) - Task 3.1 */
+@media (min-width: 768px) {
+    .company-detail-main {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+
+    .company-info-section {
+        /* 左側企業情報エリア */
+    }
+
+    .reviews-section {
+        /* 右側レビューエリア */
+    }
+}
+
+/* モバイル表示レイアウト (<768px) - Task 4.1 */
+@media (max-width: 767px) {
     .company-detail-container {
         padding: 10px;
     }
@@ -164,6 +182,12 @@
 
     .company-title {
         font-size: 2rem;
+    }
+
+    .company-detail-main {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
     }
 
     .company-details {
@@ -182,6 +206,31 @@
 
     .detail-label {
         margin-bottom: 5px;
+    }
+
+    /* モバイル用詳細トグル機能 - Task 4.2 */
+    .company-attributes {
+        display: none;
+    }
+
+    .company-attributes.expanded {
+        display: block;
+    }
+
+    .details-toggle {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-bottom: 20px;
+        width: 100%;
+        font-size: 1rem;
+    }
+
+    .details-toggle:hover {
+        background: #0056b3;
     }
 }
 
@@ -240,113 +289,145 @@
         {% end %}
     </div>
 
-    <!-- 企業詳細情報 -->
-    <div class="company-details">
-        <!-- 基本情報 -->
-        <div class="detail-section">
-            <h3>基本情報</h3>
-            <div class="detail-grid">
-                <div class="detail-label">企業名</div>
-                <div class="detail-value">{{ company['name'] }}</div>
+    <!-- PC: 左右分割レイアウト / モバイル: 縦方向レイアウト -->
+    <div class="company-detail-main">
+        <!-- 左側: 企業詳細情報セクション -->
+        <div class="company-info-section">
+            <!-- モバイル用詳細トグルボタン -->
+            <button class="details-toggle" onclick="toggleCompanyDetails()" style="display: none;">
+                企業詳細情報を表示 <span id="toggle-icon">▼</span>
+            </button>
 
-                <div class="detail-label">業界</div>
-                <div class="detail-value">{{ company['industry_label'] }}</div>
+            <!-- 企業属性情報（モバイルでは初期非表示） -->
+            <div class="company-attributes" id="company-attributes">
+                <div class="company-details">
+                    <!-- 基本情報 -->
+                    <div class="detail-section">
+                        <h3>基本情報</h3>
+                        <div class="detail-grid">
+                            <div class="detail-label">企業名</div>
+                            <div class="detail-value">{{ company['name'] }}</div>
 
-                <div class="detail-label">企業規模</div>
-                <div class="detail-value">{{ company['size_label'] }}</div>
+                            <div class="detail-label">業界</div>
+                            <div class="detail-value">{{ company['industry_label'] }}</div>
 
-                <div class="detail-label">国</div>
-                <div class="detail-value">{{ company['country'] or '-' }}</div>
+                            <div class="detail-label">企業規模</div>
+                            <div class="detail-value">{{ company['size_label'] }}</div>
 
-                <div class="detail-label">所在地</div>
-                <div class="detail-value {% if not company['location'] %}empty{% end %}">
-                    {{ company['location'] or 'データなし' }}
-                </div>
+                            <div class="detail-label">国</div>
+                            <div class="detail-value">{{ company['country'] or '-' }}</div>
 
-                <div class="detail-label">設立年</div>
-                <div class="detail-value {% if not company['founded_year'] %}empty{% end %}">
-                    {% if company['founded_year'] %}
-                    {{ company['founded_year'] }}年
-                    {% else %}
-                    データなし
-                    {% end %}
-                </div>
+                            <div class="detail-label">所在地</div>
+                            <div class="detail-value {% if not company['location'] %}empty{% end %}">
+                                {{ company['location'] or 'データなし' }}
+                            </div>
 
-                <div class="detail-label">従業員数</div>
-                <div class="detail-value {% if not company['employee_count'] %}empty{% end %}">
-                    {% if company['employee_count'] %}
-                    {{ "{:,}".format(company['employee_count']) }}名
-                    {% else %}
-                    データなし
-                    {% end %}
+                            <div class="detail-label">設立年</div>
+                            <div class="detail-value {% if not company['founded_year'] %}empty{% end %}">
+                                {% if company['founded_year'] %}
+                                {{ company['founded_year'] }}年
+                                {% else %}
+                                データなし
+                                {% end %}
+                            </div>
+
+                            <div class="detail-label">従業員数</div>
+                            <div class="detail-value {% if not company['employee_count'] %}empty{% end %}">
+                                {% if company['employee_count'] %}
+                                {{ "{:,}".format(company['employee_count']) }}名
+                                {% else %}
+                                データなし
+                                {% end %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 追加情報 -->
+                    <div class="detail-section">
+                        <h3>追加情報</h3>
+
+                        {% if company['foreign_company_data'] and (company['foreign_company_data'].get('region') or company['foreign_company_data'].get('country') or company['foreign_company_data'].get('market_cap')) %}
+                        <h4 style="color: #495057; margin-bottom: 15px;">外資系企業データ</h4>
+                        <div class="detail-grid">
+                            {% if company['foreign_company_data'].get('region') %}
+                            <div class="detail-label">地域</div>
+                            <div class="detail-value">{{ company['foreign_company_data'].get('region') }}</div>
+                            {% end %}
+
+                            {% if company['foreign_company_data'].get('country') %}
+                            <div class="detail-label">国</div>
+                            <div class="detail-value">{{ company['foreign_company_data'].get('country') }}</div>
+                            {% end %}
+
+                            {% if company['foreign_company_data'].get('market_cap') %}
+                            <div class="detail-label">時価総額</div>
+                            <div class="detail-value">{{ company['foreign_company_data'].get('market_cap') }}</div>
+                            {% end %}
+                        </div>
+                        {% end %}
+
+                        {% if company['construction_data'] and (company['construction_data'].get('license_type') or company['construction_data'].get('project_types') or company['construction_data'].get('annual_revenue')) %}
+                        <h4 style="color: #495057; margin: 20px 0 15px 0;">建設業データ</h4>
+                        <div class="detail-grid">
+                            {% if company['construction_data'].get('license_type') %}
+                            <div class="detail-label">ライセンス種類</div>
+                            <div class="detail-value">{{ company['construction_data'].get('license_type') }}</div>
+                            {% end %}
+
+                            {% if company['construction_data'].get('project_types') %}
+                            <div class="detail-label">プロジェクト種類</div>
+                            <div class="detail-value">
+                                {% if isinstance(company['construction_data']['project_types'], list) %}
+                                {{ ", ".join(company['construction_data']['project_types']) }}
+                                {% else %}
+                                {{ company['construction_data']['project_types'] }}
+                                {% end %}
+                            </div>
+                            {% end %}
+
+                            {% if company['construction_data'].get('annual_revenue') %}
+                            <div class="detail-label">年間売上</div>
+                            <div class="detail-value">{{ company['construction_data'].get('annual_revenue') }}</div>
+                            {% end %}
+                        </div>
+                        {% end %}
+
+                        {% if not ((company['foreign_company_data'] and (company['foreign_company_data'].get('region') or company['foreign_company_data'].get('country') or company['foreign_company_data'].get('market_cap'))) or (company['construction_data'] and (company['construction_data'].get('license_type') or company['construction_data'].get('project_types') or company['construction_data'].get('annual_revenue')))) %}
+                        <div class="detail-value empty">
+                            追加情報は登録されていません
+                        </div>
+                        {% end %}
+
+                        {% if company['source_files'] %}
+                        <div class="source-files">
+                            <div class="detail-label" style="margin-bottom: 10px;">データソース</div>
+                            {% for source_file in company['source_files'] %}
+                            <span class="source-file">{{ source_file }}</span>
+                            {% end %}
+                        </div>
+                        {% end %}
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 追加情報 -->
-        <div class="detail-section">
-            <h3>追加情報</h3>
-
-            {% if company['foreign_company_data'] and (company['foreign_company_data'].get('region') or company['foreign_company_data'].get('country') or company['foreign_company_data'].get('market_cap')) %}
-            <h4 style="color: #495057; margin-bottom: 15px;">外資系企業データ</h4>
-            <div class="detail-grid">
-                {% if company['foreign_company_data'].get('region') %}
-                <div class="detail-label">地域</div>
-                <div class="detail-value">{{ company['foreign_company_data'].get('region') }}</div>
-                {% end %}
-
-                {% if company['foreign_company_data'].get('country') %}
-                <div class="detail-label">国</div>
-                <div class="detail-value">{{ company['foreign_company_data'].get('country') }}</div>
-                {% end %}
-
-                {% if company['foreign_company_data'].get('market_cap') %}
-                <div class="detail-label">時価総額</div>
-                <div class="detail-value">{{ company['foreign_company_data'].get('market_cap') }}</div>
-                {% end %}
-            </div>
-            {% end %}
-
-            {% if company['construction_data'] and (company['construction_data'].get('license_type') or company['construction_data'].get('project_types') or company['construction_data'].get('annual_revenue')) %}
-            <h4 style="color: #495057; margin: 20px 0 15px 0;">建設業データ</h4>
-            <div class="detail-grid">
-                {% if company['construction_data'].get('license_type') %}
-                <div class="detail-label">ライセンス種類</div>
-                <div class="detail-value">{{ company['construction_data'].get('license_type') }}</div>
-                {% end %}
-
-                {% if company['construction_data'].get('project_types') %}
-                <div class="detail-label">プロジェクト種類</div>
-                <div class="detail-value">
-                    {% if isinstance(company['construction_data']['project_types'], list) %}
-                    {{ ", ".join(company['construction_data']['project_types']) }}
-                    {% else %}
-                    {{ company['construction_data']['project_types'] }}
-                    {% end %}
+        <!-- 右側: レビューセクション -->
+        <div class="reviews-section">
+            <!-- 企業レビュー表示エリア（将来のタスク5で実装予定） -->
+            <div class="detail-section">
+                <h3>企業レビュー</h3>
+                <div class="review-placeholder">
+                    <div class="review-prompt-section">
+                        <div class="prompt-message" style="color: #6c757d; margin-bottom: 15px;">
+                            この企業に勤めていますか？勤めたことがありますか？
+                        </div>
+                        <a href="/companies/{{ company['id'] }}/reviews/new" class="btn btn-primary review-submit-btn"
+                           style="display: inline-block; background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                            Reviewを投稿する
+                        </a>
+                    </div>
                 </div>
-                {% end %}
-
-                {% if company['construction_data'].get('annual_revenue') %}
-                <div class="detail-label">年間売上</div>
-                <div class="detail-value">{{ company['construction_data'].get('annual_revenue') }}</div>
-                {% end %}
             </div>
-            {% end %}
-
-            {% if not ((company['foreign_company_data'] and (company['foreign_company_data'].get('region') or company['foreign_company_data'].get('country') or company['foreign_company_data'].get('market_cap'))) or (company['construction_data'] and (company['construction_data'].get('license_type') or company['construction_data'].get('project_types') or company['construction_data'].get('annual_revenue')))) %}
-            <div class="detail-value empty">
-                追加情報は登録されていません
-            </div>
-            {% end %}
-
-            {% if company['source_files'] %}
-            <div class="source-files">
-                <div class="detail-label" style="margin-bottom: 10px;">データソース</div>
-                {% for source_file in company['source_files'] %}
-                <span class="source-file">{{ source_file }}</span>
-                {% end %}
-            </div>
-            {% end %}
         </div>
     </div>
 
@@ -402,4 +483,38 @@
         {% end %}
     </div>
 </div>
+
+<script>
+function toggleCompanyDetails() {
+    const attributes = document.getElementById('company-attributes');
+    const toggleIcon = document.getElementById('toggle-icon');
+    const button = document.querySelector('.details-toggle');
+
+    if (attributes.classList.contains('expanded')) {
+        attributes.classList.remove('expanded');
+        toggleIcon.textContent = '▼';
+        button.innerHTML = '企業詳細情報を表示 <span id="toggle-icon">▼</span>';
+    } else {
+        attributes.classList.add('expanded');
+        toggleIcon.textContent = '▲';
+        button.innerHTML = '企業詳細情報を非表示 <span id="toggle-icon">▲</span>';
+    }
+}
+
+// モバイル表示時のみトグルボタンを表示
+function updateToggleButtonVisibility() {
+    const button = document.querySelector('.details-toggle');
+    if (window.innerWidth < 768) {
+        button.style.display = 'block';
+    } else {
+        button.style.display = 'none';
+        // PC表示時は詳細情報を常に表示
+        document.getElementById('company-attributes').classList.add('expanded');
+    }
+}
+
+// 初期化とリサイズイベントリスナー
+document.addEventListener('DOMContentLoaded', updateToggleButtonVisibility);
+window.addEventListener('resize', updateToggleButtonVisibility);
+</script>
 {% end %}

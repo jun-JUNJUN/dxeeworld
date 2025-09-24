@@ -29,9 +29,9 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/jobs" class="nav-link" title="求人情報">
-                        <span class="nav-icon">💼</span>
-                        <span class="nav-text">求人情報</span>
+                    <a href="/review" class="nav-link" title="レビュー">
+                        <span class="nav-icon">⭐</span>
+                        <span class="nav-text">レビュー</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -40,42 +40,6 @@
                         <span class="nav-text">企業一覧</span>
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a href="/talents" class="nav-link" title="人材情報">
-                        <span class="nav-icon">👥</span>
-                        <span class="nav-text">人材情報</span>
-                    </a>
-                </li>
-                
-                <li class="nav-separator"></li>
-                
-                {% if current_user %}
-                <li class="nav-item">
-                    <a href="/profile" class="nav-link" title="プロフィール">
-                        <span class="nav-icon">👤</span>
-                        <span class="nav-text">プロフィール</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="/logout" class="nav-link" title="ログアウト">
-                        <span class="nav-icon">🚪</span>
-                        <span class="nav-text">ログアウト</span>
-                    </a>
-                </li>
-                {% else %}
-                <li class="nav-item">
-                    <a href="/login" class="nav-link" title="ログイン">
-                        <span class="nav-icon">🔑</span>
-                        <span class="nav-text">ログイン</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="/register" class="nav-link" title="新規登録">
-                        <span class="nav-icon">✍️</span>
-                        <span class="nav-text">新規登録</span>
-                    </a>
-                </li>
-                {% end %}
             </ul>
         </nav>
 
