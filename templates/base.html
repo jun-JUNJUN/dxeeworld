@@ -49,7 +49,95 @@
                 {% block content %}{% end %}
             </div>
         </main>
+
+        <!-- モバイル下部タブバー -->
+        <nav class="mobile-tab-bar" id="mobile-tab-bar">
+            <div class="tab-item">
+                <a href="/" class="tab-link" data-page="home" title="ホーム">
+                    <div class="tab-icon">🏠</div>
+                    <div class="tab-label">Home</div>
+                </a>
+            </div>
+            <div class="tab-item">
+                <a href="/review" class="tab-link" data-page="reviews" title="レビュー">
+                    <div class="tab-icon">⭐</div>
+                    <div class="tab-label">Reviews</div>
+                </a>
+            </div>
+            <div class="tab-item">
+                <a href="/companies" class="tab-link" data-page="companies" title="企業一覧">
+                    <div class="tab-icon">🏢</div>
+                    <div class="tab-label">Companies</div>
+                </a>
+            </div>
+        </nav>
     </div>
+
+    <style>
+        /* モバイルタブバー CSS */
+        .mobile-tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-around;
+            z-index: 1000;
+            padding: 8px 0;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+        }
+
+        .tab-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .tab-link {
+            display: block;
+            color: #666;
+            text-decoration: none;
+            padding: 4px;
+            transition: color 0.3s ease;
+        }
+
+        .tab-link:hover {
+            color: #007bff;
+        }
+
+        .tab-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+
+        .tab-label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* レスポンシブ表示制御 */
+        @media (max-width: 767px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding-bottom: 80px;
+            }
+
+            .mobile-tab-bar {
+                display: flex;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .mobile-tab-bar {
+                display: none;
+            }
+        }
+    </style>
 
     <script src="/static/js/main.js"></script>
     {% block scripts %}{% end %}

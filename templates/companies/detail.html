@@ -208,29 +208,157 @@
         margin-bottom: 5px;
     }
 
-    /* モバイル用詳細トグル機能 - Task 4.2 */
+    /* モバイル用詳細トグル機能 - Task 4.4 */
     .company-attributes {
         display: none;
     }
 
     .company-attributes.expanded {
-        display: block;
+        display: block !important;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .details-toggle {
         background: #007bff;
         color: white;
         border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
+        padding: 12px 20px;
+        border-radius: 8px;
         cursor: pointer;
         margin-bottom: 20px;
         width: 100%;
         font-size: 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+        min-height: 44px; /* タッチ操作最適化 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
     }
 
     .details-toggle:hover {
         background: #0056b3;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+    }
+
+    .details-toggle:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+    }
+
+    /* モバイル用レビュー最適化 - Task 4.5 */
+    .reviews-section {
+        margin-top: 20px;
+    }
+
+    .review-card-mobile {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #f0f0f0;
+    }
+
+    .review-rating-mobile {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .review-rating-stars {
+        color: #ffc107;
+        font-size: 14px;
+    }
+
+    .review-content-mobile {
+        color: #495057;
+        line-height: 1.5;
+        margin-bottom: 12px;
+    }
+
+    .review-meta-mobile {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    .reviews-list-mobile {
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    .reviews-list-mobile::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .reviews-list-mobile::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2px;
+    }
+
+    .reviews-list-mobile::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 2px;
+    }
+
+    .reviews-list-mobile::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
+    .review-prompt-section {
+        text-align: center;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border: 2px dashed #e9ecef;
+    }
+
+    .prompt-message {
+        font-size: 16px;
+        color: #495057;
+        margin-bottom: 16px;
+        font-weight: 500;
+    }
+
+    .review-submit-btn {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .review-submit-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+        text-decoration: none;
+        color: white;
     }
 }
 
@@ -294,8 +422,9 @@
         <!-- 左側: 企業詳細情報セクション -->
         <div class="company-info-section">
             <!-- モバイル用詳細トグルボタン -->
-            <button class="details-toggle" onclick="toggleCompanyDetails()" style="display: none;">
-                企業詳細情報を表示 <span id="toggle-icon">▼</span>
+            <button class="details-toggle" onclick="toggleCompanyDetails()" style="display: none;" aria-label="企業詳細情報の表示切替">
+                <span id="toggle-text">企業詳細情報を表示</span>
+                <span id="toggle-icon" aria-hidden="true">▼</span>
             </button>
 
             <!-- 企業属性情報（モバイルでは初期非表示） -->
@@ -411,22 +540,49 @@
             </div>
         </div>
 
-        <!-- 右側: レビューセクション -->
+        <!-- 右側: レビューセクション - Task 4.5 -->
         <div class="reviews-section">
-            <!-- 企業レビュー表示エリア（将来のタスク5で実装予定） -->
             <div class="detail-section">
                 <h3>企業レビュー</h3>
-                <div class="review-placeholder">
-                    <div class="review-prompt-section">
-                        <div class="prompt-message" style="color: #6c757d; margin-bottom: 15px;">
-                            この企業に勤めていますか？勤めたことがありますか？
+
+                <!-- レビューが存在する場合の表示（将来実装予定） -->
+                {% if reviews and reviews|length > 0 %}
+                <div class="reviews-list-mobile">
+                    {% for review in reviews %}
+                    <div class="review-card-mobile">
+                        <div class="review-rating-mobile">
+                            <div class="review-rating-stars">
+                                {% for i in range(5) %}
+                                    {% if i < review['overall_rating'] %}
+                                    ★
+                                    {% else %}
+                                    ☆
+                                    {% end %}
+                                {% end %}
+                            </div>
+                            <span class="review-rating-value">{{ "%.1f"|format(review['overall_rating']) }}</span>
                         </div>
-                        <a href="/companies/{{ company['id'] }}/reviews/new" class="btn btn-primary review-submit-btn"
-                           style="display: inline-block; background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
-                            Reviewを投稿する
-                        </a>
+                        <div class="review-content-mobile">
+                            {{ review['comment'][:100] }}{% if review['comment']|length > 100 %}...{% end %}
+                        </div>
+                        <div class="review-meta-mobile">
+                            <span>投稿日: {{ review['created_at'][:10] if review['created_at'] else '不明' }}</span>
+                            <span>総合評価: {{ "%.1f"|format(review['overall_rating']) }}/5.0</span>
+                        </div>
                     </div>
+                    {% end %}
                 </div>
+                {% else %}
+                <!-- レビューが存在しない場合の投稿促進UI -->
+                <div class="review-prompt-section">
+                    <div class="prompt-message">
+                        この企業に勤めていますか？勤めたことがありますか？
+                    </div>
+                    <a href="/companies/{{ company['id'] }}/reviews/new" class="review-submit-btn">
+                        Reviewを投稿する
+                    </a>
+                </div>
+                {% end %}
             </div>
         </div>
     </div>
@@ -488,33 +644,68 @@
 function toggleCompanyDetails() {
     const attributes = document.getElementById('company-attributes');
     const toggleIcon = document.getElementById('toggle-icon');
+    const toggleText = document.getElementById('toggle-text');
     const button = document.querySelector('.details-toggle');
+
+    if (!attributes || !toggleIcon || !toggleText) {
+        console.error('Required elements not found');
+        return;
+    }
 
     if (attributes.classList.contains('expanded')) {
         attributes.classList.remove('expanded');
         toggleIcon.textContent = '▼';
-        button.innerHTML = '企業詳細情報を表示 <span id="toggle-icon">▼</span>';
+        toggleIcon.setAttribute('aria-hidden', 'true');
+        toggleText.textContent = '企業詳細情報を表示';
+        button.setAttribute('aria-expanded', 'false');
     } else {
         attributes.classList.add('expanded');
         toggleIcon.textContent = '▲';
-        button.innerHTML = '企業詳細情報を非表示 <span id="toggle-icon">▲</span>';
+        toggleIcon.setAttribute('aria-hidden', 'true');
+        toggleText.textContent = '企業詳細情報を非表示';
+        button.setAttribute('aria-expanded', 'true');
     }
 }
 
-// モバイル表示時のみトグルボタンを表示
+// Task 4.4 - モバイル表示制御の改善
 function updateToggleButtonVisibility() {
     const button = document.querySelector('.details-toggle');
-    if (window.innerWidth < 768) {
+    const attributes = document.getElementById('company-attributes');
+
+    if (!button || !attributes) {
+        console.warn('Toggle elements not found');
+        return;
+    }
+
+    const isMobile = window.innerWidth < 768;
+
+    if (isMobile) {
         button.style.display = 'block';
+        // モバイル時はデフォルトで詳細情報を非表示
+        if (!attributes.classList.contains('expanded')) {
+            attributes.style.display = 'none';
+        }
     } else {
         button.style.display = 'none';
         // PC表示時は詳細情報を常に表示
-        document.getElementById('company-attributes').classList.add('expanded');
+        attributes.classList.add('expanded');
+        attributes.style.display = 'block';
     }
 }
 
-// 初期化とリサイズイベントリスナー
-document.addEventListener('DOMContentLoaded', updateToggleButtonVisibility);
-window.addEventListener('resize', updateToggleButtonVisibility);
+// レスポンシブ対応の改善
+function initializeResponsiveToggle() {
+    updateToggleButtonVisibility();
+
+    // デバウンス機能付きリサイズハンドラー
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(updateToggleButtonVisibility, 100);
+    });
+}
+
+// 初期化
+document.addEventListener('DOMContentLoaded', initializeResponsiveToggle);
 </script>
 {% end %}

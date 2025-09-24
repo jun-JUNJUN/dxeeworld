@@ -8,6 +8,10 @@ from .base_handler import BaseHandler
 from ..services.company_service import CompanyService
 from ..services.job_service import JobService
 from ..database import get_db_service
+try:
+    from ..services.review_submission_service import ReviewSubmissionService
+except ImportError:
+    ReviewSubmissionService = None
 
 logger = logging.getLogger(__name__)
 
@@ -468,6 +472,10 @@ class CompanyDetailHandler(BaseHandler):
         self.db_service = get_db_service()
         self.company_service = CompanyService(self.db_service)
         self.job_service = JobService(self.db_service)
+        if ReviewSubmissionService:
+            self.review_service = ReviewSubmissionService(self.db_service)
+        else:
+            self.review_service = None
 
     async def get(self, company_id: str):
         """企業詳細ページ表示"""
@@ -521,10 +529,39 @@ class CompanyDetailHandler(BaseHandler):
             # 追加求人情報へのリンク用URL
             jobs_url = f"/companies/{company_id}/jobs"
 
+            # レビューデータの取得（Task 4.5用）
+            reviews_data = []
+            has_reviews = False
+            if self.review_service:
+                try:
+                    reviews = await self.review_service.get_company_reviews(company_id, limit=5)
+                    has_reviews = len(reviews) > 0
+                    for review in reviews:
+                        reviews_data.append({
+                            'id': review.get('id', ''),
+                            'overall_rating': review.get('overall_rating', 0),
+                            'work_environment': review.get('work_environment', 0),
+                            'compensation': review.get('compensation', 0),
+                            'growth_opportunity': review.get('growth_opportunity', 0),
+                            'work_life_balance': review.get('work_life_balance', 0),
+                            'management_quality': review.get('management_quality', 0),
+                            'job_satisfaction': review.get('job_satisfaction', 0),
+                            'recommendation': review.get('recommendation', 0),
+                            'comment': review.get('comment', ''),
+                            'created_at': review.get('created_at', ''),
+                            'updated_at': review.get('updated_at', '')
+                        })
+                except Exception as e:
+                    logger.warning(f"Failed to load reviews for company {company_id}: {e}")
+                    reviews_data = []
+                    has_reviews = False
+
             template_data = {
                 'company': company_data,
                 'related_jobs': jobs_data,
                 'jobs_url': jobs_url,
+                'reviews': reviews_data,
+                'has_reviews': has_reviews,
                 'page_title': f'{company_data["name"]} - 企業詳細',
             }
 
