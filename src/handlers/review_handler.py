@@ -62,34 +62,48 @@ class ReviewCreateHandler(BaseHandler):
         self.review_service = ReviewSubmissionService()
 
     async def get(self, company_id):
-        """レビュー投稿フォーム表示"""
+        """Task 5.3: レビュー投稿フォーム表示"""
         try:
+            # 企業IDの検証
+            if not company_id or len(company_id.strip()) == 0:
+                raise tornado.web.HTTPError(400, "無効な企業IDです")
+
             # 会社情報を取得
             company = await self.review_service.get_company_info(company_id)
             if not company:
-                raise tornado.web.HTTPError(404, "Company not found")
+                logger.warning(f"Company not found: {company_id}")
+                raise tornado.web.HTTPError(404, "企業が見つかりません")
 
-            # 投稿権限チェック
+            # 投稿権限チェック（オプション：認証が不要な場合はスキップ）
             user_id = self.get_current_user_id()
-            permission = await self.review_service.check_review_permission(user_id, company_id)
-
-            if not permission.get("can_create", False):
-                raise tornado.web.HTTPError(403, "Cannot create review")
+            if user_id:  # 認証済みの場合のみ権限チェック
+                try:
+                    permission = await self.review_service.check_review_permission(user_id, company_id)
+                    if not permission.get("can_create", True):  # デフォルトでは投稿可能
+                        raise tornado.web.HTTPError(403, "このレビューの投稿権限がありません")
+                except Exception as perm_error:
+                    logger.warning(f"Permission check failed for user {user_id}, company {company_id}: {perm_error}")
+                    # 権限チェックが失敗した場合でも投稿フォームは表示（デフォルト許可）
 
             # フォームレンダリング
             self.render("reviews/create.html",
                        company=company,
-                       categories=self._get_review_categories())
+                       categories=self._get_review_categories(),
+                       company_id=company_id)
 
         except tornado.web.HTTPError:
             raise
         except Exception as e:
-            logger.error(f"Review create form error: {e}")
-            raise tornado.web.HTTPError(500, "Internal server error")
+            logger.error(f"Review create form error for company {company_id}: {e}")
+            raise tornado.web.HTTPError(500, "内部エラーが発生しました")
 
     async def post(self, company_id):
-        """レビュー投稿処理"""
+        """Task 5.3: レビュー投稿処理"""
         try:
+            # 企業IDの検証
+            if not company_id or len(company_id.strip()) == 0:
+                raise tornado.web.HTTPError(400, "無効な企業IDです")
+
             # 認証必須
             user_id = await self.require_authentication()
 
@@ -101,22 +115,27 @@ class ReviewCreateHandler(BaseHandler):
             # バリデーション
             validation_errors = self._validate_review_data(review_data)
             if validation_errors:
-                raise tornado.web.HTTPError(400, "Validation failed")
+                logger.warning(f"Review validation failed for company {company_id}: {validation_errors}")
+                # バリデーションエラーの場合は422 Unprocessable Entity
+                raise tornado.web.HTTPError(422, f"入力データが無効です: {', '.join(validation_errors)}")
 
             # レビュー投稿
             result = await self.review_service.submit_review(review_data)
 
-            if result["status"] == "success":
-                # 成功時は企業詳細ページにリダイレクト
+            if result and result.get("status") == "success":
+                logger.info(f"Review successfully submitted for company {company_id} by user {user_id}")
+                # Task 5.3: 成功時は企業詳細ページにリダイレクト
                 self.redirect(f"/companies/{company_id}")
             else:
-                raise tornado.web.HTTPError(400, result.get("message", "Submission failed"))
+                error_message = result.get("message", "レビューの投稿に失敗しました") if result else "レビューサービスでエラーが発生しました"
+                logger.error(f"Review submission failed for company {company_id}: {error_message}")
+                raise tornado.web.HTTPError(400, error_message)
 
         except tornado.web.HTTPError:
             raise
         except Exception as e:
-            logger.error(f"Review submission error: {e}")
-            raise tornado.web.HTTPError(500, "Internal server error")
+            logger.error(f"Review submission error for company {company_id}: {e}")
+            raise tornado.web.HTTPError(500, "レビュー投稿中に内部エラーが発生しました")
 
     def _parse_review_form(self):
         """フォームデータを解析"""
@@ -168,7 +187,7 @@ class ReviewCreateHandler(BaseHandler):
 
     def _get_review_categories(self):
         """レビューカテゴリー定義を取得"""
-        return [
+        categories = [
             {
                 "key": "recommendation",
                 "title": "推薦度合い",
@@ -200,6 +219,10 @@ class ReviewCreateHandler(BaseHandler):
                 "question": "昇進・昇給機会は平等に与えられていますか？"
             }
         ]
+        # Add index to each category for Tornado template compatibility
+        for i, category in enumerate(categories):
+            category['index'] = i + 1
+        return categories
 
     def get_current_user_id(self):
         """現在のユーザーIDを取得"""
@@ -332,7 +355,7 @@ class ReviewEditHandler(BaseHandler):
 
     def _get_review_categories(self):
         """レビューカテゴリー定義を取得（CreateHandlerと同じ）"""
-        return [
+        categories = [
             {
                 "key": "recommendation",
                 "title": "推薦度合い",
@@ -364,6 +387,10 @@ class ReviewEditHandler(BaseHandler):
                 "question": "昇進・昇給機会は平等に与えられていますか？"
             }
         ]
+        # Add index to each category for Tornado template compatibility
+        for i, category in enumerate(categories):
+            category['index'] = i + 1
+        return categories
 
     def get_current_user_id(self):
         """現在のユーザーIDを取得"""

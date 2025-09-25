@@ -545,8 +545,8 @@
             <div class="detail-section">
                 <h3>企業レビュー</h3>
 
-                <!-- レビューが存在する場合の表示（将来実装予定） -->
-                {% if reviews and reviews|length > 0 %}
+                <!-- Task 5.1: レビューが存在する場合の表示 -->
+                {% if has_reviews %}
                 <div class="reviews-list-mobile">
                     {% for review in reviews %}
                     <div class="review-card-mobile">
@@ -573,12 +573,15 @@
                     {% end %}
                 </div>
                 {% else %}
-                <!-- レビューが存在しない場合の投稿促進UI -->
+                <!-- Task 5.2: レビューが存在しない場合の投稿促進UI -->
                 <div class="review-prompt-section">
                     <div class="prompt-message">
                         この企業に勤めていますか？勤めたことがありますか？
                     </div>
-                    <a href="/companies/{{ company['id'] }}/reviews/new" class="review-submit-btn">
+                    <a href="/companies/{{ company['id'] }}/reviews/new"
+                       class="review-submit-btn"
+                       aria-label="{{ company['name'] }}のレビューを投稿する"
+                       title="この企業のレビューを投稿する">
                         Reviewを投稿する
                     </a>
                 </div>
@@ -641,31 +644,19 @@
 </div>
 
 <script>
-function toggleCompanyDetails() {
-    const attributes = document.getElementById('company-attributes');
-    const toggleIcon = document.getElementById('toggle-icon');
-    const toggleText = document.getElementById('toggle-text');
-    const button = document.querySelector('.details-toggle');
-
-    if (!attributes || !toggleIcon || !toggleText) {
-        console.error('Required elements not found');
-        return;
-    }
-
-    if (attributes.classList.contains('expanded')) {
-        attributes.classList.remove('expanded');
-        toggleIcon.textContent = '▼';
-        toggleIcon.setAttribute('aria-hidden', 'true');
-        toggleText.textContent = '企業詳細情報を表示';
-        button.setAttribute('aria-expanded', 'false');
-    } else {
-        attributes.classList.add('expanded');
-        toggleIcon.textContent = '▲';
-        toggleIcon.setAttribute('aria-hidden', 'true');
-        toggleText.textContent = '企業詳細情報を非表示';
-        button.setAttribute('aria-expanded', 'true');
-    }
-}
+// パフォーマンス最適化版: 要素をキャッシュし、DOM操作を最小化
+const toggleCompanyDetails=(()=>{
+let els=null;
+const getEls=()=>els||(els={a:document.getElementById('company-attributes'),i:document.getElementById('toggle-icon'),t:document.getElementById('toggle-text'),b:document.querySelector('.details-toggle')});
+return ()=>{
+const {a,i,t,b}=getEls();
+if(!a||!i||!t)return console.error('Required elements not found');
+const isExp=a.classList.contains('expanded');
+a.classList.toggle('expanded',!isExp);
+i.textContent=isExp?'▼':'▲';
+t.textContent=isExp?'企業詳細情報を表示':'企業詳細情報を非表示';
+b.setAttribute('aria-expanded',!isExp);
+}})();
 
 // Task 4.4 - モバイル表示制御の改善
 function updateToggleButtonVisibility() {

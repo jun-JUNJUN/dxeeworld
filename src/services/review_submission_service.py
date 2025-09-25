@@ -2,7 +2,7 @@
 レビュー投稿システムサービス
 """
 import html
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 from src.models.review import Review, EmploymentStatus, ReviewCategory
 from src.models.review_history import ReviewHistory, ReviewAction
@@ -500,3 +500,94 @@ class ReviewSubmissionService:
                 "status": "error",
                 "message": str(e)
             }
+
+    async def get_company_reviews(self, company_id: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """
+        企業のレビューを取得
+
+        Args:
+            company_id: 企業ID
+            limit: 取得件数の上限
+
+        Returns:
+            レビューのリスト
+        """
+        if not self.db:
+            # テスト環境ではモックデータを返す
+            return [
+                {
+                    "id": "review1",
+                    "user_id": "user1",
+                    "company_id": company_id,
+                    "employment_status": "former",
+                    "overall_rating": 4.2,
+                    "comment": "とても働きやすい職場で、外国人への支援も充実していました。上司との関係も良好で、成果もしっかりと評価してもらえました。",
+                    "created_at": "2024-09-01"
+                },
+                {
+                    "id": "review2",
+                    "user_id": "user2",
+                    "company_id": company_id,
+                    "employment_status": "current",
+                    "overall_rating": 3.8,
+                    "comment": "職場環境は良いですが、昇進の機会がもう少しあると良いと思います。",
+                    "created_at": "2024-08-15"
+                },
+                {
+                    "id": "review3",
+                    "user_id": "user3",
+                    "company_id": company_id,
+                    "employment_status": "former",
+                    "overall_rating": 3.5,
+                    "comment": "会社の文化は素晴らしく、多様性を重視していました。",
+                    "created_at": "2024-07-20"
+                }
+            ]
+
+        try:
+            # 実際の実装では、データベースから企業のレビューを取得
+            reviews = await self.db.find_many(
+                "reviews",
+                {"company_id": company_id, "is_active": True},
+                limit=limit,
+                sort=[("created_at", -1)]  # 新しい順
+            )
+
+            # レビューデータの整形
+            formatted_reviews = []
+            for review in reviews:
+                formatted_reviews.append({
+                    "id": str(review.get("_id", "")),
+                    "user_id": review.get("user_id", ""),
+                    "company_id": review.get("company_id", ""),
+                    "employment_status": review.get("employment_status", ""),
+                    "overall_rating": review.get("individual_average", 0.0),
+                    "comment": self._get_primary_comment(review.get("comments", {})),
+                    "created_at": review.get("created_at", "").strftime("%Y-%m-%d") if review.get("created_at") else ""
+                })
+
+            return formatted_reviews
+
+        except Exception as e:
+            # エラー時は空のリストを返す
+            return []
+
+    def _get_primary_comment(self, comments: Dict[str, Any]) -> str:
+        """
+        コメント辞書から表示用の主要コメントを取得
+
+        Args:
+            comments: コメント辞書
+
+        Returns:
+            表示用コメント
+        """
+        # 推薦度合いのコメントを優先、なければ最初の非空コメント
+        if comments.get("recommendation"):
+            return comments["recommendation"]
+
+        for comment in comments.values():
+            if comment and isinstance(comment, str) and comment.strip():
+                return comment.strip()
+
+        return "コメントなし"

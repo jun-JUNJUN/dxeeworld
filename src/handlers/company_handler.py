@@ -484,7 +484,9 @@ class CompanyDetailHandler(BaseHandler):
             company = await self.company_service.get_company(company_id)
 
             if not company:
-                raise HTTPError(404, "企業が見つかりません")
+                self.set_status(404)
+                self.render('errors/404.html')
+                return
 
             # 企業詳細表示用データの準備
             company_data = {
@@ -529,32 +531,52 @@ class CompanyDetailHandler(BaseHandler):
             # 追加求人情報へのリンク用URL
             jobs_url = f"/companies/{company_id}/jobs"
 
-            # レビューデータの取得（Task 4.5用）
+            # Task 5.1: レビュー存在状態の判定機能実装
             reviews_data = []
             has_reviews = False
+            review_count = 0
+
             if self.review_service:
                 try:
+                    # レビューデータの取得と状態管理
                     reviews = await self.review_service.get_company_reviews(company_id, limit=5)
-                    has_reviews = len(reviews) > 0
-                    for review in reviews:
-                        reviews_data.append({
-                            'id': review.get('id', ''),
-                            'overall_rating': review.get('overall_rating', 0),
-                            'work_environment': review.get('work_environment', 0),
-                            'compensation': review.get('compensation', 0),
-                            'growth_opportunity': review.get('growth_opportunity', 0),
-                            'work_life_balance': review.get('work_life_balance', 0),
-                            'management_quality': review.get('management_quality', 0),
-                            'job_satisfaction': review.get('job_satisfaction', 0),
-                            'recommendation': review.get('recommendation', 0),
-                            'comment': review.get('comment', ''),
-                            'created_at': review.get('created_at', ''),
-                            'updated_at': review.get('updated_at', '')
-                        })
+
+                    if reviews and isinstance(reviews, list):
+                        review_count = len(reviews)
+                        has_reviews = review_count > 0
+
+                        # レビューデータの変換と整形
+                        for review in reviews:
+                            if isinstance(review, dict):
+                                reviews_data.append({
+                                    'id': review.get('id', ''),
+                                    'overall_rating': float(review.get('overall_rating', 0)),
+                                    'work_environment': float(review.get('work_environment', 0)),
+                                    'compensation': float(review.get('compensation', 0)),
+                                    'growth_opportunity': float(review.get('growth_opportunity', 0)),
+                                    'work_life_balance': float(review.get('work_life_balance', 0)),
+                                    'management_quality': float(review.get('management_quality', 0)),
+                                    'job_satisfaction': float(review.get('job_satisfaction', 0)),
+                                    'recommendation': float(review.get('recommendation', 0)),
+                                    'comment': str(review.get('comment', '')),
+                                    'created_at': str(review.get('created_at', '')),
+                                    'updated_at': str(review.get('updated_at', ''))
+                                })
+                    else:
+                        logger.info(f"No reviews found for company {company_id}")
+                        has_reviews = False
+                        review_count = 0
+
                 except Exception as e:
-                    logger.warning(f"Failed to load reviews for company {company_id}: {e}")
+                    logger.error(f"Review service error for company {company_id}: {e}")
+                    # エラー時はデフォルト状態（レビューなし）に設定
                     reviews_data = []
                     has_reviews = False
+                    review_count = 0
+            else:
+                logger.info(f"Review service not available for company {company_id}")
+                has_reviews = False
+                review_count = 0
 
             template_data = {
                 'company': company_data,
@@ -562,6 +584,7 @@ class CompanyDetailHandler(BaseHandler):
                 'jobs_url': jobs_url,
                 'reviews': reviews_data,
                 'has_reviews': has_reviews,
+                'review_count': review_count,
                 'page_title': f'{company_data["name"]} - 企業詳細',
             }
 

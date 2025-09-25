@@ -45,6 +45,7 @@
   - 各項目への任意コメント投稿機能
   - 「回答しない」「ノーコメント」選択機能の実装
   - 投稿データの検証とサニタイズ処理
+  - **Fix Applied:** 欠落していたget_company_reviewsメソッドをReviewSubmissionServiceに追加
   - _Requirements: 1.1.1, 1.1.2_
 
 - [x] 3.2 レビュー投稿制限機能の実装
@@ -89,6 +90,8 @@
   - 評価点数選択（1-5点、回答しない）のUI
   - コメント入力欄とノーコメント選択機能
   - リアルタイムプレビュー機能の実装
+  - **Fix Applied:** テンプレート内辞書アクセス記法修正 (company.name → company['name'])
+  - **Fix Applied:** Tornadoテンプレート互換性対応 (loop.index → category.index)
   - _Requirements: 3.2_
 
 - [x] 5.3 レビュー編集・詳細表示画面
@@ -96,6 +99,8 @@
   - 個別レビューの詳細表示機能
   - 投稿者属性と投稿日時の表示
   - 編集権限に基づく表示制御
+  - **Fix Applied:** テンプレート内辞書アクセス記法修正 (company.name → company['name'])
+  - **Fix Applied:** Tornadoテンプレート互換性対応 (loop.index → category.index)
   - _Requirements: 3.3, 1.4.2_
 
 - [ ] 6. 認証・認可システムの統合
