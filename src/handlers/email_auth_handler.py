@@ -91,6 +91,12 @@ class EmailRegistrationHandler(BaseHandler):
                 self._send_error_response(400, "メールアドレスが必要です")
                 return
 
+            # Validate email format
+            from ..utils.email_validator import is_valid_email
+            if not is_valid_email(email):
+                self._send_error_response(400, "有効なメールアドレス形式ではありません")
+                return
+
             if user_type not in ['user', 'ally']:
                 self._send_error_response(400, "無効なユーザータイプです")
                 return

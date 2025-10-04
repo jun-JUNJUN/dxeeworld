@@ -45,3 +45,70 @@ class BaseHandler(tornado.web.RequestHandler):
                 self.request.headers.get('X-Real-IP') or
                 self.request.remote_ip or
                 '127.0.0.1')
+
+    def _get_client_ip(self):
+        """クライアントIPアドレスを取得（内部メソッド）"""
+        return self.get_client_ip()
+
+    def _send_error_response(self, status_code: int, message: str):
+        """エラーレスポンスを送信"""
+        import json
+        self.set_status(status_code)
+        if self.request.headers.get('Content-Type', '').startswith('application/json'):
+            self.set_header('Content-Type', 'application/json')
+            self.write(json.dumps({
+                'success': False,
+                'error': message
+            }))
+        else:
+            self.write(f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>エラー</title>
+                <meta charset="UTF-8">
+                <style>
+                    body {{ font-family: Arial, sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; text-align: center; }}
+                    .error {{ padding: 20px; margin: 20px 0; border-radius: 8px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }}
+                </style>
+            </head>
+            <body>
+                <div class="error">
+                    <h2>エラー</h2>
+                    <p>{message}</p>
+                </div>
+                <p><a href="javascript:history.back()">戻る</a></p>
+            </body>
+            </html>
+            """)
+
+    def _send_success_response(self, data: dict):
+        """成功レスポンスを送信"""
+        import json
+        if self.request.headers.get('Content-Type', '').startswith('application/json'):
+            self.set_header('Content-Type', 'application/json')
+            response_data = {'success': True}
+            response_data.update(data)
+            self.write(json.dumps(response_data))
+        else:
+            message = data.get('message', '処理が完了しました')
+            self.write(f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>完了</title>
+                <meta charset="UTF-8">
+                <style>
+                    body {{ font-family: Arial, sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; text-align: center; }}
+                    .success {{ padding: 20px; margin: 20px 0; border-radius: 8px; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }}
+                </style>
+            </head>
+            <body>
+                <div class="success">
+                    <h2>完了</h2>
+                    <p>{message}</p>
+                </div>
+                <p><a href="/">ホームページに戻る</a></p>
+            </body>
+            </html>
+            """)
