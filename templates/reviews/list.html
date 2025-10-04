@@ -78,7 +78,7 @@
             <!-- 検索結果 -->
             <div class="search-results">
                 {% if companies %}
-                    <p class="text-muted">{{ pagination.total }}件の企業が見つかりました</p>
+                    <p class="text-muted">{{ pagination['total'] }}件の企業が見つかりました</p>
 
                     <div class="row">
                         {% for company in companies %}
@@ -87,20 +87,20 @@
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h5 class="card-title">
-                                            <a href="/companies/{{ company.id }}" class="text-decoration-none">
-                                                {{ company.name }}
+                                            <a href="/companies/{{ company.get('id', company.get('_id', '')) }}" class="text-decoration-none">
+                                                {{ company.get('name', '') }}
                                             </a>
                                         </h5>
                                         <div class="text-end">
                                             <div class="h4 text-warning mb-0">
-                                                ★{{ "%.1f"|format(company.overall_average) }}
+                                                ★{{ "%.1f"|format(company.get('overall_average', 0)) }}
                                             </div>
-                                            <small class="text-muted">{{ company.total_reviews }}件のレビュー</small>
+                                            <small class="text-muted">{{ company.get('total_reviews', 0) }}件のレビュー</small>
                                         </div>
                                     </div>
 
                                     <p class="text-muted mb-2">
-                                        <i class="bi bi-geo-alt"></i> {{ company.location }}
+                                        <i class="bi bi-geo-alt"></i> {{ company.get('location', '') }}
                                     </p>
 
                                     <!-- 項目別評価 -->
@@ -109,19 +109,19 @@
                                         <div class="col-4">
                                             <small class="text-muted">推薦度</small><br>
                                             <span class="badge bg-secondary">
-                                                {{ "%.1f"|format(company.category_averages.get('recommendation', 0)) }}
+                                                {{ "%.1f"|format(company.get('category_averages', {}).get('recommendation', 0)) }}
                                             </span>
                                         </div>
                                         <div class="col-4">
                                             <small class="text-muted">受入制度</small><br>
                                             <span class="badge bg-secondary">
-                                                {{ "%.1f"|format(company.category_averages.get('foreign_support', 0)) }}
+                                                {{ "%.1f"|format(company.get('category_averages', {}).get('foreign_support', 0)) }}
                                             </span>
                                         </div>
                                         <div class="col-4">
                                             <small class="text-muted">会社風土</small><br>
                                             <span class="badge bg-secondary">
-                                                {{ "%.1f"|format(company.category_averages.get('company_culture', 0)) }}
+                                                {{ "%.1f"|format(company.get('category_averages', {}).get('company_culture', 0)) }}
                                             </span>
                                         </div>
                                     </div>
@@ -129,19 +129,19 @@
                                         <div class="col-4">
                                             <small class="text-muted">関係性</small><br>
                                             <span class="badge bg-secondary">
-                                                {{ "%.1f"|format(company.category_averages.get('employee_relations', 0)) }}
+                                                {{ "%.1f"|format(company.get('category_averages', {}).get('employee_relations', 0)) }}
                                             </span>
                                         </div>
                                         <div class="col-4">
                                             <small class="text-muted">評価制度</small><br>
                                             <span class="badge bg-secondary">
-                                                {{ "%.1f"|format(company.category_averages.get('evaluation_system', 0)) }}
+                                                {{ "%.1f"|format(company.get('category_averages', {}).get('evaluation_system', 0)) }}
                                             </span>
                                         </div>
                                         <div class="col-4">
                                             <small class="text-muted">昇進待遇</small><br>
                                             <span class="badge bg-secondary">
-                                                {{ "%.1f"|format(company.category_averages.get('promotion_treatment', 0)) }}
+                                                {{ "%.1f"|format(company.get('category_averages', {}).get('promotion_treatment', 0)) }}
                                             </span>
                                         </div>
                                     </div>
@@ -149,10 +149,10 @@
                                 </div>
                                 <div class="card-footer">
                                     <div class="d-flex justify-content-between">
-                                        <a href="/companies/{{ company.id }}" class="btn btn-sm btn-outline-primary">
+                                        <a href="/companies/{{ company.get('id', company.get('_id', '')) }}" class="btn btn-sm btn-outline-primary">
                                             詳細を見る
                                         </a>
-                                        <a href="/companies/{{ company.id }}/reviews/new" class="btn btn-sm btn-primary">
+                                        <a href="/companies/{{ company.get('id', company.get('_id', '')) }}/reviews/new" class="btn btn-sm btn-primary">
                                             レビューを書く
                                         </a>
                                     </div>
@@ -163,28 +163,28 @@
                     </div>
 
                     <!-- ページネーション -->
-                    {% if pagination.pages > 1 %}
+                    {% if pagination['pages'] > 1 %}
                     <nav aria-label="Page navigation">
                         <ul class="pagination justify-content-center">
-                            {% if pagination.page > 1 %}
+                            {% if pagination['page'] > 1 %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ pagination.page - 1 }}&{{ '&'.join(['%s=%s' % (k,v) for k,v in search_params.items() if k != 'page' and v]) }}">
+                                <a class="page-link" href="?page={{ pagination['page'] - 1 }}&{{ '&'.join(['%s=%s' % (k,v) for k,v in search_params.items() if k != 'page' and v]) }}">
                                     前へ
                                 </a>
                             </li>
                             {% end %}
 
-                            {% for page_num in range(max(1, pagination.page - 2), min(pagination.pages + 1, pagination.page + 3)) %}
-                            <li class="page-item {% if page_num == pagination.page %}active{% end %}">
+                            {% for page_num in range(max(1, pagination['page'] - 2), min(pagination['pages'] + 1, pagination['page'] + 3)) %}
+                            <li class="page-item {% if page_num == pagination['page'] %}active{% end %}">
                                 <a class="page-link" href="?page={{ page_num }}&{{ '&'.join(['%s=%s' % (k,v) for k,v in search_params.items() if k != 'page' and v]) }}">
                                     {{ page_num }}
                                 </a>
                             </li>
                             {% end %}
 
-                            {% if pagination.page < pagination.pages %}
+                            {% if pagination['page'] < pagination['pages'] %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ pagination.page + 1 }}&{{ '&'.join(['%s=%s' % (k,v) for k,v in search_params.items() if k != 'page' and v]) }}">
+                                <a class="page-link" href="?page={{ pagination['page'] + 1 }}&{{ '&'.join(['%s=%s' % (k,v) for k,v in search_params.items() if k != 'page' and v]) }}">
                                     次へ
                                 </a>
                             </li>

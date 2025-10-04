@@ -20,19 +20,37 @@ class SessionError(Exception):
 class SessionService:
     """Session management service"""
 
-    def __init__(self):
+    def __init__(self, db_service=None):
         """Initialize session service"""
-        self.db_service = get_db_service()
+        if db_service is None:
+            self.db_service = get_db_service()
+        else:
+            self.db_service = db_service
         self.session_duration = timedelta(days=30)  # Default session duration
 
-    def create_session(self, identity_id: str) -> Result[str, SessionError]:
-        """Create new session for Identity"""
+    async def create_session(self, user, user_agent: str, ip_address: str) -> Result[str, SessionError]:
+        """Create new session for user"""
         try:
             # Generate secure session ID
             session_id = secrets.token_urlsafe(32)
 
-            # For now, return mock session ID to satisfy tests
-            # This will be replaced with actual database operations later
+            # Session data
+            session_data = {
+                'session_id': session_id,
+                'user_id': str(user.id) if hasattr(user, 'id') else str(user.get('id', user.get('_id'))),
+                'user_email': user.email if hasattr(user, 'email') else user.get('email'),
+                'user_agent': user_agent,
+                'ip_address': ip_address,
+                'created_at': datetime.now(timezone.utc),
+                'last_accessed': datetime.now(timezone.utc),
+                'expires_at': datetime.now(timezone.utc) + self.session_duration,
+                'is_active': True
+            }
+
+            # Save session to database
+            await self.db_service.create('sessions', session_data)
+
+            logger.info(f"Session created for user {session_data['user_email']}: {session_id}")
             return Result.success(session_id)
 
         except Exception as e:
@@ -53,16 +71,20 @@ class SessionService:
             # Check if session has expired
             now = datetime.now(timezone.utc)
             expires_at = session.get('expires_at')
-            if expires_at and now > expires_at:
-                # Mark session as expired
-                await self._expire_session(session_id)
-                return Result.failure(SessionError("Session has expired"))
+            if expires_at:
+                # Ensure expires_at is timezone-aware
+                if expires_at.tzinfo is None:
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
+                if now > expires_at:
+                    # Mark session as expired
+                    await self._expire_session(session_id)
+                    return Result.failure(SessionError("Session has expired"))
 
             # Update last accessed time
             await self.db_service.update_one(
                 'sessions',
                 {'session_id': session_id},
-                {'$set': {'last_accessed': now}}
+                {'last_accessed': now}
             )
 
             return Result.success(session)
@@ -78,14 +100,12 @@ class SessionService:
                 'sessions',
                 {'session_id': session_id},
                 {
-                    '$set': {
-                        'is_active': False,
-                        'invalidated_at': datetime.now(timezone.utc)
-                    }
+                    'is_active': False,
+                    'invalidated_at': datetime.now(timezone.utc)
                 }
             )
 
-            return Result.success(result.modified_count > 0)
+            return Result.success(result)
 
         except Exception as e:
             logger.exception("Failed to invalidate session: %s", e)
@@ -98,11 +118,22 @@ class SessionService:
                 'sessions',
                 {'session_id': session_id},
                 {
-                    '$set': {
-                        'is_active': False,
-                        'expired_at': datetime.now(timezone.utc)
-                    }
+                    'is_active': False,
+                    'expired_at': datetime.now(timezone.utc)
                 }
             )
         except Exception as e:
             logger.error("Failed to mark session as expired: %s", e)
+
+    async def get_current_user_from_session(self, session_id: str) -> Result[str, SessionError]:
+        """Get current user ID from session"""
+        session_result = await self.validate_session(session_id)
+        if not session_result.is_success:
+            return Result.failure(session_result.error)
+
+        session_data = session_result.data
+        user_id = session_data.get('user_id')
+        if not user_id:
+            return Result.failure(SessionError("No user ID in session"))
+
+        return Result.success(user_id)

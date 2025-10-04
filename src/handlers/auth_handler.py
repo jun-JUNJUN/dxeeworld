@@ -229,12 +229,6 @@ class LoginHandler(BaseHandler):
                 'message': 'Internal server error'
             })
     
-    def get_client_ip(self):
-        """クライアントIPアドレスを取得"""
-        return (self.request.headers.get('X-Forwarded-For') or 
-                self.request.headers.get('X-Real-IP') or 
-                self.request.remote_ip or 
-                '127.0.0.1')
 
 
 class LogoutHandler(BaseHandler):

@@ -378,12 +378,16 @@ class ReviewSubmissionService:
         Returns:
             投稿結果
         """
-        # モック実装
-        return {
-            "status": "success",
-            "review_id": "new_review_id",
-            "individual_average": 3.5
-        }
+        if self.db and self.calc_service:
+            # 実際のデータベース保存を実行
+            return await self.create_review(review_data)
+        else:
+            # モック実装（データベースまたは計算サービスが未設定の場合）
+            return {
+                "status": "success",
+                "review_id": "new_review_id",
+                "individual_average": 3.5
+            }
 
     async def check_edit_permission(self, user_id: str, review_id: str) -> bool:
         """

@@ -69,3 +69,25 @@ class ReviewCalculationService:
                 errors.append(f"Missing required category: {category}")
 
         return errors
+
+    async def recalculate_company_averages(self, company_id: str) -> bool:
+        """
+        企業の平均評価を再計算（現在はモック実装）
+
+        Args:
+            company_id: 企業ID
+
+        Returns:
+            成功したかどうか
+        """
+        # TODO: 実際の実装では以下を行う:
+        # 1. 企業の全アクティブレビューを取得
+        # 2. カテゴリー別平均点を計算
+        # 3. 全体平均点を計算
+        # 4. 企業のreview_summaryを更新
+
+        # モック実装として成功を返す
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Mock: Recalculating company averages for {company_id}")
+        return True

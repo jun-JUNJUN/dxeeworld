@@ -553,21 +553,21 @@
                         <div class="review-rating-mobile">
                             <div class="review-rating-stars">
                                 {% for i in range(5) %}
-                                    {% if i < review['overall_rating'] %}
+                                    {% if i < float(review['overall_rating']) %}
                                     ★
                                     {% else %}
                                     ☆
                                     {% end %}
                                 {% end %}
                             </div>
-                            <span class="review-rating-value">{{ "%.1f"|format(review['overall_rating']) }}</span>
+                            <span class="review-rating-value">{{ "%.1f" % float(review['overall_rating']) }}</span>
                         </div>
                         <div class="review-content-mobile">
-                            {{ review['comment'][:100] }}{% if review['comment']|length > 100 %}...{% end %}
+                            {{ review['comment'][:100] }}{% if len(review['comment']) > 100 %}...{% end %}
                         </div>
                         <div class="review-meta-mobile">
                             <span>投稿日: {{ review['created_at'][:10] if review['created_at'] else '不明' }}</span>
-                            <span>総合評価: {{ "%.1f"|format(review['overall_rating']) }}/5.0</span>
+                            <span>総合評価: {{ "%.1f" % float(review['overall_rating']) }}/5.0</span>
                         </div>
                     </div>
                     {% end %}
@@ -627,10 +627,10 @@
             </div>
             {% end %}
 
-            {% if related_jobs|length >= 3 %}
+            {% if len(related_jobs) >= 3 %}
             <div class="view-all-jobs" style="text-align: center; margin-top: 20px;">
                 <a href="{{ jobs_url }}" class="btn btn-primary" style="display: inline-block;">
-                    すべての求人情報を見る ({{ related_jobs|length }}件)
+                    すべての求人情報を見る ({{ len(related_jobs) }}件)
                 </a>
             </div>
             {% end %}

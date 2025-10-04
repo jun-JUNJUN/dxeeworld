@@ -82,7 +82,7 @@ class ReviewCreateHandler(BaseHandler):
                 raise tornado.web.HTTPError(404, "企業が見つかりません")
 
             # 投稿権限チェック（オプション：認証が不要な場合はスキップ）
-            user_id = self.get_current_user_id()
+            user_id = await self.get_current_user_id()
             if user_id:  # 認証済みの場合のみ権限チェック
                 try:
                     permission = await self.review_service.check_review_permission(user_id, company_id)
@@ -231,19 +231,6 @@ class ReviewCreateHandler(BaseHandler):
             category['index'] = i + 1
         return categories
 
-    def get_current_user_id(self):
-        """現在のユーザーIDを取得"""
-        user_id = self.get_secure_cookie("user_id")
-        if user_id:
-            return user_id.decode('utf-8')
-        return None
-
-    async def require_authentication(self):
-        """認証を要求し、ユーザー情報を返す"""
-        user_id = self.get_current_user_id()
-        if not user_id:
-            raise tornado.web.HTTPError(401, "Authentication required")
-        return user_id
 
 
 class ReviewEditHandler(BaseHandler):
@@ -251,7 +238,12 @@ class ReviewEditHandler(BaseHandler):
 
     def initialize(self):
         """ハンドラー初期化"""
-        self.review_service = ReviewSubmissionService()
+        self.db_service = get_db_service()
+        self.calc_service = ReviewCalculationService()
+        self.review_service = ReviewSubmissionService(
+            db_service=self.db_service,
+            calculation_service=self.calc_service
+        )
 
     async def get(self, review_id):
         """レビュー編集フォーム表示"""
@@ -399,16 +391,28 @@ class ReviewEditHandler(BaseHandler):
             category['index'] = i + 1
         return categories
 
-    def get_current_user_id(self):
+    async def get_current_user_id(self):
         """現在のユーザーIDを取得"""
-        user_id = self.get_secure_cookie("user_id")
-        if user_id:
-            return user_id.decode('utf-8')
-        return None
+        from ..services.session_service import SessionService
+
+        session_id = self.get_secure_cookie("session_id")
+        if not session_id:
+            return None
+
+        session_id = session_id.decode('utf-8') if isinstance(session_id, bytes) else session_id
+        session_service = SessionService()
+
+        # セッション検証
+        session_result = await session_service.validate_session(session_id)
+        if not session_result.is_success:
+            return None
+
+        session_data = session_result.data
+        return session_data.get('identity_id')
 
     async def require_authentication(self):
         """認証を要求し、ユーザー情報を返す"""
-        user_id = self.get_current_user_id()
+        user_id = await self.get_current_user_id()
         if not user_id:
             raise tornado.web.HTTPError(401, "Authentication required")
         return user_id
