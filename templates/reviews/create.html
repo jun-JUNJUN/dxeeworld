@@ -2,8 +2,179 @@
 
 {% block title %}レビュー投稿 - {{ company['name'] }}{% end %}
 
+{% block head %}
+<style>
+.review-form-container {
+    max-width: 90%;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.company-info-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 32px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.company-name {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 12px;
+}
+
+.company-location {
+    color: #6c757d;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.location-icon {
+    color: #007bff;
+}
+
+/* フォーム表示レイアウトの改善 */
+.review-form {
+    margin-top: 20px;
+}
+
+.form-section {
+    margin-bottom: 32px;
+    padding: 20px;
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+}
+
+.form-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.employment-status-section {
+    background: #f8f9fa;
+}
+
+.review-categories .form-section {
+    margin-bottom: 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.form-control {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    padding: 10px 12px;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.review-actions {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 2px solid #e9ecef;
+}
+
+.btn {
+    border-radius: 6px;
+    padding: 12px 24px;
+    font-weight: 500;
+}
+
+/* 勤務期間入力機能のスタイル */
+.employment-period-section {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.employment-period-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 16px;
+}
+
+.period-inputs {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.period-select {
+    min-width: 120px;
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    padding: 8px 12px;
+    background-color: white;
+}
+
+.period-separator {
+    font-weight: 500;
+    color: #6c757d;
+    margin: 0 4px;
+}
+
+@media (max-width: 576px) {
+    .period-inputs {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .period-separator {
+        text-align: center;
+        margin: 8px 0;
+    }
+
+    .period-select {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .review-form-container {
+        max-width: 100%;
+        padding: 15px;
+    }
+
+    .company-info-section {
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .company-name {
+        font-size: 1.3rem;
+    }
+}
+</style>
+{% end %}
+
 {% block content %}
-<div class="container mt-4">
+<div class="review-form-container">
     <div class="row">
         <div class="col-lg-8 mx-auto">
             <div class="card">
@@ -11,11 +182,17 @@
                     <h2 class="mb-0">レビュー投稿</h2>
                 </div>
                 <div class="card-body">
-                    <!-- 企業情報 -->
-                    <div class="bg-light p-3 rounded mb-4">
-                        <h4>{{ company['name'] }}</h4>
-                        <p class="text-muted mb-0">
-                            <i class="bi bi-geo-alt"></i> {{ company['location'] }}
+                    <!-- 企業情報（改善版） -->
+                    <div class="company-info-section">
+                        <h4 class="company-name">{{ company.get('name') or company.get('company_name') or '企業名未設定' }}</h4>
+                        <p class="company-location">
+                            <span class="location-icon">📍</span>
+                            {% if company.get('location') %}
+                                {% set location_parts = company['location'].split(',') %}
+                                {{ location_parts[0].strip() }}
+                            {% else %}
+                                所在地未設定
+                            {% end %}
                         </p>
                     </div>
 
@@ -45,6 +222,23 @@
                                         </label>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- 勤務期間入力 -->
+                        <div class="employment-period-section">
+                            <div class="employment-period-title">勤務期間</div>
+                            <div class="period-inputs">
+                                <select name="employment_start_year" id="employmentStartYear" class="period-select">
+                                    <option value="">開始年を選択</option>
+                                    <!-- JavaScriptで動的生成 -->
+                                </select>
+                                <span class="period-separator">〜</span>
+                                <select name="employment_end_year" id="employmentEndYear" class="period-select">
+                                    <option value="">終了年を選択</option>
+                                    <option value="current">現在勤務</option>
+                                    <!-- JavaScriptで動的生成 -->
+                                </select>
                             </div>
                         </div>
 
@@ -152,6 +346,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const previewRating = document.getElementById('previewRating');
     const answeredCount = document.getElementById('answeredCount');
 
+    // 勤務期間ドロップダウンの初期化
+    initializeEmploymentPeriodDropdowns();
+
     // 文字カウント機能
     document.querySelectorAll('textarea[name^="comments"]').forEach(textarea => {
         const category = textarea.name.match(/comments\[(\w+)\]/)[1];
@@ -197,6 +394,60 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 初期プレビュー更新
     updatePreview();
+
+    // 勤務期間ドロップダウンの初期化関数
+    function initializeEmploymentPeriodDropdowns() {
+        const currentYear = new Date().getFullYear();
+        const startYear = 1970;
+
+        const startYearSelect = document.getElementById('employmentStartYear');
+        const endYearSelect = document.getElementById('employmentEndYear');
+
+        // 開始年ドロップダウンを生成（1970年から現在年まで）
+        for (let year = currentYear; year >= startYear; year--) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year + '年';
+            startYearSelect.appendChild(option);
+        }
+
+        // 終了年ドロップダウンを生成（1970年から現在年まで）
+        // 「現在勤務」オプションは既にHTMLに存在
+        for (let year = currentYear; year >= startYear; year--) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year + '年';
+            endYearSelect.appendChild(option);
+        }
+
+        // 開始年変更時の終了年制限ロジック
+        startYearSelect.addEventListener('change', function() {
+            const selectedStartYear = parseInt(this.value);
+            if (selectedStartYear) {
+                updateEndYearOptions(selectedStartYear, endYearSelect);
+            }
+        });
+    }
+
+    function updateEndYearOptions(startYear, endYearSelect) {
+        const currentYear = new Date().getFullYear();
+
+        // 既存のオプション（「現在勤務」以外）をクリア
+        const currentOption = endYearSelect.querySelector('option[value="current"]');
+        const emptyOption = endYearSelect.querySelector('option[value=""]');
+
+        endYearSelect.innerHTML = '';
+        if (emptyOption) endYearSelect.appendChild(emptyOption);
+        if (currentOption) endYearSelect.appendChild(currentOption);
+
+        // 開始年以降の年数のみを追加
+        for (let year = currentYear; year >= startYear; year--) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year + '年';
+            endYearSelect.appendChild(option);
+        }
+    }
 
     // フォーム送信前のバリデーション
     form.addEventListener('submit', function(e) {

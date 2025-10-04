@@ -6,6 +6,8 @@ import tornado.web
 from .base_handler import BaseHandler
 from ..services.review_submission_service import ReviewSubmissionService
 from ..services.company_search_service import CompanySearchService
+from ..services.review_calculation_service import ReviewCalculationService
+from ..database import get_db_service
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +61,12 @@ class ReviewCreateHandler(BaseHandler):
 
     def initialize(self):
         """ハンドラー初期化"""
-        self.review_service = ReviewSubmissionService()
+        self.db_service = get_db_service()
+        self.calc_service = ReviewCalculationService()
+        self.review_service = ReviewSubmissionService(
+            db_service=self.db_service,
+            calculation_service=self.calc_service
+        )
 
     async def get(self, company_id):
         """Task 5.3: レビュー投稿フォーム表示"""

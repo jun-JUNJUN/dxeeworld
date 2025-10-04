@@ -245,23 +245,73 @@
 @media (max-width: 768px) {
     .companies-container {
         padding: 10px;
+        max-width: 100%;
+        margin: 0;
+    }
+
+    .filters-section {
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 6px;
     }
 
     .filters-grid {
         grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .filter-group {
+        margin-bottom: 12px;
+    }
+
+    .filter-group label {
+        font-size: 0.85rem;
+        margin-bottom: 6px;
+    }
+
+    .filter-group select,
+    .filter-group input {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+
+    .filter-actions {
+        margin-top: 15px;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .btn {
+        width: 100%;
+        text-align: center;
+        padding: 10px 16px;
     }
 
     .companies-table-wrapper {
-        overflow-x: auto;
+        display: none;
     }
 
-    .companies-table {
-        min-width: 600px;
+    .mobile-companies-view {
+        display: block;
     }
 
     .pagination-section {
         flex-direction: column;
         text-align: center;
+        gap: 15px;
+    }
+
+    .pagination {
+        justify-content: center;
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-companies-view {
+        display: none;
     }
 }
 
@@ -274,6 +324,91 @@
 .no-results-icon {
     font-size: 3rem;
     margin-bottom: 15px;
+}
+
+/* モバイル用企業カード表示 */
+.mobile-companies-view {
+    display: none;
+}
+
+.company-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 16px;
+    padding: 16px;
+    border: 1px solid #e9ecef;
+}
+
+.company-card-header {
+    margin-bottom: 12px;
+}
+
+.company-card-name {
+    margin: 0 0 8px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.company-card-name a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.company-card-name a:hover {
+    text-decoration: underline;
+}
+
+.company-card-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.company-card-body {
+    margin-top: 12px;
+}
+
+.company-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 500;
+    color: #6c757d;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    margin-right: 8px;
+}
+
+.info-value {
+    font-size: 0.9rem;
+    color: #495057;
+    text-align: right;
+}
+
+.company-card-description {
+    background: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #6c757d;
+    line-height: 1.4;
 }
 </style>
 {% end %}
@@ -381,7 +516,7 @@
         </form>
     </div>
 
-    <!-- 企業一覧テーブル -->
+    <!-- 企業一覧テーブル（デスクトップ用） -->
     {% if companies %}
     <div class="companies-table-wrapper">
         <table class="companies-table">
@@ -432,6 +567,50 @@
                 {% end %}
             </tbody>
         </table>
+    </div>
+
+    <!-- 企業一覧カード表示（モバイル用） -->
+    <div class="mobile-companies-view">
+        {% for company in companies %}
+        <div class="company-card">
+            <div class="company-card-header">
+                <h3 class="company-card-name">
+                    <a href="/companies/{{ company['id'] }}">{{ company['name'] }}</a>
+                </h3>
+                <div class="company-card-badges">
+                    <span class="industry-badge">{{ company['industry_label'] }}</span>
+                    <span class="size-badge">{{ company['size_label'] }}</span>
+                </div>
+            </div>
+            <div class="company-card-body">
+                <div class="company-card-info">
+                    <div class="info-item">
+                        <span class="info-label">所在地</span>
+                        <span class="info-value">{{ company['location'] or '-' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">設立年</span>
+                        <span class="info-value">{{ company['founded_year'] or '-' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">従業員数</span>
+                        <span class="info-value">
+                            {% if company['employee_count'] %}
+                            {{ "{:,}".format(company['employee_count']) }}名
+                            {% else %}
+                            -
+                            {% end %}
+                        </span>
+                    </div>
+                </div>
+                {% if company['description'] %}
+                <div class="company-card-description">
+                    {{ company['description'][:100] }}{% if company['description']|length > 100 %}...{% end %}
+                </div>
+                {% end %}
+            </div>
+        </div>
+        {% end %}
     </div>
 
     <!-- ページネーション -->

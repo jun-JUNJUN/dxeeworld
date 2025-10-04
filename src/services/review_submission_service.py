@@ -306,12 +306,48 @@ class ReviewSubmissionService:
         Returns:
             企業情報
         """
-        # モック実装
-        return {
-            "id": company_id,
-            "name": "テスト企業",
-            "location": "東京都"
-        }
+        if not self.db:
+            # データベース接続が必要
+            raise ValueError("データベース接続が初期化されていません")
+
+        try:
+            from bson import ObjectId
+            import logging
+            logger = logging.getLogger(__name__)
+
+            # ObjectIdに変換してクエリ
+            try:
+                object_id = ObjectId(company_id)
+                logger.info(f"Searching for company with ObjectId: {object_id}")
+                company = await self.db.find_one("companies", {"_id": object_id})
+            except Exception as oid_error:
+                # ObjectId変換に失敗した場合は文字列としてもクエリ
+                logger.warning(f"ObjectId conversion failed for {company_id}: {oid_error}, trying string search")
+                company = await self.db.find_one("companies", {"_id": company_id})
+
+            logger.info(f"Company lookup result for {company_id}: {'Found' if company else 'Not Found'}")
+
+            if not company:
+                # 企業が見つからない場合はNoneを返す
+                return None
+
+            return {
+                "id": str(company.get("_id", company_id)),
+                "name": company.get("name", "企業名未設定"),
+                "location": company.get("location", "所在地未設定"),
+                "industry": company.get("industry"),
+                "size": company.get("size"),
+                "founded_year": company.get("founded_year"),
+                "employee_count": company.get("employee_count"),
+                "description": company.get("description")
+            }
+
+        except Exception as e:
+            # エラー時はログを出力してNoneを返す
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error fetching company info for {company_id}: {e}")
+            return None
 
     async def check_review_permission(self, user_id: str, company_id: str) -> Dict[str, Any]:
         """

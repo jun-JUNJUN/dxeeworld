@@ -2,7 +2,7 @@
 レビューデータモデル
 """
 from dataclasses import dataclass
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
 from datetime import datetime
 from enum import Enum
 
@@ -24,6 +24,50 @@ class ReviewCategory(Enum):
 
 
 @dataclass
+class EmploymentPeriod:
+    """勤務期間データ"""
+    start_year: int
+    end_year: Optional[int]  # None = 現在勤務中
+
+    def __post_init__(self):
+        """データ検証"""
+        current_year = datetime.now().year
+
+        # 開始年のバリデーション
+        if not isinstance(self.start_year, int) or self.start_year < 1970 or self.start_year > current_year:
+            raise ValueError(f"開始年は1970年から{current_year}年の間で指定してください")
+
+        # 終了年のバリデーション
+        if self.end_year is not None:
+            if not isinstance(self.end_year, int) or self.end_year < 1970 or self.end_year > current_year:
+                raise ValueError(f"終了年は1970年から{current_year}年の間で指定してください")
+            if self.end_year < self.start_year:
+                raise ValueError("終了年は開始年以降の年を指定してください")
+
+    def to_dict(self) -> dict:
+        """辞書形式に変換"""
+        return {
+            'start_year': self.start_year,
+            'end_year': self.end_year
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'EmploymentPeriod':
+        """辞書からEmploymentPeriodオブジェクトを作成"""
+        return cls(
+            start_year=data['start_year'],
+            end_year=data.get('end_year')
+        )
+
+    def get_display_string(self) -> str:
+        """表示用文字列を取得"""
+        if self.end_year is None:
+            return f"{self.start_year}年〜現在"
+        else:
+            return f"{self.start_year}年〜{self.end_year}年"
+
+
+@dataclass
 class Review:
     """レビューデータモデル"""
     id: str
@@ -37,10 +81,16 @@ class Review:
     created_at: datetime
     updated_at: datetime
     is_active: bool = True
+    employment_period: Optional[EmploymentPeriod] = None  # 新規追加: 勤務期間
 
     @classmethod
     def from_dict(cls, data: dict) -> 'Review':
         """辞書からReviewオブジェクトを作成"""
+        # 勤務期間データの処理
+        employment_period = None
+        if 'employment_period' in data and data['employment_period']:
+            employment_period = EmploymentPeriod.from_dict(data['employment_period'])
+
         return cls(
             id=str(data.get('_id', data.get('id'))),
             company_id=data['company_id'],
@@ -52,12 +102,13 @@ class Review:
             answered_count=data['answered_count'],
             created_at=data['created_at'],
             updated_at=data['updated_at'],
-            is_active=data.get('is_active', True)
+            is_active=data.get('is_active', True),
+            employment_period=employment_period
         )
 
     def to_dict(self) -> dict:
         """辞書形式に変換"""
-        return {
+        result = {
             'company_id': self.company_id,
             'user_id': self.user_id,
             'employment_status': self.employment_status.value,
@@ -69,6 +120,12 @@ class Review:
             'updated_at': self.updated_at,
             'is_active': self.is_active
         }
+
+        # 勤務期間データがある場合は追加
+        if self.employment_period:
+            result['employment_period'] = self.employment_period.to_dict()
+
+        return result
 
     @staticmethod
     def calculate_individual_average(ratings: Dict[str, Optional[int]]) -> tuple[float, int]:
@@ -88,6 +145,43 @@ class Review:
 
         average = sum(valid_ratings) / len(valid_ratings)
         return round(average, 1), len(valid_ratings)
+
+    def set_employment_period(self, start_year: int, end_year: Optional[Union[int, str]] = None) -> None:
+        """
+        勤務期間を設定
+
+        Args:
+            start_year: 開始年
+            end_year: 終了年（None または 'current' で現在勤務を表す）
+        """
+        # 'current' の場合は None に変換
+        if end_year == 'current':
+            end_year = None
+        elif isinstance(end_year, str):
+            end_year = int(end_year)
+
+        self.employment_period = EmploymentPeriod(start_year=start_year, end_year=end_year)
+
+    def get_employment_period_display(self) -> str:
+        """勤務期間の表示用文字列を取得"""
+        if self.employment_period:
+            return self.employment_period.get_display_string()
+        return "勤務期間未設定"
+
+    def validate_employment_period(self) -> bool:
+        """勤務期間データの妥当性を検証"""
+        if not self.employment_period:
+            return True  # 勤務期間が設定されていない場合は妥当
+
+        try:
+            # EmploymentPeriodクラスの__post_init__でバリデーションが実行される
+            EmploymentPeriod(
+                start_year=self.employment_period.start_year,
+                end_year=self.employment_period.end_year
+            )
+            return True
+        except ValueError:
+            return False
 
 
 @dataclass
