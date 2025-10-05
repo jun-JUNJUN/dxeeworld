@@ -39,6 +39,19 @@ class BaseHandler(tornado.web.RequestHandler):
             raise tornado.web.HTTPError(401, "Authentication required")
         return user_id
 
+    async def require_authentication_with_redirect(self):
+        """認証を要求し、未認証の場合は認証画面にリダイレクト (Task 4.1)"""
+        user_id = await self.get_current_user_id()
+        if not user_id:
+            # 現在のURLを保存してリダイレクト
+            return_url = self.request.uri
+            import urllib.parse
+            # Task 4.1: ログイン/登録選択画面にリダイレクト
+            auth_url = f"/login?return_url={urllib.parse.quote(return_url)}"
+            self.redirect(auth_url)
+            return None
+        return user_id
+
     def get_client_ip(self):
         """クライアントIPアドレスを取得"""
         return (self.request.headers.get('X-Forwarded-For') or

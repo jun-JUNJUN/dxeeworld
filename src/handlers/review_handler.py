@@ -69,8 +69,14 @@ class ReviewCreateHandler(BaseHandler):
         )
 
     async def get(self, company_id):
-        """Task 5.3: レビュー投稿フォーム表示"""
+        """Task 4.1 & 5.3: レビュー投稿フォーム表示 - 認証チェック強化"""
         try:
+            # Task 4.1: 認証チェックを最初に実行（企業情報取得前）
+            user_id = await self.require_authentication_with_redirect()
+            if user_id is None:
+                # リダイレクトが実行されたので処理を終了
+                return
+
             # 企業IDの検証
             if not company_id or len(company_id.strip()) == 0:
                 raise tornado.web.HTTPError(400, "無効な企業IDです")
@@ -81,16 +87,14 @@ class ReviewCreateHandler(BaseHandler):
                 logger.warning(f"Company not found: {company_id}")
                 raise tornado.web.HTTPError(404, "企業が見つかりません")
 
-            # 投稿権限チェック（オプション：認証が不要な場合はスキップ）
-            user_id = await self.get_current_user_id()
-            if user_id:  # 認証済みの場合のみ権限チェック
-                try:
-                    permission = await self.review_service.check_review_permission(user_id, company_id)
-                    if not permission.get("can_create", True):  # デフォルトでは投稿可能
-                        raise tornado.web.HTTPError(403, "このレビューの投稿権限がありません")
-                except Exception as perm_error:
-                    logger.warning(f"Permission check failed for user {user_id}, company {company_id}: {perm_error}")
-                    # 権限チェックが失敗した場合でも投稿フォームは表示（デフォルト許可）
+            # 投稿権限チェック（認証済みユーザーのみ）
+            try:
+                permission = await self.review_service.check_review_permission(user_id, company_id)
+                if not permission.get("can_create", True):  # デフォルトでは投稿可能
+                    raise tornado.web.HTTPError(403, "このレビューの投稿権限がありません")
+            except Exception as perm_error:
+                logger.warning(f"Permission check failed for user {user_id}, company {company_id}: {perm_error}")
+                # 権限チェックが失敗した場合でも投稿フォームは表示（デフォルト許可）
 
             # フォームレンダリング
             self.render("reviews/create.html",
