@@ -99,14 +99,14 @@
   - ルール読み込みログが正しく記録されることを確認
   - _Requirements: 3.1, 3.2, 3.3, 3.6, 3.7_
 
-- [ ] 4.2 レビュー投稿ハンドラーのアクセス制御統合
+- [x] 4.2 レビュー投稿ハンドラーのアクセス制御統合
   - `ReviewCreateHandler.get()` メソッドの先頭に認証チェックを追加
   - `AccessControlMiddleware.check_access()` を呼び出し
   - 未認証の場合、`show_login_panel=True` でテンプレートをレンダリング
   - 認証済みの場合、`review_form_visible=True` でレビューフォームを表示
   - _Requirements: 3.5, 3.8, 5.1, 5.2, 5.4_
 
-- [ ] 4.3 レビュー編集ハンドラーのアクセス制御統合
+- [x] 4.3 レビュー編集ハンドラーのアクセス制御統合
   - `ReviewEditHandler` に同様の認証チェックを追加
   - アクセス制御結果に基づいてMini Panel表示を制御
   - _Requirements: 3.5, 3.8, 5.5_

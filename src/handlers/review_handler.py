@@ -1,8 +1,10 @@
 """
 レビュー関連ハンドラー
 """
+
 import logging
 import tornado.web
+import traceback
 from .base_handler import BaseHandler
 from ..services.review_submission_service import ReviewSubmissionService
 from ..services.company_search_service import CompanySearchService
@@ -30,7 +32,7 @@ class ReviewListHandler(BaseHandler):
                 "max_rating": self.get_argument("max_rating", None),
                 "page": int(self.get_argument("page", "1")),
                 "limit": int(self.get_argument("limit", "20")),
-                "sort": self.get_argument("sort", "rating_high")
+                "sort": self.get_argument("sort", "rating_high"),
             }
 
             # 評価範囲の型変換
@@ -40,20 +42,26 @@ class ReviewListHandler(BaseHandler):
                 search_params["max_rating"] = float(search_params["max_rating"])
 
             # 企業検索実行
-            search_result = await self.company_search_service.search_companies_with_reviews(search_params)
+            search_result = await self.company_search_service.search_companies_with_reviews(
+                search_params
+            )
 
             # テンプレートレンダリング
-            self.render("reviews/list.html",
-                       companies=search_result["companies"],
-                       pagination=search_result["pagination"],
-                       search_params=search_params)
+            self.render(
+                "reviews/list.html",
+                companies=search_result["companies"],
+                pagination=search_result["pagination"],
+                search_params=search_params,
+            )
 
         except Exception as e:
             logger.error(f"Review list error: {e}")
-            self.render("reviews/list.html",
-                       companies=[],
-                       pagination={"page": 1, "total": 0, "pages": 0},
-                       search_params={})
+            self.render(
+                "reviews/list.html",
+                companies=[],
+                pagination={"page": 1, "total": 0, "pages": 0},
+                search_params={},
+            )
 
 
 class ReviewCreateHandler(BaseHandler):
@@ -64,28 +72,75 @@ class ReviewCreateHandler(BaseHandler):
         self.db_service = get_db_service()
         self.calc_service = ReviewCalculationService()
         self.review_service = ReviewSubmissionService(
-            db_service=self.db_service,
-            calculation_service=self.calc_service
+            db_service=self.db_service, calculation_service=self.calc_service
         )
+        # Task 4.2: AccessControlMiddleware統合
+        from ..middleware.access_control_middleware import AccessControlMiddleware
+
+        self.access_control = AccessControlMiddleware()
 
     async def get(self, company_id):
-        """Task 4.1 & 5.3: レビュー投稿フォーム表示 - 認証チェック強化"""
+        """Task 4.2: レビュー投稿フォーム表示 - AccessControlMiddleware統合"""
         try:
-            # Task 4.1: 認証チェックを最初に実行（企業情報取得前）
-            user_id = await self.require_authentication_with_redirect()
-            if user_id is None:
-                # リダイレクトが実行されたので処理を終了
-                return
+            logger.info(f"ReviewCreateHandler.get called for company_id: {company_id}")
+            traceback.print_stack()
 
             # 企業IDの検証
             if not company_id or len(company_id.strip()) == 0:
                 raise tornado.web.HTTPError(400, "無効な企業IDです")
 
-            # 会社情報を取得
+            # 会社情報を取得（認証チェック前に取得、Mini Panel表示時にも必要）
             company = await self.review_service.get_company_info(company_id)
             if not company:
                 logger.warning(f"Company not found: {company_id}")
                 raise tornado.web.HTTPError(404, "企業が見つかりません")
+
+            # Task 4.2: AccessControlMiddlewareによる認証チェック
+            session_id = self.get_secure_cookie("session_id")
+            if session_id:
+                session_id = session_id.decode("utf-8")
+
+            access_result = await self.access_control.check_access(
+                self.request.path, session_id, self.request.remote_ip
+            )
+
+            # デバッグログ: アクセス制御結果を出力
+            logger.info(
+                f"D-00006: Access control result - is_success: {access_result.is_success}, data: {access_result.data if access_result.is_success else 'N/A'}, session_id: {session_id}, path: {self.request.path}"
+            )
+
+            # 未認証の場合、Mini Panelを表示してレビューフォームを非表示
+            if not access_result.is_success:
+                logger.info(
+                    f"D-00005:Unauthenticated access to review creation for company {company_id}"
+                )
+                self.render(
+                    "reviews/create.html",
+                    company=company,
+                    categories=self._get_review_categories(),
+                    company_id=company_id,
+                    show_login_panel=True,
+                    review_form_visible=False,
+                )
+                return
+
+            # access_granted チェック（access_result.is_success が True の場合のみ）
+            if not access_result.data.get("access_granted", False):
+                logger.info(f"D-00005:Access denied for review creation for company {company_id}")
+                self.render(
+                    "reviews/create.html",
+                    company=company,
+                    categories=self._get_review_categories(),
+                    company_id=company_id,
+                    show_login_panel=True,
+                    review_form_visible=False,
+                )
+                return
+
+            # 認証済みの場合、通常のレビューフォームを表示
+            user_context = access_result.data.get("user_context") or {}
+            logger.info(f"D-00005: user has a session {user_context}")
+            user_id = user_context.get("identity_id")
 
             # 投稿権限チェック（認証済みユーザーのみ）
             try:
@@ -93,19 +148,25 @@ class ReviewCreateHandler(BaseHandler):
                 if not permission.get("can_create", True):  # デフォルトでは投稿可能
                     raise tornado.web.HTTPError(403, "このレビューの投稿権限がありません")
             except Exception as perm_error:
-                logger.warning(f"Permission check failed for user {user_id}, company {company_id}: {perm_error}")
+                logger.warning(
+                    f"Permission check failed for user {user_id}, company {company_id}: {perm_error}"
+                )
                 # 権限チェックが失敗した場合でも投稿フォームは表示（デフォルト許可）
 
-            # フォームレンダリング
-            self.render("reviews/create.html",
-                       company=company,
-                       categories=self._get_review_categories(),
-                       company_id=company_id)
+            # フォームレンダリング（認証済み）
+            self.render(
+                "reviews/create.html",
+                company=company,
+                categories=self._get_review_categories(),
+                company_id=company_id,
+                show_login_panel=False,
+                review_form_visible=True,
+            )
 
         except tornado.web.HTTPError:
             raise
         except Exception as e:
-            logger.error(f"Review create form error for company {company_id}: {e}")
+            logger.exception(f"Review create form error for company {company_id}: {e}")
             raise tornado.web.HTTPError(500, "内部エラーが発生しました")
 
     async def post(self, company_id):
@@ -126,19 +187,29 @@ class ReviewCreateHandler(BaseHandler):
             # バリデーション
             validation_errors = self._validate_review_data(review_data)
             if validation_errors:
-                logger.warning(f"Review validation failed for company {company_id}: {validation_errors}")
+                logger.warning(
+                    f"Review validation failed for company {company_id}: {validation_errors}"
+                )
                 # バリデーションエラーの場合は422 Unprocessable Entity
-                raise tornado.web.HTTPError(422, f"入力データが無効です: {', '.join(validation_errors)}")
+                raise tornado.web.HTTPError(
+                    422, f"入力データが無効です: {', '.join(validation_errors)}"
+                )
 
             # レビュー投稿
             result = await self.review_service.submit_review(review_data)
 
             if result and result.get("status") == "success":
-                logger.info(f"Review successfully submitted for company {company_id} by user {user_id}")
+                logger.info(
+                    f"Review successfully submitted for company {company_id} by user {user_id}"
+                )
                 # Task 5.3: 成功時は企業詳細ページにリダイレクト
                 self.redirect(f"/companies/{company_id}")
             else:
-                error_message = result.get("message", "レビューの投稿に失敗しました") if result else "レビューサービスでエラーが発生しました"
+                error_message = (
+                    result.get("message", "レビューの投稿に失敗しました")
+                    if result
+                    else "レビューサービスでエラーが発生しました"
+                )
                 logger.error(f"Review submission failed for company {company_id}: {error_message}")
                 raise tornado.web.HTTPError(400, error_message)
 
@@ -154,8 +225,14 @@ class ReviewCreateHandler(BaseHandler):
         comments = {}
 
         # 6つのカテゴリーから評価とコメントを取得
-        categories = ["recommendation", "foreign_support", "company_culture",
-                     "employee_relations", "evaluation_system", "promotion_treatment"]
+        categories = [
+            "recommendation",
+            "foreign_support",
+            "company_culture",
+            "employee_relations",
+            "evaluation_system",
+            "promotion_treatment",
+        ]
 
         for category in categories:
             # 評価点数（1-5 or None）
@@ -172,7 +249,7 @@ class ReviewCreateHandler(BaseHandler):
         return {
             "employment_status": self.get_argument("employment_status"),
             "ratings": ratings,
-            "comments": comments
+            "comments": comments,
         }
 
     def _validate_review_data(self, data):
@@ -202,39 +279,38 @@ class ReviewCreateHandler(BaseHandler):
             {
                 "key": "recommendation",
                 "title": "推薦度合い",
-                "question": "他の外国人に就業を推薦したい会社ですか？"
+                "question": "他の外国人に就業を推薦したい会社ですか？",
             },
             {
                 "key": "foreign_support",
                 "title": "外国人の受け入れ制度",
-                "question": "外国人の受け入れ制度が整っていますか？"
+                "question": "外国人の受け入れ制度が整っていますか？",
             },
             {
                 "key": "company_culture",
                 "title": "会社風土",
-                "question": "会社方針は明確で、文化的多様性を尊重していますか？"
+                "question": "会社方針は明確で、文化的多様性を尊重していますか？",
             },
             {
                 "key": "employee_relations",
                 "title": "社員との関係性",
-                "question": "上司・部下とも尊敬の念を持って関係が構築できますか？"
+                "question": "上司・部下とも尊敬の念を持って関係が構築できますか？",
             },
             {
                 "key": "evaluation_system",
                 "title": "成果・評価制度",
-                "question": "外国人従業員の成果が認められる制度が整っていますか？"
+                "question": "外国人従業員の成果が認められる制度が整っていますか？",
             },
             {
                 "key": "promotion_treatment",
                 "title": "昇進・昇給・待遇",
-                "question": "昇進・昇給機会は平等に与えられていますか？"
-            }
+                "question": "昇進・昇給機会は平等に与えられていますか？",
+            },
         ]
         # Add index to each category for Tornado template compatibility
         for i, category in enumerate(categories):
-            category['index'] = i + 1
+            category["index"] = i + 1
         return categories
-
 
 
 class ReviewEditHandler(BaseHandler):
@@ -245,22 +321,17 @@ class ReviewEditHandler(BaseHandler):
         self.db_service = get_db_service()
         self.calc_service = ReviewCalculationService()
         self.review_service = ReviewSubmissionService(
-            db_service=self.db_service,
-            calculation_service=self.calc_service
+            db_service=self.db_service, calculation_service=self.calc_service
         )
+        # Task 4.3: AccessControlMiddleware統合
+        from ..middleware.access_control_middleware import AccessControlMiddleware
+
+        self.access_control = AccessControlMiddleware()
 
     async def get(self, review_id):
-        """レビュー編集フォーム表示"""
+        """Task 4.3: レビュー編集フォーム表示 - AccessControlMiddleware統合"""
         try:
-            # 認証必須
-            user_id = await self.require_authentication()
-
-            # 編集権限チェック
-            has_permission = await self.review_service.check_edit_permission(user_id, review_id)
-            if not has_permission:
-                raise tornado.web.HTTPError(403, "Edit permission denied")
-
-            # 既存レビューデータを取得
+            # 既存レビューデータを取得（認証チェック前に取得、Mini Panel表示時にも必要）
             review = await self.review_service.get_review(review_id)
             if not review:
                 raise tornado.web.HTTPError(404, "Review not found")
@@ -268,17 +339,104 @@ class ReviewEditHandler(BaseHandler):
             # 会社情報を取得
             company = await self.review_service.get_company_info(review["company_id"])
 
-            # 編集フォームレンダリング
-            self.render("reviews/edit.html",
-                       review=review,
-                       company=company,
-                       categories=self._get_review_categories())
+            # Task 4.3: AccessControlMiddlewareによる認証チェック
+            session_id = self.get_secure_cookie("session_id")
+            if session_id:
+                session_id = session_id.decode("utf-8")
+
+            access_result = await self.access_control.check_access(
+                self.request.path, session_id, self.request.remote_ip
+            )
+
+            # 未認証の場合、Mini Panelを表示して編集フォームを非表示
+            if not access_result.is_success:
+                logger.info(f"Unauthenticated access to review editing for review {review_id}")
+                self.render(
+                    "reviews/edit.html",
+                    review=review,
+                    company=company,
+                    categories=self._get_review_categories(),
+                    show_login_panel=True,
+                    review_form_visible=False,
+                )
+                return
+
+            # access_granted チェック（access_result.is_success が True の場合のみ）
+            if not access_result.data.get("access_granted", False):
+                logger.info(f"Access denied for review editing for review {review_id}")
+                self.render(
+                    "reviews/edit.html",
+                    review=review,
+                    company=company,
+                    categories=self._get_review_categories(),
+                    show_login_panel=True,
+                    review_form_visible=False,
+                )
+                return
+
+            # 認証済みの場合、編集権限チェック
+            user_context = access_result.data.get("user_context") or {}
+            user_id = user_context.get("identity_id")
+
+            # 編集権限チェック
+            has_permission = await self.review_service.check_edit_permission(user_id, review_id)
+            if not has_permission:
+                raise tornado.web.HTTPError(403, "Edit permission denied")
+
+            # 編集フォームレンダリング（認証済み）
+            self.render(
+                "reviews/edit.html",
+                review=review,
+                company=company,
+                categories=self._get_review_categories(),
+                show_login_panel=False,
+                review_form_visible=True,
+            )
 
         except tornado.web.HTTPError:
             raise
         except Exception as e:
-            logger.error(f"Review edit form error: {e}")
-            raise tornado.web.HTTPError(500, "Internal server error")
+            logger.error(f"Review edit form error for review {review_id}: {e}")
+            raise tornado.web.HTTPError(500, "内部エラーが発生しました")
+
+    def _get_review_categories(self):
+        """レビューカテゴリー定義を取得"""
+        categories = [
+            {
+                "key": "recommendation",
+                "title": "推薦度合い",
+                "question": "他の外国人に就業を推薦したい会社ですか？",
+            },
+            {
+                "key": "foreign_support",
+                "title": "外国人の受け入れ制度",
+                "question": "外国人の受け入れ制度が整っていますか？",
+            },
+            {
+                "key": "company_culture",
+                "title": "会社風土",
+                "question": "会社方針は明確で、文化的多様性を尊重していますか？",
+            },
+            {
+                "key": "employee_relations",
+                "title": "社員との関係性",
+                "question": "上司・部下とも尊敬の念を持って関係が構築できますか？",
+            },
+            {
+                "key": "evaluation_system",
+                "title": "成果・評価制度",
+                "question": "外国人従業員の成果が認められる制度が整っていますか？",
+            },
+            {
+                "key": "promotion_treatment",
+                "title": "昇進・昇給・待遇",
+                "question": "昇進・昇給機会は平等に与えられていますか？",
+            },
+        ]
+        # Add index to each category for Tornado template compatibility
+        for i, category in enumerate(categories):
+            category["index"] = i + 1
+        return categories
 
     async def post(self, review_id):
         """レビュー更新処理"""
@@ -319,8 +477,14 @@ class ReviewEditHandler(BaseHandler):
         ratings = {}
         comments = {}
 
-        categories = ["recommendation", "foreign_support", "company_culture",
-                     "employee_relations", "evaluation_system", "promotion_treatment"]
+        categories = [
+            "recommendation",
+            "foreign_support",
+            "company_culture",
+            "employee_relations",
+            "evaluation_system",
+            "promotion_treatment",
+        ]
 
         for category in categories:
             rating_value = self.get_argument(f"ratings[{category}]", None)
@@ -335,7 +499,7 @@ class ReviewEditHandler(BaseHandler):
         return {
             "employment_status": self.get_argument("employment_status"),
             "ratings": ratings,
-            "comments": comments
+            "comments": comments,
         }
 
     def _validate_review_data(self, data):
@@ -362,37 +526,37 @@ class ReviewEditHandler(BaseHandler):
             {
                 "key": "recommendation",
                 "title": "推薦度合い",
-                "question": "他の外国人に就業を推薦したい会社ですか？"
+                "question": "他の外国人に就業を推薦したい会社ですか？",
             },
             {
                 "key": "foreign_support",
                 "title": "外国人の受け入れ制度",
-                "question": "外国人の受け入れ制度が整っていますか？"
+                "question": "外国人の受け入れ制度が整っていますか？",
             },
             {
                 "key": "company_culture",
                 "title": "会社風土",
-                "question": "会社方針は明確で、文化的多様性を尊重していますか？"
+                "question": "会社方針は明確で、文化的多様性を尊重していますか？",
             },
             {
                 "key": "employee_relations",
                 "title": "社員との関係性",
-                "question": "上司・部下とも尊敬の念を持って関係が構築できますか？"
+                "question": "上司・部下とも尊敬の念を持って関係が構築できますか？",
             },
             {
                 "key": "evaluation_system",
                 "title": "成果・評価制度",
-                "question": "外国人従業員の成果が認められる制度が整っていますか？"
+                "question": "外国人従業員の成果が認められる制度が整っていますか？",
             },
             {
                 "key": "promotion_treatment",
                 "title": "昇進・昇給・待遇",
-                "question": "昇進・昇給機会は平等に与えられていますか？"
-            }
+                "question": "昇進・昇給機会は平等に与えられていますか？",
+            },
         ]
         # Add index to each category for Tornado template compatibility
         for i, category in enumerate(categories):
-            category['index'] = i + 1
+            category["index"] = i + 1
         return categories
 
     async def get_current_user_id(self):
@@ -403,7 +567,7 @@ class ReviewEditHandler(BaseHandler):
         if not session_id:
             return None
 
-        session_id = session_id.decode('utf-8') if isinstance(session_id, bytes) else session_id
+        session_id = session_id.decode("utf-8") if isinstance(session_id, bytes) else session_id
         session_service = SessionService()
 
         # セッション検証
@@ -412,7 +576,7 @@ class ReviewEditHandler(BaseHandler):
             return None
 
         session_data = session_result.data
-        return session_data.get('identity_id')
+        return session_data.get("identity_id")
 
     async def require_authentication(self):
         """認証を要求し、ユーザー情報を返す"""
