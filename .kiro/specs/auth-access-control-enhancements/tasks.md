@@ -92,10 +92,10 @@
   - _Requirements: 2.2_
 
 - [ ] 4. アクセス制御とMini Panel連携の実装
-- [ ] 4.1 アクセス制御ルールの.env設定読み込み確認
+- [x] 4.1 アクセス制御ルールの.env設定読み込み確認
   - 既存の `AccessControlMiddleware.load_access_control_rules()` が正しく動作することを確認
-  - `/companies/([^/]+)/reviews/new,user` ルールを.envに追加
-  - `/reviews/([^/]+)/edit,user` ルールを.envに追加
+  - `/reviews/new,user` ルールを.env.exampleに追加
+  - `/edit,user` ルールを.env.exampleに追加
   - ルール読み込みログが正しく記録されることを確認
   - _Requirements: 3.1, 3.2, 3.3, 3.6, 3.7_
 
