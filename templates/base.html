@@ -79,6 +79,32 @@
         </nav>
     </div>
 
+    <!-- Login/Register Mini Panel -->
+    <div id="login-mini-panel" class="mini-panel" style="display: none;" role="dialog" aria-labelledby="panel-title" aria-hidden="true">
+        <div class="panel-header">
+            <h3 id="panel-title">Sign in to DXEEWorld</h3>
+            <button class="close-btn" aria-label="閉じる" title="パネルを閉じる">&times;</button>
+        </div>
+        <div class="panel-body">
+            <button class="google-btn" onclick="loginWithGoogle()" aria-label="Googleアカウントでログイン">
+                <img src="/static/images/google-icon.svg" alt="Google" aria-hidden="true">
+                <span>Google でログイン</span>
+            </button>
+            <button class="facebook-btn" onclick="loginWithFacebook()" aria-label="Facebookアカウントでログイン">
+                <img src="/static/images/facebook-icon.svg" alt="Facebook" aria-hidden="true">
+                <span>Facebook でログイン</span>
+            </button>
+            <div class="divider" role="separator" aria-label="または">または</div>
+            <input type="email" id="email-input" placeholder="Email" aria-label="メールアドレスを入力" autocomplete="email" required>
+            <button class="email-btn" onclick="loginWithEmail()" aria-label="メールアドレスでログイン">
+                Sign in with Email
+            </button>
+            <div class="register-link">
+                Don't have an account? <a href="/auth/email/register" aria-label="アカウント登録ページへ移動">Register</a>
+            </div>
+        </div>
+    </div>
+
     <style>
         /* モバイルタブバー CSS */
         .mobile-tab-bar {
@@ -146,6 +172,7 @@
     </style>
 
     <script src="/static/js/main.js"></script>
+    <script src="/static/js/login-panel.js"></script>
     {% block scripts %}{% end %}
 </body>
 </html>
