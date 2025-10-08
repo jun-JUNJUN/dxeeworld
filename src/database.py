@@ -112,6 +112,19 @@ class DatabaseService:
             logger.error(f"delete_one エラー: {e}")
             return False
     
+    def find(self, collection: str, filter_dict: dict = None):
+        """複数ドキュメント検索用のカーソルを返す"""
+        try:
+            if not self.client:
+                raise RuntimeError("Database not connected. Call connect() first.")
+
+            collection_obj = self.db[collection]
+            return collection_obj.find(filter_dict or {})
+
+        except Exception as e:
+            logger.error(f"find エラー: {e}")
+            raise
+
     async def find_many(self, collection: str, filter_dict: dict = None, limit: int = None, sort: list = None, skip: int = None):
         """複数ドキュメントを検索"""
         try:
@@ -142,14 +155,42 @@ class DatabaseService:
         try:
             if not self.client:
                 await self.connect()
-            
+
             collection_obj = self.db[collection]
-            result = await collection_obj.update_one(filter_dict, {'$set': update_dict})
-            return result.modified_count > 0
-            
+            result = await collection_obj.update_one(filter_dict, update_dict if '$set' in update_dict or '$inc' in update_dict else {'$set': update_dict})
+            return result
+
         except Exception as e:
             logger.error(f"update_one エラー: {e}")
-            return False
+            raise
+
+    async def update_many(self, collection: str, filter_dict: dict, update_dict: dict):
+        """複数ドキュメントを更新"""
+        try:
+            if not self.client:
+                await self.connect()
+
+            collection_obj = self.db[collection]
+            result = await collection_obj.update_many(filter_dict, update_dict if '$set' in update_dict or '$inc' in update_dict else {'$set': update_dict})
+            return result
+
+        except Exception as e:
+            logger.error(f"update_many エラー: {e}")
+            raise
+
+    async def delete_many(self, collection: str, filter_dict: dict):
+        """複数ドキュメントを削除"""
+        try:
+            if not self.client:
+                await self.connect()
+
+            collection_obj = self.db[collection]
+            result = await collection_obj.delete_many(filter_dict)
+            return result
+
+        except Exception as e:
+            logger.error(f"delete_many エラー: {e}")
+            raise
     
     async def count_documents(self, collection: str, filter_dict: dict = None):
         """ドキュメント数をカウント"""

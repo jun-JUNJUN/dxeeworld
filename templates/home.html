@@ -12,7 +12,7 @@
         </p>
         <div class="hero-actions">
             {% if not current_user %}
-            <a href="/register" class="btn btn-primary">今すぐ始める</a>
+            <a href="/auth/email/register" class="btn btn-primary">今すぐ始める</a>
             <a href="/jobs" class="btn btn-secondary">求人を探す</a>
             {% else %}
             <a href="/jobs" class="btn btn-primary">求人を探す</a>
@@ -100,7 +100,7 @@
         <h2>今すぐあなたの未来を始めよう</h2>
         <p>革新的なスタートアップで働き、世界を変える一員になりませんか？</p>
         {% if not current_user %}
-        <a href="/register" class="btn btn-primary btn-large">無料で登録する</a>
+        <a href="/auth/email/register" class="btn btn-primary btn-large">無料で登録する</a>
         {% else %}
         <a href="/jobs" class="btn btn-primary btn-large">求人を探す</a>
         {% end %}

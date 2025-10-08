@@ -131,9 +131,31 @@ class IdentityDatabaseService:
                 "email_hash": email_hash
             }
             result = await self.db_service.find_one(self.COLLECTION_NAME, filter_dict)
+
+            # Normalize MongoDB document: convert _id to id
+            if result and '_id' in result:
+                result['id'] = str(result['_id'])
+
             return result
         except Exception as e:
             logger.error(f"Failed to find identity: {e}")
+            return None
+
+    async def find_identity_by_email_hash(self, email_hash: str) -> Optional[Dict[str, Any]]:
+        """Find identity by email_hash only (regardless of auth_method)"""
+        try:
+            filter_dict = {
+                "email_hash": email_hash
+            }
+            result = await self.db_service.find_one(self.COLLECTION_NAME, filter_dict)
+
+            # Normalize MongoDB document: convert _id to id
+            if result and '_id' in result:
+                result['id'] = str(result['_id'])
+
+            return result
+        except Exception as e:
+            logger.error(f"Failed to find identity by email hash: {e}")
             return None
 
     async def list_indexes(self) -> list:

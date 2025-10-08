@@ -30,27 +30,31 @@ class EmailRegistrationHandler(BaseHandler):
 
     def get(self):
         """Display email registration form"""
-        html = """
+        return_url = self.get_argument('return_url', '')
+        return_url_field = f'<input type="hidden" name="return_url" value="{return_url}">' if return_url else ''
+
+        html = f"""
         <!DOCTYPE html>
         <html>
         <head>
             <title>Email Registration</title>
             <meta charset="UTF-8">
             <style>
-                body { font-family: Arial, sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; }
-                .form-group { margin-bottom: 15px; }
-                label { display: block; margin-bottom: 5px; font-weight: bold; }
-                input[type="email"], select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-                button { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
-                button:hover { background-color: #0056b3; }
-                .message { padding: 10px; margin: 10px 0; border-radius: 4px; }
-                .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-                .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+                body {{ font-family: Arial, sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; }}
+                .form-group {{ margin-bottom: 15px; }}
+                label {{ display: block; margin-bottom: 5px; font-weight: bold; }}
+                input[type="email"], select {{ width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }}
+                button {{ background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }}
+                button:hover {{ background-color: #0056b3; }}
+                .message {{ padding: 10px; margin: 10px 0; border-radius: 4px; }}
+                .success {{ background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }}
+                .error {{ background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }}
             </style>
         </head>
         <body>
             <h1>メール認証で新規登録</h1>
             <form method="post" action="/auth/email/register">
+                {return_url_field}
                 <div class="form-group">
                     <label for="email">メールアドレス:</label>
                     <input type="email" id="email" name="email" required>
@@ -80,11 +84,13 @@ class EmailRegistrationHandler(BaseHandler):
             else:
                 data = {
                     'email': self.get_argument('email'),
-                    'user_type': self.get_argument('user_type', 'user')
+                    'user_type': self.get_argument('user_type', 'user'),
+                    'return_url': self.get_argument('return_url', '')
                 }
 
             email = data.get('email', '').strip().lower()
             user_type = data.get('user_type', 'user')
+            return_url = data.get('return_url', '')
 
             # Validate input
             if not email:
@@ -101,9 +107,9 @@ class EmailRegistrationHandler(BaseHandler):
                 self._send_error_response(400, "無効なユーザータイプです")
                 return
 
-            # Check if email already exists
-            existing_identity = await self.identity_service.find_identity_by_email(email)
-            if existing_identity.is_success:
+            # Check if email already exists (regardless of auth method)
+            existing_identity = await self.identity_service.find_identity_by_email_only(email)
+            if existing_identity.is_success and existing_identity.data:
                 self._send_error_response(409, "このメールアドレスは既に登録されています")
                 return
 
@@ -117,13 +123,16 @@ class EmailRegistrationHandler(BaseHandler):
                 self._send_error_response(500, error_result.user_message)
                 return
 
-            # Create verification URL
+            # Create verification URL with return_url parameter
             base_url = self.request.protocol + "://" + self.request.host
-            verification_url = f"{base_url}/auth/email/verify?" + urlencode({
+            verify_params = {
                 'token': token_result.data['token'],
                 'type': 'registration',
                 'user_type': user_type
-            })
+            }
+            if return_url:
+                verify_params['return_url'] = return_url
+            verification_url = f"{base_url}/auth/email/verify?" + urlencode(verify_params)
 
             # Send verification email
             email_result = await self.email_service.send_verification_email(
@@ -172,59 +181,83 @@ class EmailVerificationHandler(BaseHandler):
             token = self.get_argument('token', '')
             verification_type = self.get_argument('type', '')
             user_type = self.get_argument('user_type', 'user')
+            return_url = self.get_argument('return_url', '/')
+
+            logger.info("=== Email Verification Started ===")
+            logger.info("Token: %s...", token[:20] if token else "NONE")
+            logger.info("Type: %s", verification_type)
+            logger.info("User Type: %s", user_type)
+            logger.info("Return URL: %s", return_url)
 
             if not token:
+                logger.error("Token is missing")
                 self._render_verification_result(False, "認証トークンが見つかりません")
                 return
 
             # Verify token
+            logger.info("Calling verify_verification_token...")
             verification_result = await self.email_auth_service.verify_verification_token(token)
+            logger.info("Token verification result - Success: %s", verification_result.is_success)
 
             if not verification_result.is_success:
+                logger.error("Token verification failed: %s", verification_result.error)
                 error_result = self.error_handler.handle_email_error(verification_result.error)
                 self._render_verification_result(False, error_result.user_message)
                 return
 
             verification_data = verification_result.data
             email = verification_data.get('email')  # Note: This is currently mock data
+            logger.info("Verification data - Email: %s", email)
 
             if verification_type == 'registration':
+                logger.info("Processing registration flow...")
                 # Create new Identity for registration
+                logger.info("Creating identity for email: %s, user_type: %s", email, user_type)
                 identity_result = await self.identity_service.create_or_update_identity(
-                    email, 'email', user_type
+                    'email', email, user_type
                 )
+                logger.info("Identity creation result - Success: %s", identity_result.is_success)
 
                 if not identity_result.is_success:
+                    logger.error("Identity creation failed: %s", identity_result.error if hasattr(identity_result, 'error') else "Unknown error")
                     self._render_verification_result(False, "アカウント作成に失敗しました")
                     return
 
                 identity = identity_result.data
+                logger.info("Identity created successfully - ID: %s", identity.get('id', 'UNKNOWN')[:8])
 
                 # Create session for immediate login
+                logger.info("Creating OAuth session...")
                 session_result = await self.session_service.create_oauth_session(
                     identity,
                     self.request.headers.get('User-Agent', 'browser'),
                     self._get_client_ip()
                 )
+                logger.info("Session creation result - Success: %s", session_result.is_success)
 
                 if session_result.is_success:
                     session_id = session_result.data['session_id']
+                    logger.info("Setting secure cookie with session_id: %s...", session_id[:20])
                     self.set_secure_cookie('session_id', session_id, expires_days=30)
+                else:
+                    logger.error("Session creation failed: %s", session_result.error if hasattr(session_result, 'error') else "Unknown error")
 
+                logger.info("Rendering success page with redirect to: %s", return_url)
                 self._render_verification_result(
                     True,
                     "メールアドレスの確認が完了しました。登録とログインが完了しました。",
-                    redirect_url="/"
+                    redirect_url=return_url
                 )
 
             else:
+                logger.info("Processing non-registration verification type: %s", verification_type)
                 self._render_verification_result(
                     True,
                     "メールアドレスの確認が完了しました。"
                 )
 
         except Exception as e:
-            logger.exception("Email verification failed: %s", e)
+            logger.exception("Email verification failed with exception: %s", e)
             error_result = self.error_handler.make_user_friendly(e)
             self._render_verification_result(False, error_result.user_message)
 
@@ -412,7 +445,7 @@ class EmailLoginHandler(BaseHandler):
                 return
 
             # Check if identity exists
-            identity_result = await self.identity_service.find_identity_by_email(email)
+            identity_result = await self.identity_service.find_identity_by_email('email', email)
             if not identity_result.is_success:
                 # For security, don't reveal if email exists or not
                 self._send_success_response({
@@ -502,13 +535,31 @@ class EmailCodeVerificationHandler(BaseHandler):
                 self._send_error_response(400, error_result.user_message)
                 return
 
-            # Get identity
-            identity_result = await self.identity_service.find_identity_by_email(email)
+            # Get identity or create if not exists
+            logger.info("Looking up identity for email: %s", email)
+            identity_result = await self.identity_service.find_identity_by_email('email', email)
+            logger.info("Identity lookup result - Success: %s, Data: %s", identity_result.is_success, identity_result.data)
+
             if not identity_result.is_success:
                 self._send_error_response(404, "ユーザーが見つかりません")
                 return
 
             identity = identity_result.data
+
+            # If identity doesn't exist, create it (auto-registration for email login)
+            if not identity:
+                logger.info("Identity not found, creating new identity for email: %s", email)
+                create_result = await self.identity_service.create_or_update_identity(
+                    'email', email, 'user'
+                )
+                if not create_result.is_success:
+                    logger.error("Failed to create identity: %s", create_result.error if hasattr(create_result, 'error') else "Unknown error")
+                    self._send_error_response(500, "ユーザー作成に失敗しました")
+                    return
+                identity = create_result.data
+                logger.info("New identity created - ID: %s", identity.get('id', 'UNKNOWN'))
+            else:
+                logger.info("Found identity - ID: %s", identity.get('id', 'UNKNOWN'))
 
             # Create OAuth session
             session_result = await self.session_service.create_oauth_session(

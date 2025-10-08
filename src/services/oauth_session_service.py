@@ -100,9 +100,13 @@ class OAuthSessionService:
             if not session:
                 return Result.failure(OAuthSessionError("Session not found"))
 
-            # Check expiration
+            # Check expiration - MongoDB returns timezone-naive datetime, treat as UTC
             now = datetime.now(timezone.utc)
-            if session['expires_at'] < now:
+            expires_at = session['expires_at']
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+            if expires_at < now:
                 # Mark session as expired
                 await self._expire_session(session_id)
                 return Result.failure(OAuthSessionError("Session expired"))
@@ -116,7 +120,7 @@ class OAuthSessionService:
             await self.db_service.update_one(
                 self.COLLECTION_NAME,
                 {'session_id': session_id},
-                {'$set': {'last_accessed': now}}
+                {'last_accessed': now}
             )
 
             return Result.success({

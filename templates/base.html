@@ -11,6 +11,7 @@
     <!-- Performance optimization hints -->
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/login-panel.css">
     {% block head %}{% end %}
 </head>
 <body>
@@ -86,6 +87,7 @@
             <button class="close-btn" aria-label="閉じる" title="パネルを閉じる">&times;</button>
         </div>
         <div class="panel-body">
+            <div class="loading-spinner" role="status" aria-label="読み込み中"></div>
             <button class="google-btn" onclick="loginWithGoogle()" aria-label="Googleアカウントでログイン">
                 <img src="/static/images/google-icon.svg" alt="Google" aria-hidden="true">
                 <span>Google でログイン</span>
@@ -100,7 +102,7 @@
                 Sign in with Email
             </button>
             <div class="register-link">
-                Don't have an account? <a href="/auth/email/register" aria-label="アカウント登録ページへ移動">Register</a>
+                Don't have an account? <a href="#" id="register-link" aria-label="アカウント登録ページへ移動">Register</a>
             </div>
         </div>
     </div>

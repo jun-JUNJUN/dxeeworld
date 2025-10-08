@@ -1,0 +1,276 @@
+/* Mini Panel CSS - Task 5.2 */
+
+/* Mini Panel Container */
+.mini-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 360px;
+    background: #1a1a1a;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    padding: 24px;
+    z-index: 1000;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Panel Header */
+.mini-panel .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.mini-panel .panel-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.mini-panel .close-btn {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.mini-panel .close-btn:hover {
+    color: #fff;
+}
+
+/* Panel Body */
+.mini-panel .panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Google Button */
+.mini-panel .google-btn {
+    background: #fff;
+    color: #333;
+    border: 1px solid #ddd;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.mini-panel .google-btn:hover {
+    background: #f8f8f8;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mini-panel .google-btn img {
+    width: 18px;
+    height: 18px;
+}
+
+/* Facebook Button */
+.mini-panel .facebook-btn {
+    background: #1877f2;
+    color: #fff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.mini-panel .facebook-btn:hover {
+    background: #166fe5;
+    box-shadow: 0 2px 8px rgba(24, 119, 242, 0.3);
+}
+
+.mini-panel .facebook-btn img {
+    width: 18px;
+    height: 18px;
+}
+
+/* Divider */
+.mini-panel .divider {
+    text-align: center;
+    color: #666;
+    font-size: 12px;
+    margin: 8px 0;
+    position: relative;
+}
+
+.mini-panel .divider::before,
+.mini-panel .divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: #333;
+}
+
+.mini-panel .divider::before {
+    left: 0;
+}
+
+.mini-panel .divider::after {
+    right: 0;
+}
+
+/* Email Input */
+.mini-panel #email-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #333;
+    border-radius: 6px;
+    background: #2a2a2a;
+    color: #fff;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+}
+
+.mini-panel #email-input:focus {
+    outline: none;
+    border-color: #007bff;
+    background: #333;
+}
+
+.mini-panel #email-input::placeholder {
+    color: #666;
+}
+
+/* Email Button */
+.mini-panel .email-btn {
+    background: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mini-panel .email-btn:hover {
+    background: #0056b3;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.mini-panel .email-btn:disabled {
+    background: #555;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Register Link */
+.mini-panel .register-link {
+    text-align: center;
+    font-size: 12px;
+    color: #999;
+    margin-top: 8px;
+}
+
+.mini-panel .register-link a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.mini-panel .register-link a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+/* Loading Indicator */
+.mini-panel .loading-spinner {
+    display: none;
+    margin: 12px auto;
+    width: 32px;
+    height: 32px;
+    border: 3px solid #333;
+    border-top-color: #007bff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.mini-panel.loading .loading-spinner {
+    display: block;
+}
+
+.mini-panel.loading .panel-body > button,
+.mini-panel.loading .panel-body > input {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .mini-panel {
+        bottom: 0;
+        right: 0;
+        left: 0;
+        width: 100%;
+        border-radius: 12px 12px 0 0;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .mini-panel {
+        background: #1a1a1a;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+}
+
+/* Accessibility */
+.mini-panel button:focus,
+.mini-panel input:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* Animation */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mini-panel[aria-hidden="false"] {
+    animation: slideUp 0.3s ease-out;
+}

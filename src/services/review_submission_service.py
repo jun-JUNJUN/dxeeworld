@@ -380,7 +380,21 @@ class ReviewSubmissionService:
         """
         if self.db and self.calc_service:
             # 実際のデータベース保存を実行
-            return await self.create_review(review_data)
+            result = await self.create_review(review_data)
+            # create_reviewは{"success": True/False}形式を返すので、{"status": "success"}形式に変換
+            if result.get("success"):
+                return {
+                    "status": "success",
+                    "review_id": result.get("review_id"),
+                    "individual_average": result.get("individual_average")
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": result.get("message", "レビューの投稿に失敗しました"),
+                    "error_code": result.get("error_code"),
+                    "errors": result.get("errors")
+                }
         else:
             # モック実装（データベースまたは計算サービスが未設定の場合）
             return {

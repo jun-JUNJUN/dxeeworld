@@ -6,8 +6,8 @@
 
 ## タスク一覧
 
-- [ ] 1. メール認証6桁コード生成・検証機能の実装
-- [ ] 1.1 6桁コード生成機能の実装
+- [x] 1. メール認証6桁コード生成・検証機能の実装
+- [x] 1.1 6桁コード生成機能の実装
   - `EmailAuthService` に `generate_login_code()` メソッドを追加
   - `secrets.randbelow(1000000)` で暗号学的に安全な6桁コード生成
   - 生成したコードをbcryptでハッシュ化
@@ -15,7 +15,7 @@
   - コード生成成功時、生成されたコード（平文）と有効期限を返す
   - _Requirements: 1.2, 1.6, 7.1, 7.2_
 
-- [ ] 1.2 6桁コード検証機能の実装
+- [x] 1.2 6桁コード検証機能の実装
   - `EmailAuthService` に `verify_login_code()` メソッドを追加
   - MongoDBから該当メールアドレスのハッシュ化コードを取得
   - `bcrypt.checkpw()` で入力コードとハッシュを照合
@@ -25,16 +25,17 @@
   - 検証失敗時、試行回数をインクリメント
   - _Requirements: 1.3, 1.4, 1.5, 7.2, 7.3_
 
-- [ ] 1.3 6桁コード送信用メールサービス拡張
+- [x] 1.3 6桁コード送信用メールサービス拡張
   - `EmailService` に `send_login_code_email()` メソッドを追加
   - メールテンプレート作成（6桁コードを含む）
   - SMTP経由でメール送信（タイムアウト10秒）
   - 送信成功/失敗をログに記録
   - メール送信エラーを適切にハンドリング（ユーザーフレンドリーなエラーメッセージ）
   - _Requirements: 1.2, 2.2, 2.3, 2.4, 7.4_
+  - **Note**: 既に実装済み (src/services/email_service.py:280-299)
 
-- [ ] 2. メール認証ログインハンドラーの実装
-- [ ] 2.1 メールアドレス入力とコード送信ハンドラーの作成
+- [x] 2. メール認証ログインハンドラーの実装
+- [x] 2.1 メールアドレス入力とコード送信ハンドラーの作成
   - `EmailLoginHandler` を新規作成（GET/POSTメソッド）
   - GETでメールアドレス入力フォームを表示
   - POSTでメールアドレスを受け取り、バリデーション
@@ -44,14 +45,14 @@
   - コード入力画面にリダイレクト（`/auth/email/login?step=code&email={email}`）
   - _Requirements: 1.1, 1.2_
 
-- [ ] 2.2 6桁コード入力フォーム表示機能の実装
+- [x] 2.2 6桁コード入力フォーム表示機能の実装
   - `EmailLoginHandler.get()` メソッドに `step=code` パラメータ処理を追加
   - コード入力フォームをレンダリング（6桁数字入力、カウントダウンタイマー表示）
   - マスキングされたメールアドレス表示（例: `ab***@example.com`）
   - コード再送信ボタンの配置
   - _Requirements: 1.2, 1.5_
 
-- [ ] 2.3 6桁コード検証ハンドラーの作成
+- [x] 2.3 6桁コード検証ハンドラーの作成
   - `EmailCodeVerificationHandler` を新規作成（POSTメソッド）
   - メールアドレスと6桁コードを受け取り
   - `EmailAuthService.verify_login_code()` でコード検証
@@ -61,7 +62,7 @@
   - 検証失敗時、エラーメッセージ表示と再入力プロンプト
   - _Requirements: 1.3, 1.4, 7.5_
 
-- [ ] 2.4 コード再送信ハンドラーの作成
+- [x] 2.4 コード再送信ハンドラーの作成
   - `EmailCodeResendHandler` を新規作成（POSTメソッド）
   - メールアドレスを受け取り
   - 新しい6桁コードを生成・送信（タスク1.1、1.3と同じロジック）
@@ -69,7 +70,7 @@
   - _Requirements: 1.5_
 
 - [ ] 3. SMTP設定テスト機能の実装
-- [ ] 3.1 SMTP接続テスト機能の実装
+- [x] 3.1 SMTP接続テスト機能の実装
   - `EmailService` に `test_smtp_connection()` メソッドを追加
   - .envからSMTP設定（ホスト、ポート、ユーザー名、パスワード）を読み込み
   - SMTP接続を試行（タイムアウト10秒）
@@ -120,7 +121,7 @@
   - 初期状態は非表示（`display: none`）
   - _Requirements: 4.1, 4.2, 4.3_
 
-- [ ] 5.2 Mini Panel CSSスタイルの実装
+- [x] 5.2 Mini Panel CSSスタイルの実装
   - `static/css/login-panel.css` を新規作成
   - 右下固定配置（fixed position）、角丸、ダークモード背景
   - Googleボタン（白背景、Googleアイコン）、Facebookボタン（ダークブルー背景、Facebookアイコン）
@@ -129,7 +130,7 @@
   - shadow効果、適度なpadding
   - _Requirements: 4.2, 4.7_
 
-- [ ] 5.3 Mini Panel JavaScript制御の実装
+- [x] 5.3 Mini Panel JavaScript制御の実装
   - `static/js/login-panel.js` を新規作成
   - `LoginPanel` クラスを実装（show/hide メソッド）
   - `loginWithEmail()` メソッド: Email入力値を取得し、`/auth/email/login` にPOST
@@ -139,7 +140,7 @@
   - テンプレート変数 `show_login_panel` に基づいて自動表示
   - _Requirements: 4.1, 4.3, 4.4, 4.5, 4.6_
 
-- [ ] 5.4 認証処理中のローディングインジケーター実装
+- [x] 5.4 認証処理中のローディングインジケーター実装
   - Mini Panel内にローディングスピナーを追加
   - 認証API呼び出し中にスピナーを表示
   - 認証完了/失敗時にスピナーを非表示

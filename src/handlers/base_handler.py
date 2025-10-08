@@ -1,8 +1,11 @@
 """
 ベースハンドラー
 """
+import logging
 import tornado.web
-from ..services.session_service import SessionService
+from ..services.oauth_session_service import OAuthSessionService
+
+logger = logging.getLogger(__name__)
 
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -17,20 +20,26 @@ class BaseHandler(tornado.web.RequestHandler):
         self.write(f"<html><body><h1>Error {status_code}</h1></body></html>")
 
     async def get_current_user_id(self):
-        """現在のユーザーIDを取得（セッションベース）"""
+        """現在のユーザーIDを取得（OAuth セッションベース）"""
         session_id = self.get_secure_cookie("session_id")
         if not session_id:
             return None
 
         session_id = session_id.decode('utf-8') if isinstance(session_id, bytes) else session_id
-        session_service = SessionService()
+        oauth_session_service = OAuthSessionService()
 
-        # セッション検証してユーザーID取得
-        user_result = await session_service.get_current_user_from_session(session_id)
-        if not user_result.is_success:
+        # OAuth セッション検証してユーザーID取得
+        validation_result = await oauth_session_service.validate_oauth_session(
+            session_id,
+            self.request.remote_ip
+        )
+
+        if not validation_result.is_success:
+            logger.warning("Session validation failed: %s", validation_result.error if hasattr(validation_result, 'error') else "Unknown")
             return None
 
-        return user_result.data
+        # identity_id を返す
+        return validation_result.data.get('identity_id')
 
     async def require_authentication(self):
         """認証を要求し、ユーザーIDを返す"""

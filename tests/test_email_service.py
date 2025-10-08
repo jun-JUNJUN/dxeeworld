@@ -240,3 +240,68 @@ class TestEmailService:
 
         assert "text/plain" in content_types
         assert "text/html" in content_types
+
+    @pytest.mark.asyncio
+    @patch('src.services.email_service.smtplib.SMTP')
+    async def test_smtp_connection_test_success(self, mock_smtp_class, email_service):
+        """RED: Test SMTP connection test returns success"""
+        # Setup mock SMTP connection
+        mock_smtp = MagicMock()
+        mock_smtp.starttls = MagicMock()
+        mock_smtp.login = MagicMock()
+        mock_smtp.quit = MagicMock()
+        mock_smtp_class.return_value = mock_smtp
+
+        result = await email_service.test_smtp_connection()
+
+        assert result.is_success
+        assert result.data['connected'] is True
+        assert 'server' in result.data
+        assert 'response' in result.data
+        mock_smtp.starttls.assert_called_once()
+        mock_smtp.login.assert_called_once()
+        mock_smtp.quit.assert_called_once()
+
+    @pytest.mark.asyncio
+    @patch('src.services.email_service.smtplib.SMTP')
+    async def test_smtp_connection_test_failure(self, mock_smtp_class, email_service):
+        """RED: Test SMTP connection test returns failure with error details"""
+        # Setup mock SMTP connection failure
+        mock_smtp_class.side_effect = Exception("Connection refused")
+
+        result = await email_service.test_smtp_connection()
+
+        assert not result.is_success
+        assert isinstance(result.error, EmailError)
+        assert "connection" in str(result.error).lower()
+
+    @pytest.mark.asyncio
+    @patch('src.services.email_service.smtplib.SMTP')
+    async def test_smtp_connection_test_timeout(self, mock_smtp_class, email_service):
+        """RED: Test SMTP connection test respects timeout"""
+        import socket
+        # Setup mock SMTP timeout
+        mock_smtp_class.side_effect = socket.timeout("Connection timed out")
+
+        result = await email_service.test_smtp_connection()
+
+        assert not result.is_success
+        assert isinstance(result.error, EmailError)
+        assert "timeout" in str(result.error).lower() or "timed out" in str(result.error).lower()
+
+    @pytest.mark.asyncio
+    @patch('src.services.email_service.smtplib.SMTP')
+    async def test_smtp_connection_test_login_failure(self, mock_smtp_class, email_service):
+        """RED: Test SMTP connection test detects authentication failure"""
+        import smtplib
+        # Setup mock SMTP login failure
+        mock_smtp = MagicMock()
+        mock_smtp.starttls = MagicMock()
+        mock_smtp.login.side_effect = smtplib.SMTPAuthenticationError(535, b"Authentication failed")
+        mock_smtp_class.return_value = mock_smtp
+
+        result = await email_service.test_smtp_connection()
+
+        assert not result.is_success
+        assert isinstance(result.error, EmailError)
+        assert "authentication" in str(result.error).lower() or "login" in str(result.error).lower()

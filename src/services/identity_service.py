@@ -45,6 +45,21 @@ class IdentityService:
         # This is essentially the same as find_identity_by_email_hash for public API
         return await self.find_identity_by_email_hash(auth_method, email)
 
+    async def find_identity_by_email_only(self, email: str) -> Result[Optional[Dict[str, Any]], IdentityError]:
+        """Find identity by email address only (regardless of auth_method)"""
+        try:
+            # Hash the email for database lookup
+            email_hash = self.email_service.hash_email(email)
+
+            # Search in database by email hash only
+            identity = await self.db_service.find_identity_by_email_hash(email_hash)
+
+            return Result.success(identity)
+
+        except Exception as e:
+            logger.exception("Failed to find identity by email only: %s", e)
+            return Result.failure(IdentityError(f"Find identity failed: {e}"))
+
     async def create_or_update_identity(
         self,
         auth_method: str,
@@ -54,6 +69,8 @@ class IdentityService:
     ) -> Result[Dict[str, Any], IdentityError]:
         """Create or update Identity record"""
         try:
+            logger.info("=== create_or_update_identity called ===")
+            logger.info("Auth method: %s, Email: %s, User type: %s", auth_method, email, user_type)
             # Validate auth method
             if auth_method not in self.db_service.VALID_AUTH_METHODS:
                 return Result.failure(IdentityError(f"Invalid auth method: {auth_method}"))

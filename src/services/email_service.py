@@ -297,3 +297,37 @@ DxeeWorldチーム
         except Exception as e:
             logger.exception("Failed to send login code email: %s", e)
             return Result.failure(EmailError(f"Login code email failed: {e}"))
+
+    async def test_smtp_connection(self) -> Result[Dict[str, Any], EmailError]:
+        """Test SMTP connection and authentication"""
+        try:
+            # Create SMTP connection with timeout
+            smtp = smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=10)
+
+            # Enable TLS if configured
+            if self.smtp_use_tls:
+                smtp.starttls()
+
+            # Test authentication
+            smtp.login(self.smtp_username, self.smtp_password)
+
+            # Get server response
+            response = smtp.noop()[1].decode('utf-8') if smtp.noop()[1] else 'OK'
+
+            # Close connection
+            smtp.quit()
+
+            logger.info("SMTP connection test successful: %s:%d", self.smtp_host, self.smtp_port)
+
+            return Result.success({
+                'connected': True,
+                'server': f"{self.smtp_host}:{self.smtp_port}",
+                'response': response
+            })
+
+        except smtplib.SMTPAuthenticationError as e:
+            logger.error("SMTP authentication failed: %s", e)
+            return Result.failure(EmailError(f"SMTP authentication failed: {e}"))
+        except Exception as e:
+            logger.exception("SMTP connection test failed: %s", e)
+            return Result.failure(EmailError(f"SMTP connection test failed: {e}"))

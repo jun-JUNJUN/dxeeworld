@@ -9,7 +9,7 @@ from tornado.web import RequestHandler
 from tornado.auth import GoogleOAuth2Mixin
 from ..services.oauth2_service import OAuth2Service
 from ..services.identity_service import IdentityService
-from ..services.session_service import SessionService
+from ..services.oauth_session_service import OAuthSessionService
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +21,9 @@ class GoogleOAuthHandler(RequestHandler, GoogleOAuth2Mixin):
         """Initialize handler with required services"""
         self.oauth2_service = OAuth2Service()
         self.identity_service = IdentityService()
-        self.session_service = SessionService()
+        self.oauth_session_service = OAuthSessionService()
 
-    def get(self):
+    async def get(self):
         """
         Handle GET requests for Google OAuth
         - Without code parameter: Generate and redirect to auth URL
@@ -38,7 +38,7 @@ class GoogleOAuthHandler(RequestHandler, GoogleOAuth2Mixin):
             # Check if this is a callback with authorization code
             code = self.get_argument('code', None)
             if code:
-                self._handle_callback()
+                await self._handle_callback()
             else:
                 self._handle_auth_redirect()
 
@@ -85,7 +85,7 @@ class GoogleOAuthHandler(RequestHandler, GoogleOAuth2Mixin):
             logger.exception("Auth redirect error: %s", e)
             self.send_error(500, reason="Authentication setup failed")
 
-    def _handle_callback(self):
+    async def _handle_callback(self):
         """Process OAuth callback with authorization code"""
         try:
             # Get callback parameters
@@ -116,7 +116,7 @@ class GoogleOAuthHandler(RequestHandler, GoogleOAuth2Mixin):
             user_info = token_result.data
 
             # Create or update Identity
-            identity_result = self.identity_service.create_or_update_identity(
+            identity_result = await self.identity_service.create_or_update_identity(
                 auth_method='google',
                 email=user_info['email'],
                 user_type='user',
@@ -130,15 +130,22 @@ class GoogleOAuthHandler(RequestHandler, GoogleOAuth2Mixin):
 
             identity = identity_result.data
 
-            # Create session
-            session_result = self.session_service.create_session(identity['id'])
+            # Create OAuth session
+            user_agent = self.request.headers.get('User-Agent', 'browser')
+            ip_address = self.request.remote_ip or '127.0.0.1'
+            session_result = await self.oauth_session_service.create_oauth_session(
+                identity,
+                user_agent,
+                ip_address,
+                auth_context='google_oauth_callback'
+            )
 
             if not session_result.is_success:
                 logger.error("Session creation failed: %s", session_result.error)
                 self.send_error(500, reason="Session setup failed")
                 return
 
-            session_id = session_result.data
+            session_id = session_result.data['session_id']
 
             # Set session cookie
             self.set_secure_cookie('session_id', session_id, expires_days=30)

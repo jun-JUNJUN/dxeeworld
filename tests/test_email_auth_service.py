@@ -89,17 +89,20 @@ class TestEmailAuthService:
     @pytest.mark.asyncio
     async def test_verify_login_code(self, email_auth_service):
         """RED: Test verifying 6-digit login code"""
-        # This test should fail because verify_login_code is not implemented
+        import bcrypt
 
         # First generate a code
         code_result = await email_auth_service.generate_login_code("test@example.com")
         code = code_result.data['code']
 
+        # Hash the code with bcrypt (simulating what generate_login_code does)
+        code_hash = bcrypt.hashpw(code.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
         # Setup mock to return verification record for the code
         from datetime import datetime, timezone, timedelta
         mock_verification = {
             '_id': 'test_id',
-            'code': code,
+            'code_hash': code_hash,
             'email_hash': 'test_hash',
             'verification_type': 'login',
             'expires_at': datetime.now(timezone.utc) + timedelta(minutes=5),
@@ -208,7 +211,7 @@ class TestEmailAuthService:
     @pytest.mark.asyncio
     async def test_code_one_time_use(self, email_auth_service):
         """RED: Test login code can only be used once"""
-        # This test should fail because one-time use is not implemented
+        import bcrypt
 
         email = "test@example.com"
 
@@ -216,11 +219,14 @@ class TestEmailAuthService:
         code_result = await email_auth_service.generate_login_code(email)
         code = code_result.data['code']
 
+        # Hash the code with bcrypt
+        code_hash = bcrypt.hashpw(code.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
         # Setup mock to return verification record for first use
         from datetime import datetime, timezone, timedelta
         mock_verification = {
             '_id': 'test_id',
-            'code': code,
+            'code_hash': code_hash,
             'email_hash': 'test_hash',
             'verification_type': 'login',
             'expires_at': datetime.now(timezone.utc) + timedelta(minutes=5),
@@ -272,3 +278,67 @@ class TestEmailAuthService:
 
         assert not result.is_success
         assert isinstance(result.error, EmailAuthError)
+
+    @pytest.mark.asyncio
+    async def test_code_bcrypt_hashing(self, email_auth_service):
+        """RED: Test that login codes are hashed with bcrypt before storage"""
+        import bcrypt
+
+        # Generate a login code
+        result = await email_auth_service.generate_login_code("test@example.com")
+        assert result.is_success
+
+        code = result.data['code']
+
+        # Check that db_service.create was called
+        assert email_auth_service.db_service.create.called
+
+        # Get the data that was saved to database
+        call_args = email_auth_service.db_service.create.call_args
+        saved_data = call_args[0][1]  # Second argument to create()
+
+        # Verify that 'code_hash' field exists (not 'code')
+        assert 'code_hash' in saved_data
+        assert 'code' not in saved_data
+
+        # Verify that the hash can be verified with bcrypt
+        code_hash = saved_data['code_hash']
+        assert bcrypt.checkpw(code.encode('utf-8'), code_hash.encode('utf-8'))
+
+    @pytest.mark.asyncio
+    async def test_code_verification_uses_bcrypt(self, email_auth_service):
+        """RED: Test that code verification uses bcrypt.checkpw"""
+        import bcrypt
+
+        email = "test@example.com"
+        correct_code = "123456"
+        wrong_code = "999999"
+
+        # Hash the correct code with bcrypt
+        code_hash = bcrypt.hashpw(correct_code.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+        # Setup mock to return verification record with bcrypt hash
+        mock_verification = {
+            '_id': 'test_id',
+            'code_hash': code_hash,
+            'email_hash': 'test_hash',
+            'verification_type': 'login',
+            'expires_at': datetime.now(timezone.utc) + timedelta(minutes=5),
+            'verified_at': None,
+            'attempts': 0
+        }
+        email_auth_service.db_service.find_one.return_value = mock_verification
+
+        # Verify with correct code - should succeed
+        result = await email_auth_service.verify_login_code(email, correct_code)
+        assert result.is_success
+        assert result.data is True
+
+        # Reset mock for next verification
+        mock_verification['attempts'] = 0
+        email_auth_service.db_service.find_one.return_value = mock_verification
+
+        # Verify with wrong code - should fail
+        result = await email_auth_service.verify_login_code(email, wrong_code)
+        assert not result.is_success
+        assert "invalid code" in str(result.error).lower()

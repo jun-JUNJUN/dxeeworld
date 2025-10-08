@@ -1,7 +1,7 @@
 """
-認証関連のHTTPハンドラー
+Unified Authentication Handler
+統合認証ページハンドラー - Google OAuth, Facebook OAuth, メール認証を統合
 """
-import json
 import logging
 import tornado.web
 from .base_handler import BaseHandler
@@ -9,13 +9,14 @@ from .base_handler import BaseHandler
 logger = logging.getLogger(__name__)
 
 
-class LoginHandler(BaseHandler):
-    """ログインハンドラー"""
-    
+class UnifiedLoginHandler(BaseHandler):
+    """統合ログインページハンドラー"""
+
     def get(self):
         """統合ログインページを表示"""
         return_url = self.get_argument('return_url', '/')
 
+        # ログインパネルのCSSとJSを読み込む
         html = f"""
         <!DOCTYPE html>
         <html>
@@ -23,6 +24,7 @@ class LoginHandler(BaseHandler):
             <title>ログイン - DxeeWorld</title>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link rel="stylesheet" href="/static/css/login-panel.css">
             <style>
                 body {{
                     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -177,17 +179,14 @@ class LoginHandler(BaseHandler):
         """
         self.write(html)
 
-    # POST method removed - use OAuth or email authentication instead
 
-
-
-class LogoutHandler(BaseHandler):
-    """ログアウトハンドラー"""
+class UnifiedLogoutHandler(BaseHandler):
+    """統合ログアウトハンドラー"""
 
     def initialize(self):
-        """ハンドラー初期化"""
+        """Initialize handler dependencies"""
         from ..services.oauth_session_service import OAuthSessionService
-        self.oauth_session_service = OAuthSessionService()
+        self.session_service = OAuthSessionService()
 
     async def get(self):
         """ログアウト処理 (GETリクエスト)"""
@@ -206,7 +205,7 @@ class LogoutHandler(BaseHandler):
                 session_id = session_id.decode('utf-8') if isinstance(session_id, bytes) else session_id
 
                 # OAuth セッション無効化
-                await self.oauth_session_service.logout_session(session_id)
+                await self.session_service.logout_session(session_id)
 
             # セッションクッキークリア
             self.clear_cookie('session_id')

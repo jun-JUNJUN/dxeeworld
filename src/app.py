@@ -10,7 +10,7 @@ from tornado.options import define, options
 from .config import get_app_config
 from .handlers.home_handler import HomeHandler
 from .handlers.health_handler import HealthCheckHandler
-from .handlers.auth_handler import RegisterHandler, LoginHandler, LogoutHandler
+from .handlers.auth_handler import LoginHandler, LogoutHandler
 from .handlers.company_handler import (
     CompanyListHandler,
     CompanyDetailHandler,
@@ -47,9 +47,10 @@ def create_app():
     # URLルーティング設定
     handlers = [
         (r"/", HomeHandler),
-        (r"/register", RegisterHandler),
         (r"/login", LoginHandler),
         (r"/logout", LogoutHandler),
+        (r"/auth/login", LoginHandler),  # Alias for /login
+        (r"/auth/logout", LogoutHandler),  # Alias for /logout
         (r"/health", HealthCheckHandler),
         (r"/jobs", JobsListHandler),
         (r"/companies", CompanyListHandler),
