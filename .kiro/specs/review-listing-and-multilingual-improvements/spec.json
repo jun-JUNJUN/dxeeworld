@@ -1,0 +1,22 @@
+{
+  "feature_name": "review-listing-and-multilingual-improvements",
+  "created_at": "2025-10-08T08:06:23Z",
+  "updated_at": "2025-10-08T23:15:00Z",
+  "language": "ja",
+  "phase": "tasks-generated",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": false
+    }
+  },
+  "ready_for_implementation": false
+}

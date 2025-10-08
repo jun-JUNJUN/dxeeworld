@@ -22,6 +22,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - **ui-navigation-redesign**: UI navigation menu cleanup and company detail page responsive redesign (Phase: initialized)
 - **ui-review-improvements**: Mobile responsive fixes for company listing forms, review form improvements with employment period dropdowns, and authentication flow enhancements (Phase: initialized)
 - **auth-access-control-enhancements**: Email login code verification, SMTP testing, .env-based URL access control, login panel UI, and multi-review support (Phase: initialized)
+- **review-listing-and-multilingual-improvements**: Review listing with access control, multilingual review form with language selection and confirmation screen, and employment period validation (Phase: initialized)
 - Check `.kiro/specs/` for active specifications
 - Use `/kiro:spec-status [feature-name]` to check progress
 
