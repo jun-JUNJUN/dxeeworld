@@ -82,6 +82,17 @@ class Review:
     updated_at: datetime
     is_active: bool = True
     employment_period: Optional[EmploymentPeriod] = None  # 新規追加: 勤務期間
+    language: str = "ja"  # 新規追加: レビュー言語 (en, ja, zh)
+    comments_ja: Optional[Dict[str, Optional[str]]] = None  # 新規追加: 日本語翻訳
+    comments_zh: Optional[Dict[str, Optional[str]]] = None  # 新規追加: 中国語翻訳
+    comments_en: Optional[Dict[str, Optional[str]]] = None  # 新規追加: 英語翻訳
+
+    def __post_init__(self):
+        """データ検証"""
+        # 言語コードの検証
+        valid_languages = ["en", "ja", "zh"]
+        if self.language not in valid_languages:
+            raise ValueError(f"言語コードは 'en', 'ja', 'zh' のいずれかである必要があります")
 
     @classmethod
     def from_dict(cls, data: dict) -> 'Review':
@@ -103,7 +114,11 @@ class Review:
             created_at=data['created_at'],
             updated_at=data['updated_at'],
             is_active=data.get('is_active', True),
-            employment_period=employment_period
+            employment_period=employment_period,
+            language=data.get('language', 'ja'),
+            comments_ja=data.get('comments_ja'),
+            comments_zh=data.get('comments_zh'),
+            comments_en=data.get('comments_en')
         )
 
     def to_dict(self) -> dict:
@@ -118,12 +133,21 @@ class Review:
             'answered_count': self.answered_count,
             'created_at': self.created_at,
             'updated_at': self.updated_at,
-            'is_active': self.is_active
+            'is_active': self.is_active,
+            'language': self.language
         }
 
         # 勤務期間データがある場合は追加
         if self.employment_period:
             result['employment_period'] = self.employment_period.to_dict()
+
+        # 翻訳データがある場合は追加（Noneでないもののみ）
+        if self.comments_ja is not None:
+            result['comments_ja'] = self.comments_ja
+        if self.comments_zh is not None:
+            result['comments_zh'] = self.comments_zh
+        if self.comments_en is not None:
+            result['comments_en'] = self.comments_en
 
         return result
 

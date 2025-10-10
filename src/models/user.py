@@ -71,14 +71,15 @@ class UserProfile:
 
 class User:
     """ユーザーエンティティ"""
-    
-    def __init__(self, id: str, email: str, name: str, user_type: UserType, 
-                 password_hash: str, company_id: Optional[str] = None, 
-                 position: Optional[str] = None, 
+
+    def __init__(self, id: str, email: str, name: str, user_type: UserType,
+                 password_hash: str, company_id: Optional[str] = None,
+                 position: Optional[str] = None,
                  profile: Optional[UserProfile] = None,
                  created_at: Optional[datetime] = None,
                  updated_at: Optional[datetime] = None,
-                 is_active: bool = True):
+                 is_active: bool = True,
+                 last_review_posted_at: Optional[datetime] = None):
         self.id = id
         self.email = email
         self.name = name
@@ -90,6 +91,7 @@ class User:
         self.created_at = created_at or datetime.utcnow()
         self.updated_at = updated_at or datetime.utcnow()
         self.is_active = is_active
+        self.last_review_posted_at = last_review_posted_at
     
     def to_dict(self) -> dict:
         """辞書形式に変換（パスワードハッシュは除外）"""
@@ -103,7 +105,8 @@ class User:
             'profile': self.profile.to_dict() if self.profile else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-            'is_active': self.is_active
+            'is_active': self.is_active,
+            'last_review_posted_at': self.last_review_posted_at.isoformat() if self.last_review_posted_at else None
         }
     
     @classmethod
@@ -111,7 +114,7 @@ class User:
         """辞書からユーザーインスタンスを作成"""
         profile_data = data.get('profile')
         profile = UserProfile.from_dict(profile_data) if profile_data else UserProfile()
-        
+
         return cls(
             id=str(data['_id']),
             email=data['email'],
@@ -123,16 +126,44 @@ class User:
             profile=profile,
             created_at=data.get('created_at'),
             updated_at=data.get('updated_at'),
-            is_active=data.get('is_active', True)
+            is_active=data.get('is_active', True),
+            last_review_posted_at=data.get('last_review_posted_at')
         )
     
     def update_profile(self, profile_data: dict):
         """プロファイル情報を更新"""
         if self.profile is None:
             self.profile = UserProfile()
-        
+
         for key, value in profile_data.items():
             if hasattr(self.profile, key):
                 setattr(self.profile, key, value)
-        
+
         self.updated_at = datetime.utcnow()
+
+    def update_last_review_posted_at(self, posted_at: datetime):
+        """最終レビュー投稿日時を更新"""
+        self.last_review_posted_at = posted_at
+        self.updated_at = datetime.utcnow()
+
+    def has_review_access(self) -> bool:
+        """
+        レビュー一覧へのアクセス権限を持つかチェック
+
+        Returns:
+            bool: 1年以内にレビューを投稿している場合True
+        """
+        if self.last_review_posted_at is None:
+            return False
+
+        from datetime import timezone, timedelta
+        now = datetime.now(timezone.utc)
+        one_year_ago = now - timedelta(days=365)
+
+        # last_review_posted_atがnaiveな場合、UTCとみなす
+        if self.last_review_posted_at.tzinfo is None:
+            last_posted = self.last_review_posted_at.replace(tzinfo=timezone.utc)
+        else:
+            last_posted = self.last_review_posted_at
+
+        return last_posted > one_year_ago
