@@ -152,32 +152,28 @@ class ReviewCreateHandler(BaseHandler):
                 f"D-00006: Access control result - is_success: {access_result.is_success}, data: {access_result.data if access_result.is_success else 'N/A'}, session_id: {session_id}, path: {self.request.path}"
             )
 
-            # 未認証の場合、Mini Panelを表示してレビューフォームを非表示
+            # 未認証の場合、ログインページにリダイレクト
             if not access_result.is_success:
                 logger.info(
-                    f"D-00005:Unauthenticated access to review creation for company {company_id}"
+                    f"D-00005:Unauthenticated access to review creation for company {company_id}, redirecting to login"
                 )
-                self.render(
-                    "reviews/create.html",
-                    company=company,
-                    categories=self._get_review_categories(),
-                    company_id=company_id,
-                    show_login_panel=True,
-                    review_form_visible=False,
-                )
+                import urllib.parse
+
+                return_url = self.request.uri
+                login_url = f"/auth/email/login?return_url={urllib.parse.quote(return_url)}"
+                self.redirect(login_url)
                 return
 
             # access_granted チェック（access_result.is_success が True の場合のみ）
             if not access_result.data.get("access_granted", False):
-                logger.info(f"D-00005:Access denied for review creation for company {company_id}")
-                self.render(
-                    "reviews/create.html",
-                    company=company,
-                    categories=self._get_review_categories(),
-                    company_id=company_id,
-                    show_login_panel=True,
-                    review_form_visible=False,
+                logger.info(
+                    f"D-00005:Access denied for review creation for company {company_id}, redirecting to login"
                 )
+                import urllib.parse
+
+                return_url = self.request.uri
+                login_url = f"/auth/email/login?return_url={urllib.parse.quote(return_url)}"
+                self.redirect(login_url)
                 return
 
             # 認証済みの場合、通常のレビューフォームを表示

@@ -22,4 +22,16 @@
 - 「現従業員」を選択したら、期限を”今現在”を自動で選択すること。
 - 「元従業員」を選択したら、開始と終了の年が選択されていなければ、メッセージ表示し、投稿の確認画面に進めないようにする。
 
-## Bug:
+[Done] ## 画面の左下に、LoginしたらLogin情報を表示したい。
+    "anthropic": {},
+    "lmstudio": {
+      "api_url": "http://localhost:1238/v1",
+      "available_models": [
+        {
+          "name": "qwen3-1.7b",
+          "display_name": "qwen3-1.7b",
+          "supports_images": true,
+          "supports_tool_calls": false,
+        }
+      ]
+    }

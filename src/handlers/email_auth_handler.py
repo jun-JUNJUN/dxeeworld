@@ -3,6 +3,7 @@ Email Authentication Handlers
 Task 5.3: メール認証新規登録フローの実装
 Task 5.4: メール認証ログインフローの実装
 """
+
 import json
 import logging
 import tornado.web
@@ -30,8 +31,10 @@ class EmailRegistrationHandler(BaseHandler):
 
     def get(self):
         """Display email registration form"""
-        return_url = self.get_argument('return_url', '')
-        return_url_field = f'<input type="hidden" name="return_url" value="{return_url}">' if return_url else ''
+        return_url = self.get_argument("return_url", "")
+        return_url_field = (
+            f'<input type="hidden" name="return_url" value="{return_url}">' if return_url else ""
+        )
 
         html = f"""
         <!DOCTYPE html>
@@ -79,18 +82,18 @@ class EmailRegistrationHandler(BaseHandler):
         """Process email registration request"""
         try:
             # Parse input data
-            if self.request.headers.get('Content-Type', '').startswith('application/json'):
+            if self.request.headers.get("Content-Type", "").startswith("application/json"):
                 data = json.loads(self.request.body)
             else:
                 data = {
-                    'email': self.get_argument('email'),
-                    'user_type': self.get_argument('user_type', 'user'),
-                    'return_url': self.get_argument('return_url', '')
+                    "email": self.get_argument("email"),
+                    "user_type": self.get_argument("user_type", "user"),
+                    "return_url": self.get_argument("return_url", ""),
                 }
 
-            email = data.get('email', '').strip().lower()
-            user_type = data.get('user_type', 'user')
-            return_url = data.get('return_url', '')
+            email = data.get("email", "").strip().lower()
+            user_type = data.get("user_type", "user")
+            return_url = data.get("return_url", "")
 
             # Validate input
             if not email:
@@ -99,11 +102,12 @@ class EmailRegistrationHandler(BaseHandler):
 
             # Validate email format
             from ..utils.email_validator import is_valid_email
+
             if not is_valid_email(email):
                 self._send_error_response(400, "有効なメールアドレス形式ではありません")
                 return
 
-            if user_type not in ['user', 'ally']:
+            if user_type not in ["user", "ally"]:
                 self._send_error_response(400, "無効なユーザータイプです")
                 return
 
@@ -115,7 +119,7 @@ class EmailRegistrationHandler(BaseHandler):
 
             # Generate verification token
             token_result = await self.email_auth_service.generate_verification_token(
-                email, 'registration'
+                email, "registration"
             )
 
             if not token_result.is_success:
@@ -126,18 +130,16 @@ class EmailRegistrationHandler(BaseHandler):
             # Create verification URL with return_url parameter
             base_url = self.request.protocol + "://" + self.request.host
             verify_params = {
-                'token': token_result.data['token'],
-                'type': 'registration',
-                'user_type': user_type
+                "token": token_result.data["token"],
+                "type": "registration",
+                "user_type": user_type,
             }
             if return_url:
-                verify_params['return_url'] = return_url
+                verify_params["return_url"] = return_url
             verification_url = f"{base_url}/auth/email/verify?" + urlencode(verify_params)
 
             # Send verification email
-            email_result = await self.email_service.send_verification_email(
-                email, verification_url
-            )
+            email_result = await self.email_service.send_verification_email(email, verification_url)
 
             if not email_result.is_success:
                 error_result = self.error_handler.handle_email_error(email_result.error)
@@ -145,11 +147,13 @@ class EmailRegistrationHandler(BaseHandler):
                 return
 
             # Success response
-            self._send_success_response({
-                'message': '確認メールを送信しました。メールのリンクをクリックして登録を完了してください。',
-                'email_masked': self._mask_email(email),
-                'expires_in_hours': 1
-            })
+            self._send_success_response(
+                {
+                    "message": "確認メールを送信しました。メールのリンクをクリックして登録を完了してください。",
+                    "email_masked": self._mask_email(email),
+                    "expires_in_hours": 1,
+                }
+            )
 
         except Exception as e:
             logger.exception("Email registration failed: %s", e)
@@ -158,11 +162,11 @@ class EmailRegistrationHandler(BaseHandler):
 
     def _mask_email(self, email: str) -> str:
         """Mask email for display"""
-        if '@' in email:
-            local, domain = email.split('@', 1)
-            masked_local = local[:2] + '***' if len(local) > 2 else '***'
+        if "@" in email:
+            local, domain = email.split("@", 1)
+            masked_local = local[:2] + "***" if len(local) > 2 else "***"
             return f"{masked_local}@{domain}"
-        return '***'
+        return "***"
 
 
 class EmailVerificationHandler(BaseHandler):
@@ -178,10 +182,10 @@ class EmailVerificationHandler(BaseHandler):
     async def get(self):
         """Handle email verification link click"""
         try:
-            token = self.get_argument('token', '')
-            verification_type = self.get_argument('type', '')
-            user_type = self.get_argument('user_type', 'user')
-            return_url = self.get_argument('return_url', '/')
+            token = self.get_argument("token", "")
+            verification_type = self.get_argument("type", "")
+            user_type = self.get_argument("user_type", "user")
+            return_url = self.get_argument("return_url", "/")
 
             logger.info("=== Email Verification Started ===")
             logger.info("Token: %s...", token[:20] if token else "NONE")
@@ -206,65 +210,102 @@ class EmailVerificationHandler(BaseHandler):
                 return
 
             verification_data = verification_result.data
-            email = verification_data.get('email')  # Note: This is currently mock data
+            email = verification_data.get("email")  # Note: This is currently mock data
             logger.info("Verification data - Email: %s", email)
 
-            if verification_type == 'registration':
+            if verification_type == "registration":
                 logger.info("Processing registration flow...")
                 # Create new Identity for registration
                 logger.info("Creating identity for email: %s, user_type: %s", email, user_type)
                 identity_result = await self.identity_service.create_or_update_identity(
-                    'email', email, user_type
+                    "email", email, user_type
                 )
                 logger.info("Identity creation result - Success: %s", identity_result.is_success)
 
                 if not identity_result.is_success:
-                    logger.error("Identity creation failed: %s", identity_result.error if hasattr(identity_result, 'error') else "Unknown error")
+                    logger.error(
+                        "Identity creation failed: %s",
+                        identity_result.error
+                        if hasattr(identity_result, "error")
+                        else "Unknown error",
+                    )
                     self._render_verification_result(False, "アカウント作成に失敗しました")
                     return
 
                 identity = identity_result.data
-                logger.info("Identity created successfully - ID: %s", identity.get('id', 'UNKNOWN')[:8])
+                logger.info(
+                    "Identity created successfully - ID: %s", identity.get("id", "UNKNOWN")[:8]
+                )
 
                 # Create session for immediate login
                 logger.info("Creating OAuth session...")
                 session_result = await self.session_service.create_oauth_session(
                     identity,
-                    self.request.headers.get('User-Agent', 'browser'),
-                    self._get_client_ip()
+                    self.request.headers.get("User-Agent", "browser"),
+                    self._get_client_ip(),
                 )
                 logger.info("Session creation result - Success: %s", session_result.is_success)
 
                 if session_result.is_success:
-                    session_id = session_result.data['session_id']
+                    session_id = session_result.data["session_id"]
                     logger.info("Setting secure cookie with session_id: %s...", session_id[:20])
-                    self.set_secure_cookie('session_id', session_id, expires_days=30)
+                    self.set_secure_cookie("session_id", session_id, expires_days=30)
                 else:
-                    logger.error("Session creation failed: %s", session_result.error if hasattr(session_result, 'error') else "Unknown error")
+                    logger.error(
+                        "Session creation failed: %s",
+                        session_result.error
+                        if hasattr(session_result, "error")
+                        else "Unknown error",
+                    )
 
                 logger.info("Rendering success page with redirect to: %s", return_url)
+                # Pass user data to be saved in localStorage
+                user_data = {
+                    "id": identity.get("id"),
+                    "email_masked": identity.get("email_masked"),
+                    "user_type": identity.get("user_type", "user"),
+                    "auth_method": identity.get("auth_method", "email"),
+                    "name": identity.get("email_masked", "").split("@")[
+                        0
+                    ],  # Use email prefix as name
+                }
                 self._render_verification_result(
                     True,
                     "メールアドレスの確認が完了しました。登録とログインが完了しました。",
-                    redirect_url=return_url
+                    redirect_url=return_url,
+                    user_data=user_data,
                 )
 
             else:
                 logger.info("Processing non-registration verification type: %s", verification_type)
-                self._render_verification_result(
-                    True,
-                    "メールアドレスの確認が完了しました。"
-                )
+                self._render_verification_result(True, "メールアドレスの確認が完了しました。")
 
         except Exception as e:
             logger.exception("Email verification failed with exception: %s", e)
             error_result = self.error_handler.make_user_friendly(e)
             self._render_verification_result(False, error_result.user_message)
 
-    def _render_verification_result(self, success: bool, message: str, redirect_url: str = None):
+    def _render_verification_result(
+        self, success: bool, message: str, redirect_url: str = None, user_data: dict = None
+    ):
         """Render verification result page"""
         status_class = "success" if success else "error"
         status_text = "成功" if success else "エラー"
+
+        # Add user data to localStorage if provided
+        user_data_script = ""
+        if success and user_data:
+            import json
+
+            user_data_json = json.dumps(user_data)
+            user_data_script = f"""
+            <script>
+                // Save user data to localStorage
+                const userData = {user_data_json};
+                localStorage.setItem('user', JSON.stringify(userData));
+                console.log('User data saved to localStorage:', userData);
+            </script>
+            """
 
         redirect_script = ""
         if success and redirect_url:
@@ -291,16 +332,17 @@ class EmailVerificationHandler(BaseHandler):
                 a {{ color: #007bff; text-decoration: none; }}
                 a:hover {{ text-decoration: underline; }}
             </style>
+            {user_data_script}
             {redirect_script}
         </head>
         <body>
             <div class="result {status_class}">
-                <div class="icon">{'✓' if success else '✗'}</div>
+                <div class="icon">{"✓" if success else "✗"}</div>
                 <h2>認証{status_text}</h2>
                 <p>{message}</p>
-                {f'<p>3秒後に自動的にリダイレクトします...</p>' if success and redirect_url else ''}
+                {f"<p>3秒後に自動的にリダイレクトします...</p>" if success and redirect_url else ""}
             </div>
-            {f'<p><a href="{redirect_url}">今すぐ移動する</a></p>' if success and redirect_url else ''}
+            {f'<p><a href="{redirect_url}">今すぐ移動する</a></p>' if success and redirect_url else ""}
             <p><a href="/">ホームページに戻る</a></p>
         </body>
         </html>
@@ -321,10 +363,10 @@ class EmailLoginHandler(BaseHandler):
 
     def get(self):
         """Display email login form"""
-        step = self.get_argument('step', 'email')
-        email = self.get_argument('email', '')
+        step = self.get_argument("step", "email")
+        email = self.get_argument("email", "")
 
-        if step == 'code':
+        if step == "code":
             self._render_code_form(email)
         else:
             self._render_email_form()
@@ -411,15 +453,59 @@ class EmailLoginHandler(BaseHandler):
                 <p>メールを確認して、認証コードを入力してください。</p>
                 <div class="countdown" id="countdown"></div>
             </div>
-            <form method="post" action="/auth/email/verify-code">
+            <form method="post" action="/auth/email/verify-code" id="verify-code-form">
                 <input type="hidden" name="email" value="{email}">
                 <div class="form-group">
                     <label for="code">認証コード (6桁):</label>
                     <input type="text" id="code" name="code" maxlength="6" pattern="[0-9]{{6}}" required>
                 </div>
+                <div id="error-message" style="color: red; margin: 10px 0; display: none;"></div>
                 <button type="submit">ログイン</button>
                 <button type="button" class="secondary" onclick="window.location.href='/auth/email/login'">戻る</button>
             </form>
+            <script>
+                document.getElementById('verify-code-form').addEventListener('submit', async function(e) {{
+                    e.preventDefault();
+                    const email = document.querySelector('input[name="email"]').value;
+                    const code = document.querySelector('input[name="code"]').value;
+                    const errorDiv = document.getElementById('error-message');
+
+                    try {{
+                        const response = await fetch('/auth/email/verify-code', {{
+                            method: 'POST',
+                            headers: {{'Content-Type': 'application/json'}},
+                            body: JSON.stringify({{email: email, code: code}})
+                        }});
+
+                        const data = await response.json();
+
+                        if (response.ok && data.success) {{
+                            // Save user data to localStorage
+                            if (data.user) {{
+                                const userData = {{
+                                    id: data.user.id,
+                                    email_masked: data.user.email_masked,
+                                    user_type: data.user.user_type,
+                                    auth_method: data.user.auth_method,
+                                    name: data.user.email_masked ? data.user.email_masked.split('@')[0] : 'User'
+                                }};
+                                localStorage.setItem('user', JSON.stringify(userData));
+                                console.log('User data saved to localStorage:', userData);
+                            }}
+
+                            // Redirect to home page
+                            window.location.href = data.redirect_url || '/';
+                        }} else {{
+                            errorDiv.textContent = data.error || 'ログインに失敗しました';
+                            errorDiv.style.display = 'block';
+                        }}
+                    }} catch (error) {{
+                        console.error('Login error:', error);
+                        errorDiv.textContent = 'ネットワークエラーが発生しました';
+                        errorDiv.style.display = 'block';
+                    }}
+                }});
+            </script>
             <form method="post" action="/auth/email/resend-code" style="margin-top: 20px;">
                 <input type="hidden" name="email" value="{email}">
                 <button type="submit" class="secondary">認証コードを再送信</button>
@@ -433,26 +519,28 @@ class EmailLoginHandler(BaseHandler):
         """Process email login request (send code)"""
         try:
             # Parse input data
-            if self.request.headers.get('Content-Type', '').startswith('application/json'):
+            if self.request.headers.get("Content-Type", "").startswith("application/json"):
                 data = json.loads(self.request.body)
             else:
-                data = {'email': self.get_argument('email')}
+                data = {"email": self.get_argument("email")}
 
-            email = data.get('email', '').strip().lower()
+            email = data.get("email", "").strip().lower()
 
             if not email:
                 self._send_error_response(400, "メールアドレスが必要です")
                 return
 
             # Check if identity exists
-            identity_result = await self.identity_service.find_identity_by_email('email', email)
+            identity_result = await self.identity_service.find_identity_by_email("email", email)
             if not identity_result.is_success:
                 # For security, don't reveal if email exists or not
-                self._send_success_response({
-                    'message': '認証コードを送信しました。メールを確認してください。',
-                    'email_masked': self._mask_email(email),
-                    'next_step': 'verify_code'
-                })
+                self._send_success_response(
+                    {
+                        "message": "認証コードを送信しました。メールを確認してください。",
+                        "email_masked": self._mask_email(email),
+                        "next_step": "verify_code",
+                    }
+                )
                 return
 
             # Generate login code
@@ -465,7 +553,7 @@ class EmailLoginHandler(BaseHandler):
 
             # Send code via email
             email_result = await self.email_service.send_login_code_email(
-                email, code_result.data['code']
+                email, code_result.data["code"]
             )
 
             if not email_result.is_success:
@@ -474,15 +562,17 @@ class EmailLoginHandler(BaseHandler):
                 return
 
             # Redirect to code verification page
-            if self.request.headers.get('Content-Type', '').startswith('application/json'):
-                self._send_success_response({
-                    'message': '認証コードを送信しました。メールを確認してください。',
-                    'email_masked': self._mask_email(email),
-                    'next_step': 'verify_code',
-                    'redirect_url': f'/auth/email/login?step=code&email={email}'
-                })
+            if self.request.headers.get("Content-Type", "").startswith("application/json"):
+                self._send_success_response(
+                    {
+                        "message": "認証コードを送信しました。メールを確認してください。",
+                        "email_masked": self._mask_email(email),
+                        "next_step": "verify_code",
+                        "redirect_url": f"/auth/email/login?step=code&email={email}",
+                    }
+                )
             else:
-                self.redirect(f'/auth/email/login?step=code&email={email}')
+                self.redirect(f"/auth/email/login?step=code&email={email}")
 
         except Exception as e:
             logger.exception("Email login failed: %s", e)
@@ -491,11 +581,11 @@ class EmailLoginHandler(BaseHandler):
 
     def _mask_email(self, email: str) -> str:
         """Mask email for display"""
-        if '@' in email:
-            local, domain = email.split('@', 1)
-            masked_local = local[:2] + '***' if len(local) > 2 else '***'
+        if "@" in email:
+            local, domain = email.split("@", 1)
+            masked_local = local[:2] + "***" if len(local) > 2 else "***"
             return f"{masked_local}@{domain}"
-        return '***'
+        return "***"
 
 
 class EmailCodeVerificationHandler(BaseHandler):
@@ -512,16 +602,13 @@ class EmailCodeVerificationHandler(BaseHandler):
         """Verify login code and create session"""
         try:
             # Parse input data
-            if self.request.headers.get('Content-Type', '').startswith('application/json'):
+            if self.request.headers.get("Content-Type", "").startswith("application/json"):
                 data = json.loads(self.request.body)
             else:
-                data = {
-                    'email': self.get_argument('email'),
-                    'code': self.get_argument('code')
-                }
+                data = {"email": self.get_argument("email"), "code": self.get_argument("code")}
 
-            email = data.get('email', '').strip().lower()
-            code = data.get('code', '').strip()
+            email = data.get("email", "").strip().lower()
+            code = data.get("code", "").strip()
 
             if not email or not code:
                 self._send_error_response(400, "メールアドレスと認証コードが必要です")
@@ -537,8 +624,12 @@ class EmailCodeVerificationHandler(BaseHandler):
 
             # Get identity or create if not exists
             logger.info("Looking up identity for email: %s", email)
-            identity_result = await self.identity_service.find_identity_by_email('email', email)
-            logger.info("Identity lookup result - Success: %s, Data: %s", identity_result.is_success, identity_result.data)
+            identity_result = await self.identity_service.find_identity_by_email("email", email)
+            logger.info(
+                "Identity lookup result - Success: %s, Data: %s",
+                identity_result.is_success,
+                identity_result.data,
+            )
 
             if not identity_result.is_success:
                 self._send_error_response(404, "ユーザーが見つかりません")
@@ -550,44 +641,52 @@ class EmailCodeVerificationHandler(BaseHandler):
             if not identity:
                 logger.info("Identity not found, creating new identity for email: %s", email)
                 create_result = await self.identity_service.create_or_update_identity(
-                    'email', email, 'user'
+                    "email", email, "user"
                 )
                 if not create_result.is_success:
-                    logger.error("Failed to create identity: %s", create_result.error if hasattr(create_result, 'error') else "Unknown error")
+                    logger.error(
+                        "Failed to create identity: %s",
+                        create_result.error if hasattr(create_result, "error") else "Unknown error",
+                    )
                     self._send_error_response(500, "ユーザー作成に失敗しました")
                     return
                 identity = create_result.data
-                logger.info("New identity created - ID: %s", identity.get('id', 'UNKNOWN'))
+                logger.info("New identity created - ID: %s", identity.get("id", "UNKNOWN"))
             else:
-                logger.info("Found identity - ID: %s", identity.get('id', 'UNKNOWN'))
+                logger.info("Found identity - ID: %s", identity.get("id", "UNKNOWN"))
 
             # Create OAuth session
             session_result = await self.session_service.create_oauth_session(
-                identity,
-                self.request.headers.get('User-Agent', 'browser'),
-                self._get_client_ip()
+                identity, self.request.headers.get("User-Agent", "browser"), self._get_client_ip()
             )
 
             if not session_result.is_success:
                 self._send_error_response(500, "セッション作成に失敗しました")
                 return
 
-            session_id = session_result.data['session_id']
+            session_id = session_result.data["session_id"]
 
             # Set session cookie
-            self.set_secure_cookie('session_id', session_id, expires_days=30)
+            self.set_secure_cookie("session_id", session_id, expires_days=30)
+
+            # Prepare user data for response
+            user_data = {
+                "id": identity["id"],
+                "email_masked": identity.get("email_masked"),
+                "user_type": identity.get("user_type"),
+                "auth_method": "email",
+            }
+
+            logger.info("Sending user data to client: %s", user_data)
 
             # Success response
-            self._send_success_response({
-                'message': 'ログインが完了しました',
-                'user': {
-                    'id': identity['id'],
-                    'email_masked': identity.get('email_masked'),
-                    'user_type': identity.get('user_type'),
-                    'auth_method': 'email'
-                },
-                'redirect_url': '/'
-            })
+            self._send_success_response(
+                {
+                    "message": "ログインが完了しました",
+                    "user": user_data,
+                    "redirect_url": "/",
+                }
+            )
 
         except Exception as e:
             logger.exception("Code verification failed: %s", e)
@@ -607,7 +706,7 @@ class EmailCodeResendHandler(BaseHandler):
     async def post(self):
         """Resend login code"""
         try:
-            email = self.get_argument('email', '').strip().lower()
+            email = self.get_argument("email", "").strip().lower()
 
             if not email:
                 self._send_error_response(400, "メールアドレスが必要です")
@@ -623,7 +722,7 @@ class EmailCodeResendHandler(BaseHandler):
 
             # Send code via email
             email_result = await self.email_service.send_login_code_email(
-                email, code_result.data['code']
+                email, code_result.data["code"]
             )
 
             if not email_result.is_success:
@@ -632,7 +731,7 @@ class EmailCodeResendHandler(BaseHandler):
                 return
 
             # Redirect back to code form
-            self.redirect(f'/auth/email/login?step=code&email={email}')
+            self.redirect(f"/auth/email/login?step=code&email={email}")
 
         except Exception as e:
             logger.exception("Code resend failed: %s", e)

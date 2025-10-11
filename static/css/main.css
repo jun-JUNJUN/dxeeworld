@@ -6,7 +6,7 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f8fafc;
     color: #334155;
     line-height: 1.6;
@@ -28,6 +28,88 @@ body {
     height: 100vh;
     z-index: 1000;
     overflow-y: auto;
+}
+/* Sidebar Login Section */
+.sidebar-login-section {
+    margin-top: auto;
+    padding: 1rem 0;
+}
+
+.login-info {
+    padding: 0 0.5rem;
+}
+
+.login-btn {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.5rem;
+    margin: 0;
+    transition: all 0.2s ease;
+}
+
+.login-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.user-info {
+    padding: 0.5rem;
+}
+
+.user-avatar {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.avatar-img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.user-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-name {
+    font-weight: 600;
+    color: white;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-email {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar.collapsed .user-details,
+.sidebar.collapsed .avatar-img {
+    display: none;
+}
+
+.sidebar.collapsed .user-avatar {
+    justify-content: center;
+    padding: 0.5rem;
+}
+
+/* モバイル対応 */
+@media (max-width: 767px) {
+    .sidebar-login-section {
+        display: none;
+    }
 }
 
 .sidebar.collapsed {
@@ -84,7 +166,7 @@ body {
 
 .hamburger::before,
 .hamburger::after {
-    content: '';
+    content: "";
     position: absolute;
     width: 18px;
     height: 2px;
@@ -417,31 +499,31 @@ body {
     .sidebar {
         width: 70px;
     }
-    
+
     .sidebar .nav-text,
     .sidebar .logo-text {
         display: none;
     }
-    
+
     .main-content {
         margin-left: 70px;
     }
-    
+
     .hero-section {
         grid-template-columns: 1fr;
         text-align: center;
         gap: 2rem;
     }
-    
+
     .hero-title {
         font-size: 2rem;
     }
-    
+
     .features-grid {
         grid-template-columns: 1fr;
         padding: 0 1rem;
     }
-    
+
     .stats-container {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -451,15 +533,15 @@ body {
     .content-wrapper {
         padding: 1rem;
     }
-    
+
     .hero-title {
         font-size: 1.75rem;
     }
-    
+
     .btn {
         padding: 0.75rem 1.5rem;
     }
-    
+
     .stats-container {
         grid-template-columns: 1fr;
     }

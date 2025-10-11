@@ -26,6 +26,7 @@ from .handlers.email_auth_handler import (
     EmailCodeResendHandler,
 )
 from .handlers.simple_auth_handler import SimpleLoginHandler, SimpleLogoutHandler
+from .handlers.user_info_handler import UserInfoHandler
 
 # ログ設定
 logging.basicConfig(
@@ -66,6 +67,8 @@ def create_app():
         (r"/auth/email/login", EmailLoginHandler),
         (r"/auth/email/verify-code", EmailCodeVerificationHandler),
         (r"/auth/email/resend-code", EmailCodeResendHandler),
+        # User info API
+        (r"/api/user/info", UserInfoHandler),
         # 簡単認証ルート（テスト用）
         (r"/simple-login", SimpleLoginHandler),
         (r"/simple-logout", SimpleLogoutHandler),

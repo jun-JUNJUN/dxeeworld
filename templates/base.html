@@ -1,180 +1,337 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="外国人向け企業レビュープラットフォーム - 日本企業の働きやすさを評価・共有">
-    <meta name="keywords" content="外国人,企業レビュー,日本企業,就職,転職,働きやすさ">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>{% block title %}Startup Platform: Dxee{% end %}</title>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            name="description"
+            content="外国人向け企業レビュープラットフォーム - 日本企業の働きやすさを評価・共有"
+        />
+        <meta
+            name="keywords"
+            content="外国人,企業レビュー,日本企業,就職,転職,働きやすさ"
+        />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <title>{% block title %}Startup Platform: Dxee{% end %}</title>
 
-    <!-- Performance optimization hints -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-    <link rel="stylesheet" href="/static/css/main.css">
-    <link rel="stylesheet" href="/static/css/login-panel.css">
-    {% block head %}{% end %}
-</head>
-<body>
-    <div class="app-container">
-        <!-- サイドバーナビゲーション -->
-        <nav class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <h1 class="logo">
-                    <span class="logo-icon">🚀</span>
-                    <span class="logo-text">Startup Platform: Dxee</span>
-                </h1>
-                <button class="sidebar-toggle" id="sidebar-toggle">
-                    <span class="hamburger"></span>
+        <!-- Performance optimization hints -->
+        <link
+            rel="preconnect"
+            href="https://fonts.googleapis.com"
+            crossorigin
+        />
+        <link rel="stylesheet" href="/static/css/main.css" />
+        <link rel="stylesheet" href="/static/css/login-panel.css" />
+        {% block head %}{% end %}
+    </head>
+    <body>
+        <div class="app-container">
+            <!-- サイドバーナビゲーション -->
+            <nav class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <h1 class="logo">
+                        <span class="logo-icon">🚀</span>
+                        <span class="logo-text">Startup Platform: Dxee</span>
+                    </h1>
+                    <button class="sidebar-toggle" id="sidebar-toggle">
+                        <span class="hamburger"></span>
+                    </button>
+                </div>
+
+                <ul class="nav-menu" role="menubar">
+                    <li class="nav-item" role="none">
+                        <a
+                            href="/"
+                            class="nav-link"
+                            title="ホーム"
+                            aria-label="ホームページへ移動"
+                            role="menuitem"
+                        >
+                            <span class="nav-icon" aria-hidden="true">🏠</span>
+                            <span class="nav-text">ホーム</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" role="none">
+                        <a
+                            href="/review"
+                            class="nav-link"
+                            title="レビュー"
+                            aria-label="レビューページへ移動"
+                            role="menuitem"
+                        >
+                            <span class="nav-icon" aria-hidden="true">⭐</span>
+                            <span class="nav-text">レビュー</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" role="none">
+                        <a
+                            href="/companies"
+                            class="nav-link"
+                            title="企業一覧"
+                            aria-label="企業一覧ページへ移動"
+                            role="menuitem"
+                        >
+                            <span class="nav-icon" aria-hidden="true">🏢</span>
+                            <span class="nav-text">企業一覧</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- ログイン情報セクション -->
+                <div class="sidebar-login-section">
+                    <div class="nav-separator"></div>
+                    <div class="login-info" id="sidebar-login-info">
+                        <!-- ログイン前の状態 -->
+                        <div class="login-prompt" id="login-prompt">
+                            <button
+                                class="nav-link login-btn"
+                                onclick="openLoginPanel()"
+                                title="ログイン"
+                                aria-label="ログインパネルを開く"
+                            >
+                                <span class="nav-icon" aria-hidden="true"
+                                    >👤</span
+                                >
+                                <span class="nav-text">ログイン</span>
+                            </button>
+                        </div>
+                        <!-- ログイン後の状態 (初期は非表示) -->
+                        <div
+                            class="user-info"
+                            id="user-info"
+                            style="display: none"
+                        >
+                            <div class="user-avatar">
+                                <img
+                                    id="user-avatar"
+                                    src=""
+                                    alt="ユーザーアバター"
+                                    class="avatar-img"
+                                />
+                                <div class="user-details">
+                                    <div class="user-name" id="user-name"></div>
+                                    <div
+                                        class="user-email"
+                                        id="user-email"
+                                    ></div>
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <button
+                                    class="nav-link"
+                                    onclick="logout()"
+                                    title="ログアウト"
+                                    aria-label="ログアウト"
+                                >
+                                    <span class="nav-icon" aria-hidden="true"
+                                        >🚪</span
+                                    >
+                                    <span class="nav-text">ログアウト</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- メインコンテンツ -->
+            <main class="main-content">
+                <div class="content-wrapper">{% block content %}{% end %}</div>
+            </main>
+
+            <!-- モバイル下部タブバー -->
+            <nav
+                class="mobile-tab-bar"
+                id="mobile-tab-bar"
+                role="navigation"
+                aria-label="メインナビゲーション"
+            >
+                <div class="tab-item">
+                    <a
+                        href="/"
+                        class="tab-link"
+                        data-page="home"
+                        title="ホーム"
+                        aria-label="ホームページへ移動"
+                    >
+                        <div class="tab-icon" aria-hidden="true">🏠</div>
+                        <div class="tab-label">Home</div>
+                    </a>
+                </div>
+                <div class="tab-item">
+                    <a
+                        href="/review"
+                        class="tab-link"
+                        data-page="reviews"
+                        title="レビュー"
+                        aria-label="レビューページへ移動"
+                    >
+                        <div class="tab-icon" aria-hidden="true">⭐</div>
+                        <div class="tab-label">Reviews</div>
+                    </a>
+                </div>
+                <div class="tab-item">
+                    <a
+                        href="/companies"
+                        class="tab-link"
+                        data-page="companies"
+                        title="企業一覧"
+                        aria-label="企業一覧ページへ移動"
+                    >
+                        <div class="tab-icon" aria-hidden="true">🏢</div>
+                        <div class="tab-label">Companies</div>
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Login/Register Mini Panel -->
+        <div
+            id="login-mini-panel"
+            class="mini-panel"
+            style="display: none"
+            role="dialog"
+            aria-labelledby="panel-title"
+            aria-hidden="true"
+        >
+            <div class="panel-header">
+                <h3 id="panel-title">Sign in to DXEEWorld</h3>
+                <button
+                    class="close-btn"
+                    aria-label="閉じる"
+                    title="パネルを閉じる"
+                >
+                    &times;
                 </button>
             </div>
-            
-            <ul class="nav-menu" role="menubar">
-                <li class="nav-item" role="none">
-                    <a href="/" class="nav-link" title="ホーム" aria-label="ホームページへ移動" role="menuitem">
-                        <span class="nav-icon" aria-hidden="true">🏠</span>
-                        <span class="nav-text">ホーム</span>
-                    </a>
-                </li>
-                <li class="nav-item" role="none">
-                    <a href="/review" class="nav-link" title="レビュー" aria-label="レビューページへ移動" role="menuitem">
-                        <span class="nav-icon" aria-hidden="true">⭐</span>
-                        <span class="nav-text">レビュー</span>
-                    </a>
-                </li>
-                <li class="nav-item" role="none">
-                    <a href="/companies" class="nav-link" title="企業一覧" aria-label="企業一覧ページへ移動" role="menuitem">
-                        <span class="nav-icon" aria-hidden="true">🏢</span>
-                        <span class="nav-text">企業一覧</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-
-        <!-- メインコンテンツ -->
-        <main class="main-content">
-            <div class="content-wrapper">
-                {% block content %}{% end %}
-            </div>
-        </main>
-
-        <!-- モバイル下部タブバー -->
-        <nav class="mobile-tab-bar" id="mobile-tab-bar" role="navigation" aria-label="メインナビゲーション">
-            <div class="tab-item">
-                <a href="/" class="tab-link" data-page="home" title="ホーム" aria-label="ホームページへ移動">
-                    <div class="tab-icon" aria-hidden="true">🏠</div>
-                    <div class="tab-label">Home</div>
-                </a>
-            </div>
-            <div class="tab-item">
-                <a href="/review" class="tab-link" data-page="reviews" title="レビュー" aria-label="レビューページへ移動">
-                    <div class="tab-icon" aria-hidden="true">⭐</div>
-                    <div class="tab-label">Reviews</div>
-                </a>
-            </div>
-            <div class="tab-item">
-                <a href="/companies" class="tab-link" data-page="companies" title="企業一覧" aria-label="企業一覧ページへ移動">
-                    <div class="tab-icon" aria-hidden="true">🏢</div>
-                    <div class="tab-label">Companies</div>
-                </a>
-            </div>
-        </nav>
-    </div>
-
-    <!-- Login/Register Mini Panel -->
-    <div id="login-mini-panel" class="mini-panel" style="display: none;" role="dialog" aria-labelledby="panel-title" aria-hidden="true">
-        <div class="panel-header">
-            <h3 id="panel-title">Sign in to DXEEWorld</h3>
-            <button class="close-btn" aria-label="閉じる" title="パネルを閉じる">&times;</button>
-        </div>
-        <div class="panel-body">
-            <div class="loading-spinner" role="status" aria-label="読み込み中"></div>
-            <button class="google-btn" onclick="loginWithGoogle()" aria-label="Googleアカウントでログイン">
-                <img src="/static/images/google-icon.svg" alt="Google" aria-hidden="true">
-                <span>Google でログイン</span>
-            </button>
-            <button class="facebook-btn" onclick="loginWithFacebook()" aria-label="Facebookアカウントでログイン">
-                <img src="/static/images/facebook-icon.svg" alt="Facebook" aria-hidden="true">
-                <span>Facebook でログイン</span>
-            </button>
-            <div class="divider" role="separator" aria-label="または">または</div>
-            <input type="email" id="email-input" placeholder="Email" aria-label="メールアドレスを入力" autocomplete="email" required>
-            <button class="email-btn" onclick="loginWithEmail()" aria-label="メールアドレスでログイン">
-                Sign in with Email
-            </button>
-            <div class="register-link">
-                Don't have an account? <a href="#" id="register-link" aria-label="アカウント登録ページへ移動">Register</a>
+            <div class="panel-body">
+                <div
+                    class="loading-spinner"
+                    role="status"
+                    aria-label="読み込み中"
+                ></div>
+                <button
+                    class="google-btn"
+                    onclick="loginWithGoogle()"
+                    aria-label="Googleアカウントでログイン"
+                >
+                    <img
+                        src="/static/images/google-icon.svg"
+                        alt="Google"
+                        aria-hidden="true"
+                    />
+                    <span>Google でログイン</span>
+                </button>
+                <button
+                    class="facebook-btn"
+                    onclick="loginWithFacebook()"
+                    aria-label="Facebookアカウントでログイン"
+                >
+                    <img
+                        src="/static/images/facebook-icon.svg"
+                        alt="Facebook"
+                        aria-hidden="true"
+                    />
+                    <span>Facebook でログイン</span>
+                </button>
+                <div class="divider" role="separator" aria-label="または">
+                    または
+                </div>
+                <input
+                    type="email"
+                    id="email-input"
+                    placeholder="Email"
+                    aria-label="メールアドレスを入力"
+                    autocomplete="email"
+                    required
+                />
+                <button
+                    class="email-btn"
+                    onclick="loginWithEmail()"
+                    aria-label="メールアドレスでログイン"
+                >
+                    Sign in with Email
+                </button>
+                <div class="register-link">
+                    Don't have an account?
+                    <a
+                        href="#"
+                        id="register-link"
+                        aria-label="アカウント登録ページへ移動"
+                        >Register</a
+                    >
+                </div>
             </div>
         </div>
-    </div>
 
-    <style>
-        /* モバイルタブバー CSS */
-        .mobile-tab-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #fff;
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            justify-content: space-around;
-            z-index: 1000;
-            padding: 8px 0;
-            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-        }
-
-        .tab-item {
-            flex: 1;
-            text-align: center;
-        }
-
-        .tab-link {
-            display: block;
-            color: #666;
-            text-decoration: none;
-            padding: 4px;
-            transition: color 0.3s ease;
-        }
-
-        .tab-link:hover {
-            color: #007bff;
-        }
-
-        .tab-icon {
-            font-size: 20px;
-            margin-bottom: 2px;
-        }
-
-        .tab-label {
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        /* レスポンシブ表示制御 */
-        @media (max-width: 767px) {
-            .sidebar {
-                display: none;
-            }
-
-            .main-content {
-                margin-left: 0;
-                padding-bottom: 80px;
-            }
-
+        <style>
+            /* モバイルタブバー CSS */
             .mobile-tab-bar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: #fff;
+                border-top: 1px solid #e0e0e0;
                 display: flex;
+                justify-content: space-around;
+                z-index: 1000;
+                padding: 8px 0;
+                box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
             }
-        }
 
-        @media (min-width: 768px) {
-            .mobile-tab-bar {
-                display: none;
+            .tab-item {
+                flex: 1;
+                text-align: center;
             }
-        }
-    </style>
 
-    <script src="/static/js/main.js"></script>
-    <script src="/static/js/login-panel.js"></script>
-    {% block scripts %}{% end %}
-</body>
+            .tab-link {
+                display: block;
+                color: #666;
+                text-decoration: none;
+                padding: 4px;
+                transition: color 0.3s ease;
+            }
+
+            .tab-link:hover {
+                color: #007bff;
+            }
+
+            .tab-icon {
+                font-size: 20px;
+                margin-bottom: 2px;
+            }
+
+            .tab-label {
+                font-size: 12px;
+                font-weight: 500;
+            }
+
+            /* レスポンシブ表示制御 */
+            @media (max-width: 767px) {
+                .sidebar {
+                    display: none;
+                }
+
+                .main-content {
+                    margin-left: 0;
+                    padding-bottom: 80px;
+                }
+
+                .mobile-tab-bar {
+                    display: flex;
+                }
+            }
+
+            @media (min-width: 768px) {
+                .mobile-tab-bar {
+                    display: none;
+                }
+            }
+        </style>
+
+        <script src="/static/js/main.js"></script>
+        <script src="/static/js/login-panel.js"></script>
+        {% block scripts %}{% end %}
+    </body>
 </html>
