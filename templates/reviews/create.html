@@ -219,11 +219,32 @@ block head %}
                     <form method="post" id="reviewForm">
                         {% module xsrf_form_html() %}
 
+                        <!-- Task 3.2: 言語選択ドロップダウン -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold" data-i18n-label="review_language">
+                                レビュー言語
+                            </label>
+                            <select
+                                class="form-select"
+                                id="reviewLanguage"
+                                name="review_language"
+                            >
+                                {% for lang in supported_languages %}
+                                <option value="{{ lang['code'] }}" {% if lang['code'] == default_language %}selected{% end %}>
+                                    {{ lang['native_name'] }}
+                                </option>
+                                {% end %}
+                            </select>
+                            <small class="form-text text-muted" data-i18n-label="select_language">
+                                レビューを投稿する言語を選択してください
+                            </small>
+                        </div>
+
                         <!-- 在職状況 -->
                         <div class="mb-4">
-                            <label class="form-label fw-bold"
+                            <label class="form-label fw-bold" data-i18n-label="employment_status"
                                 >在職状況
-                                <span class="text-danger">*</span></label
+                                <span class="text-danger" data-i18n-label="required">*</span></label
                             >
                             <div class="row">
                                 <div class="col-md-6">
@@ -239,6 +260,7 @@ block head %}
                                         <label
                                             class="form-check-label"
                                             for="current"
+                                            data-i18n-label="current_employee"
                                         >
                                             現従業員
                                         </label>
@@ -257,6 +279,7 @@ block head %}
                                         <label
                                             class="form-check-label"
                                             for="former"
+                                            data-i18n-label="former_employee"
                                         >
                                             元従業員
                                         </label>
@@ -267,14 +290,17 @@ block head %}
 
                         <!-- 勤務期間入力 -->
                         <div class="employment-period-section">
-                            <div class="employment-period-title">勤務期間</div>
+                            <div class="employment-period-title" data-i18n-label="employment_period">勤務期間</div>
+                            <!-- Task 4.3: バリデーションエラー表示エリア -->
+                            <div id="employmentPeriodErrors" style="display: none;"></div>
                             <div class="period-inputs">
                                 <select
                                     name="employment_start_year"
                                     id="employmentStartYear"
                                     class="period-select"
+                                    data-i18n-placeholder="select_start_year"
                                 >
-                                    <option value="">開始年を選択</option>
+                                    <option value="" data-i18n-placeholder="select_start_year">開始年を選択</option>
                                     <!-- JavaScriptで動的生成 -->
                                 </select>
                                 <span class="period-separator">〜</span>
@@ -282,9 +308,10 @@ block head %}
                                     name="employment_end_year"
                                     id="employmentEndYear"
                                     class="period-select"
+                                    data-i18n-placeholder="select_end_year"
                                 >
-                                    <option value="">終了年を選択</option>
-                                    <option value="current">現在勤務</option>
+                                    <option value="" data-i18n-placeholder="select_end_year">終了年を選択</option>
+                                    <option value="present" data-i18n-label="present">現在勤務</option>
                                     <!-- JavaScriptで動的生成 -->
                                 </select>
                             </div>
@@ -438,12 +465,35 @@ block head %}
 </div>
 
 {% if not show_login_panel %}
+<!-- Task 3.3, 4.1, 4.3: reviewForm.js の読み込み -->
+<script src="/static/js/reviewForm.js"></script>
 <script>
+    // Task 3.2: 翻訳辞書をJavaScriptで利用可能にする
+    const translations = {{ translations }};
+
     document.addEventListener("DOMContentLoaded", function () {
         const form = document.getElementById("reviewForm");
         const submitBtn = document.getElementById("submitBtn");
         const previewRating = document.getElementById("previewRating");
         const answeredCount = document.getElementById("answeredCount");
+
+        // Task 3.3: ReviewFormインスタンス作成
+        const reviewForm = new ReviewForm(translations);
+
+        // Task 3.3: ブラウザ言語からデフォルト言語を設定
+        const defaultLang = reviewForm.detectBrowserLanguage();
+        const languageSelect = document.getElementById('reviewLanguage');
+        if (languageSelect && !languageSelect.value) {
+            languageSelect.value = defaultLang;
+        }
+        reviewForm.switchLanguage(languageSelect ? languageSelect.value : defaultLang);
+
+        // Task 3.3: 言語選択の変更イベント
+        if (languageSelect) {
+            languageSelect.addEventListener('change', function() {
+                reviewForm.switchLanguage(this.value);
+            });
+        }
 
         // 勤務期間ドロップダウンの初期化
         initializeEmploymentPeriodDropdowns();
@@ -560,7 +610,28 @@ block head %}
             }
         }
 
-        // フォーム送信前のバリデーション
+        // Task 4.1: 雇用状態選択時の自動入力サポート
+        const currentRadio = document.getElementById('current');
+        const formerRadio = document.getElementById('former');
+        const endYearSelect = document.getElementById('employmentEndYear');
+
+        if (currentRadio && formerRadio && endYearSelect) {
+            currentRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    reviewForm.handleEmploymentStatusChange('current', endYearSelect);
+                }
+            });
+
+            formerRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    reviewForm.handleEmploymentStatusChange('former', endYearSelect);
+                }
+            });
+        }
+
+        // Task 4.3: フォーム送信前のバリデーション
+        const errorContainer = document.getElementById('employmentPeriodErrors');
+
         form.addEventListener("submit", function (e) {
             const employmentStatus = form.querySelector(
                 'input[name="employment_status"]:checked',
@@ -577,6 +648,12 @@ block head %}
 
             if (!hasAnyRating) {
                 alert("少なくとも1つの項目に評価をつけてください");
+                e.preventDefault();
+                return;
+            }
+
+            // Task 4.3: 雇用期間バリデーション
+            if (!reviewForm.validateOnSubmit(form, errorContainer)) {
                 e.preventDefault();
                 return;
             }

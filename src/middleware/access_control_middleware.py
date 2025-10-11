@@ -27,6 +27,7 @@ class AccessControlMiddleware:
         """Initialize access control middleware"""
         self.access_rules: List[Dict[str, Any]] = []
         self.session_service = OAuthSessionService()
+        self.user_service = None  # Lazy initialization
         self.last_config_load = None
         self.reload_interval = int(os.getenv("ACCESS_CONTROL_RELOAD_INTERVAL", "30"))
         # Note: load_access_control_rules() is async, so it will be called on first check_access()
@@ -251,3 +252,118 @@ class AccessControlMiddleware:
 
         except Exception as e:
             return Result.failure(AccessControlError(f"Configuration validation failed: {e}"))
+
+    def _detect_web_crawler(self, user_agent: Optional[str]) -> bool:
+        """
+        Detect web crawler from User-Agent string
+
+        Args:
+            user_agent: User-Agent header value
+
+        Returns:
+            bool: True if crawler detected, False otherwise
+        """
+        if not user_agent:
+            return False
+
+        # Common crawler patterns (case-insensitive)
+        crawler_patterns = [
+            "googlebot",
+            "bingbot",
+            "slurp",  # Yahoo
+            "duckduckbot",
+            "baiduspider",
+            "yandexbot",
+            "facebookexternalhit",
+            "twitterbot",
+            "rogerbot",
+            "linkedinbot",
+            "embedly",
+            "bot",  # Generic bot pattern
+            "crawler",
+            "spider",
+        ]
+
+        user_agent_lower = user_agent.lower()
+
+        for pattern in crawler_patterns:
+            if pattern in user_agent_lower:
+                return True
+
+        return False
+
+    async def check_review_list_access(
+        self,
+        user_id: Optional[str],
+        user_agent: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Check review list access permissions based on user authentication and review history
+
+        Requirements: 1.1, 1.2, 1.3, 1.7
+
+        Args:
+            user_id: User ID (None if unauthenticated)
+            user_agent: User-Agent header value
+
+        Returns:
+            Dict containing:
+                - access_level: "full" | "preview" | "crawler" | "denied"
+                - can_filter: bool (フィルター機能が使えるか)
+                - message: Optional[str] (アクセス拒否時のメッセージ)
+                - user_last_posted_at: Optional[datetime]
+        """
+        try:
+            # Priority 1: Detect web crawler (Requirement 1.2)
+            if self._detect_web_crawler(user_agent):
+                return {
+                    "access_level": "crawler",
+                    "can_filter": False,
+                    "message": None,
+                    "user_last_posted_at": None,
+                }
+
+            # Priority 2: Unauthenticated user (Requirement 1.1)
+            if user_id is None:
+                return {
+                    "access_level": "preview",
+                    "can_filter": False,
+                    "message": None,
+                    "user_last_posted_at": None,
+                }
+
+            # Priority 3: Authenticated user - check review history
+            # Lazy initialization of UserService
+            if self.user_service is None:
+                from ..services.user_service import UserService
+                self.user_service = UserService()
+
+            # Check if user has reviewed within one year (Requirements 1.3, 1.7)
+            has_recent_review = await self.user_service.check_review_access_within_one_year(user_id)
+
+            if has_recent_review:
+                # Full access (Requirement 1.3)
+                return {
+                    "access_level": "full",
+                    "can_filter": True,
+                    "message": None,
+                    "user_last_posted_at": None,
+                }
+            else:
+                # Access denied (Requirement 1.7)
+                return {
+                    "access_level": "denied",
+                    "can_filter": False,
+                    "message": "Reviewを投稿いただいた方に閲覧権限を付与しています",
+                    "user_last_posted_at": None,
+                }
+
+        except Exception as e:
+            # Secure fail: エラー時は denied として扱う
+            logger.error(f"Review list access check failed: {e}")
+            return {
+                "access_level": "denied",
+                "can_filter": False,
+                "message": "アクセス権限の確認中にエラーが発生しました",
+                "user_last_posted_at": None,
+            }

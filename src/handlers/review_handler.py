@@ -21,6 +21,45 @@ class ReviewListHandler(BaseHandler):
         """ハンドラー初期化"""
         self.company_search_service = CompanySearchService()
 
+    @staticmethod
+    def truncate_comment_for_preview(comment: str, max_chars: int = 128) -> dict:
+        """
+        レビューコメントをプレビュー用に切り詰める
+
+        Args:
+            comment: レビューコメント
+            max_chars: 最大表示文字数（デフォルト: 128）
+
+        Returns:
+            dict: {
+                "visible_text": 表示する部分（最初の1行または最初のmax_chars文字）,
+                "masked_text": 伏せ字部分（"●●●●●"）,
+                "has_more": 続きがあるか（bool）
+            }
+        """
+        if not comment:
+            return {"visible_text": "", "masked_text": "", "has_more": False}
+
+        # コメントを改行で分割し、最初の1行を取得
+        lines = comment.split("\n")
+        first_line = lines[0]
+
+        # 最初の1行がmax_chars以下の場合
+        if len(first_line) <= max_chars:
+            # 2行目以降がある場合は伏せ字を追加
+            if len(lines) > 1 or len(first_line) < len(comment):
+                return {"visible_text": first_line, "masked_text": "●●●●●", "has_more": True}
+            else:
+                # 1行のみでmax_chars以下の場合、伏せ字なし
+                return {"visible_text": first_line, "masked_text": "", "has_more": False}
+        else:
+            # 最初の1行がmax_charsを超える場合、max_chars文字で切り詰め
+            return {
+                "visible_text": first_line[:max_chars],
+                "masked_text": "●●●●●",
+                "has_more": True,
+            }
+
     async def get(self):
         """レビュー一覧ページを表示"""
         try:
@@ -77,7 +116,11 @@ class ReviewCreateHandler(BaseHandler):
         # Task 4.2: AccessControlMiddleware統合
         from ..middleware.access_control_middleware import AccessControlMiddleware
 
+        # Task 3.2: I18nFormService統合
+        from ..services.i18n_form_service import I18nFormService
+
         self.access_control = AccessControlMiddleware()
+        self.i18n_service = I18nFormService()
 
     async def get(self, company_id):
         """Task 4.2: レビュー投稿フォーム表示 - AccessControlMiddleware統合"""
@@ -153,6 +196,14 @@ class ReviewCreateHandler(BaseHandler):
                 )
                 # 権限チェックが失敗した場合でも投稿フォームは表示（デフォルト許可）
 
+            # Task 3.2: ブラウザ言語検出と翻訳辞書取得
+            import json
+
+            accept_language = self.request.headers.get("Accept-Language", "")
+            default_language = self.i18n_service.detect_browser_language(accept_language)
+            translations = self.i18n_service.get_form_translations()
+            supported_languages = self.i18n_service.get_supported_languages()
+
             # フォームレンダリング（認証済み）
             self.render(
                 "reviews/create.html",
@@ -161,6 +212,9 @@ class ReviewCreateHandler(BaseHandler):
                 company_id=company_id,
                 show_login_panel=False,
                 review_form_visible=True,
+                default_language=default_language,
+                translations=json.dumps(translations),  # JSON文字列に変換
+                supported_languages=supported_languages,
             )
 
         except tornado.web.HTTPError:

@@ -8,6 +8,17 @@ from src.models.review import Review, EmploymentStatus, ReviewCategory
 from src.models.review_history import ReviewHistory, ReviewAction
 
 
+class ValidationError:
+    """バリデーションエラーを表すクラス"""
+
+    def __init__(self, field: str, message: str):
+        self.field = field
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
+
 class ReviewSubmissionService:
     """レビュー投稿・編集機能を担当するサービス"""
 
@@ -19,6 +30,91 @@ class ReviewSubmissionService:
         """
         self.db = db_service
         self.calc_service = calculation_service
+
+    @staticmethod
+    def validate_employment_period(review_data: Dict[str, Any]) -> List[str]:
+        """
+        雇用期間のバリデーション
+
+        Requirements: 6.1, 6.2, 7.1, 7.2, 7.3, 7.6, 7.7
+
+        Args:
+            review_data: レビューデータ
+
+        Returns:
+            バリデーションエラーのリスト
+
+        Examples:
+            >>> # 現従業員の場合（終了年なし）
+            >>> data = {
+            ...     "employment_status": "current",
+            ...     "employment_period": {"start_year": 2020, "end_year": None},
+            ...     "ratings": {"recommendation": 4},
+            ...     "comments": {},
+            ... }
+            >>> ReviewSubmissionService.validate_employment_period(data)
+            []
+
+            >>> # 元従業員の場合（開始年 > 終了年）
+            >>> data = {
+            ...     "employment_status": "former",
+            ...     "employment_period": {"start_year": 2023, "end_year": 2020},
+            ...     "ratings": {"recommendation": 4},
+            ...     "comments": {},
+            ... }
+            >>> ReviewSubmissionService.validate_employment_period(data)
+            ['雇用開始年は雇用終了年より前である必要があります']
+        """
+        errors = []
+        employment_status = review_data.get("employment_status")
+        employment_period = review_data.get("employment_period", {})
+
+        start_year = employment_period.get("start_year")
+        end_year = employment_period.get("end_year")
+
+        # 現在年を取得
+        current_year = datetime.now().year
+
+        # 開始年の必須チェック
+        if start_year is None:
+            errors.append("雇用開始年を入力してください")
+        else:
+            # 開始年の範囲チェック
+            if start_year < 1970:
+                errors.append("1970年以降の年を入力してください")
+            elif start_year > current_year:
+                errors.append("未来の年は入力できません")
+
+        # 終了年のバリデーション
+        if employment_status == "former":
+            # 元従業員の場合、終了年は必須
+            if end_year is None or end_year == "":
+                errors.append("雇用終了年を入力してください")
+            elif end_year != "present":
+                # 終了年が指定されている場合
+                try:
+                    end_year_int = int(end_year)
+
+                    # 終了年の範囲チェック
+                    if end_year_int < 1970:
+                        errors.append("1970年以降の年を入力してください")
+                    elif end_year_int > current_year:
+                        errors.append("未来の年は入力できません")
+
+                    # 開始年と終了年の論理チェック
+                    if start_year is not None and start_year > end_year_int:
+                        errors.append("開始年は終了年より前である必要があります")
+
+                except (ValueError, TypeError):
+                    errors.append("無効な終了年です")
+
+        elif employment_status == "current":
+            # 現従業員の場合、終了年は「present」またはNoneでなければならない
+            if end_year is not None and end_year != "present" and end_year != "":
+                # 終了年が指定されている場合は警告（自動的にpresentに設定されるべき）
+                pass  # フロントエンドで自動設定されるため、ここではエラーにしない
+
+        return errors
 
     async def create_review(self, review_data: Dict[str, Any]) -> Dict[str, Any]:
         """

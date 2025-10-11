@@ -5,7 +5,7 @@ import re
 import bcrypt
 import logging
 from typing import Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from ..models.user import User, UserType
 from ..utils.result import Result
 
@@ -493,3 +493,83 @@ class UserService:
         """URL形式の検証"""
         pattern = r'^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$'
         return re.match(pattern, url) is not None
+
+    async def get_last_review_posted_at(self, user_id: str) -> Optional[datetime]:
+        """
+        最終レビュー投稿日時を取得
+
+        Args:
+            user_id: ユーザーID
+
+        Returns:
+            最終レビュー投稿日時（存在しない場合はNone）
+        """
+        try:
+            user_doc = await self.db_service.find_one('users', {'_id': user_id})
+            if not user_doc:
+                return None
+
+            return user_doc.get('last_review_posted_at')
+
+        except Exception as e:
+            logger.error(f"最終レビュー投稿日時取得エラー: {e}")
+            return None
+
+    async def update_last_review_posted_at(
+        self,
+        user_id: str,
+        review_datetime: Optional[datetime] = None
+    ) -> Result[bool, ValidationError]:
+        """
+        最終レビュー投稿日時を更新
+
+        Args:
+            user_id: ユーザーID
+            review_datetime: レビュー投稿日時（省略時は現在時刻）
+
+        Returns:
+            Result[bool, ValidationError]: 成功時はTrue、失敗時はエラー
+        """
+        try:
+            if review_datetime is None:
+                review_datetime = datetime.utcnow()
+
+            update_data = {
+                'last_review_posted_at': review_datetime,
+                'updated_at': datetime.utcnow()
+            }
+
+            result = await self.db_service.update_one('users', {'_id': user_id}, update_data)
+
+            if result and result.get('modified_count', 0) > 0:
+                return Result.success(True)
+            else:
+                return Result.failure(ValidationError({'update': ['Failed to update review posted time']}))
+
+        except Exception as e:
+            logger.error(f"最終レビュー投稿日時更新エラー: {e}")
+            return Result.failure(ValidationError({'system': ['Update failed']}))
+
+    async def check_review_access_within_one_year(self, user_id: str) -> bool:
+        """
+        1年以内のレビュー投稿履歴をチェック
+
+        Args:
+            user_id: ユーザーID
+
+        Returns:
+            bool: 1年以内にレビュー投稿があればTrue、それ以外はFalse
+        """
+        try:
+            last_posted_at = await self.get_last_review_posted_at(user_id)
+
+            if last_posted_at is None:
+                return False
+
+            one_year_ago = datetime.utcnow() - timedelta(days=365)
+
+            return last_posted_at >= one_year_ago
+
+        except Exception as e:
+            logger.error(f"レビューアクセス履歴チェックエラー: {e}")
+            return False
