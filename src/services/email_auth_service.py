@@ -2,6 +2,7 @@
 Email Authentication Service
 Task 5.1: メール認証用トークンとコード管理機能
 """
+
 import logging
 import secrets
 import re
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class EmailAuthError(Exception):
     """Email authentication error"""
+
     pass
 
 
@@ -36,19 +38,22 @@ class EmailAuthService:
         self.db_service = get_db_service()
         # Get secret key from environment
         import os
-        secret_key = os.getenv('EMAIL_AUTH_SECRET_KEY', 'default-secret-key-change-in-production')
+
+        secret_key = os.getenv("EMAIL_AUTH_SECRET_KEY", "default-secret-key-change-in-production")
         self.serializer = URLSafeTimedSerializer(secret_key)
 
     def _validate_email(self, email: str) -> bool:
         """Validate email format"""
-        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         return re.match(pattern, email) is not None
 
     def _validate_verification_type(self, verification_type: str) -> bool:
         """Validate verification type"""
         return verification_type in self.VALID_VERIFICATION_TYPES
 
-    async def generate_verification_token(self, email: str, verification_type: str) -> Result[Dict[str, Any], EmailAuthError]:
+    async def generate_verification_token(
+        self, email: str, verification_type: str
+    ) -> Result[Dict[str, Any], EmailAuthError]:
         """Generate secure verification token"""
         try:
             # Validate email format
@@ -75,24 +80,22 @@ class EmailAuthService:
 
             # Create verification record
             verification_data = {
-                'email_hash': email_hash,
-                'email_encrypted': email_encrypted_result.data.encrypted,
-                'verification_type': verification_type,
-                'token': token,
-                'expires_at': expires_at,
-                'verified_at': None,
-                'attempts': 0,
-                'created_at': datetime.now(timezone.utc)
+                "email_hash": email_hash,
+                "email_encrypted": email_encrypted_result.data.encrypted,
+                "verification_type": verification_type,
+                "token": token,
+                "expires_at": expires_at,
+                "verified_at": None,
+                "attempts": 0,
+                "created_at": datetime.now(timezone.utc),
             }
 
             # Save to database
             verification_id = await self.db_service.create(self.COLLECTION_NAME, verification_data)
 
-            return Result.success({
-                'token': token,
-                'expires_at': expires_at,
-                'verification_id': verification_id
-            })
+            return Result.success(
+                {"token": token, "expires_at": expires_at, "verification_id": verification_id}
+            )
 
         except Exception as e:
             logger.exception("Failed to generate verification token: %s", e)
@@ -104,23 +107,27 @@ class EmailAuthService:
             logger.info("Searching for token in database: %s...", token[:20])
             # Find token in database
             verification = await self.db_service.find_one(
-                self.COLLECTION_NAME,
-                {'token': token, 'verified_at': None}
+                self.COLLECTION_NAME, {"token": token, "verified_at": None}
             )
 
             if not verification:
                 logger.error("Token not found or already used")
                 return Result.failure(EmailAuthError("Invalid or already used token"))
 
-            logger.info("Token found in database - verification_type: %s, created_at: %s",
-                       verification.get('verification_type'), verification.get('created_at'))
+            logger.info(
+                "Token found in database - verification_type: %s, created_at: %s",
+                verification.get("verification_type"),
+                verification.get("created_at"),
+            )
 
             # Check expiration - MongoDB returns timezone-naive datetime, treat as UTC
-            expires_at = verification['expires_at']
+            expires_at = verification["expires_at"]
             if expires_at.tzinfo is None:
                 expires_at = expires_at.replace(tzinfo=timezone.utc)
 
-            logger.info("Token expires at: %s, current time: %s", expires_at, datetime.now(timezone.utc))
+            logger.info(
+                "Token expires at: %s, current time: %s", expires_at, datetime.now(timezone.utc)
+            )
 
             if expires_at < datetime.now(timezone.utc):
                 logger.error("Token has expired")
@@ -130,29 +137,31 @@ class EmailAuthService:
             logger.info("Marking token as verified")
             await self.db_service.update_one(
                 self.COLLECTION_NAME,
-                {'_id': verification['_id']},
-                {'verified_at': datetime.now(timezone.utc)}
+                {"_id": verification["_id"]},
+                {"verified_at": datetime.now(timezone.utc)},
             )
 
             # Decrypt email for return
-            email_encrypted = verification.get('email_encrypted')
+            email_encrypted = verification.get("email_encrypted")
             if email_encrypted:
                 decrypted_email_result = self.email_service.decrypt_email(email_encrypted)
                 if decrypted_email_result.is_success:
                     email = decrypted_email_result.data
                 else:
                     logger.error("Failed to decrypt email: %s", decrypted_email_result.error)
-                    email = 'unknown@example.com'
+                    email = "unknown@example.com"
             else:
                 logger.warning("No encrypted email found in verification record")
-                email = 'unknown@example.com'
+                email = "unknown@example.com"
 
             logger.info("Token verification successful for email: %s", email)
-            return Result.success({
-                'email': email,
-                'verification_type': verification['verification_type'],
-                'verified_at': datetime.now(timezone.utc)
-            })
+            return Result.success(
+                {
+                    "email": email,
+                    "verification_type": verification["verification_type"],
+                    "verified_at": datetime.now(timezone.utc),
+                }
+            )
 
         except Exception as e:
             logger.exception("Failed to verify token: %s", e)
@@ -165,37 +174,43 @@ class EmailAuthService:
             if not self._validate_email(email):
                 return Result.failure(EmailAuthError("Invalid email format"))
 
+            # Hash email for database storage
+            email_hash = self.email_service.hash_email(email)
+
+            # Delete any existing unverified login codes for this email
+            # This allows users to request a new code even if they had too many attempts before
+            await self.db_service.delete_many(
+                self.COLLECTION_NAME,
+                {"email_hash": email_hash, "verification_type": "login", "verified_at": None},
+            )
+            logger.info("Deleted old verification codes for email hash: %s...", email_hash[:8])
+
             # Generate 6-digit code using cryptographically secure random
             code = f"{secrets.randbelow(1000000):06d}"
 
             # Hash code with bcrypt
-            code_hash = bcrypt.hashpw(code.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-            # Hash email for database storage
-            email_hash = self.email_service.hash_email(email)
+            code_hash = bcrypt.hashpw(code.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
             # Calculate expiry time
             expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.CODE_EXPIRY_MINUTES)
 
             # Create verification record with hashed code
             verification_data = {
-                'email_hash': email_hash,
-                'verification_type': 'login',
-                'code_hash': code_hash,
-                'expires_at': expires_at,
-                'verified_at': None,
-                'attempts': 0,
-                'created_at': datetime.now(timezone.utc)
+                "email_hash": email_hash,
+                "verification_type": "login",
+                "code_hash": code_hash,
+                "expires_at": expires_at,
+                "verified_at": None,
+                "attempts": 0,
+                "created_at": datetime.now(timezone.utc),
             }
 
             # Save to database
             verification_id = await self.db_service.create(self.COLLECTION_NAME, verification_data)
 
-            return Result.success({
-                'code': code,
-                'expires_at': expires_at,
-                'verification_id': verification_id
-            })
+            return Result.success(
+                {"code": code, "expires_at": expires_at, "verification_id": verification_id}
+            )
 
         except Exception as e:
             logger.exception("Failed to generate login code: %s", e)
@@ -210,18 +225,14 @@ class EmailAuthService:
             # Find verification record
             verification = await self.db_service.find_one(
                 self.COLLECTION_NAME,
-                {
-                    'email_hash': email_hash,
-                    'verification_type': 'login',
-                    'verified_at': None
-                }
+                {"email_hash": email_hash, "verification_type": "login", "verified_at": None},
             )
 
             if not verification:
                 return Result.failure(EmailAuthError("No verification code found"))
 
             # Check expiration - MongoDB returns timezone-naive datetime, treat as UTC
-            expires_at = verification['expires_at']
+            expires_at = verification["expires_at"]
             if expires_at.tzinfo is None:
                 expires_at = expires_at.replace(tzinfo=timezone.utc)
 
@@ -229,25 +240,23 @@ class EmailAuthService:
                 return Result.failure(EmailAuthError("Code expired"))
 
             # Check attempt limit
-            if verification['attempts'] >= self.MAX_ATTEMPTS:
+            if verification["attempts"] >= self.MAX_ATTEMPTS:
                 return Result.failure(EmailAuthError("Too many attempts"))
 
             # Verify code with bcrypt
-            code_hash = verification['code_hash']
-            if not bcrypt.checkpw(code.encode('utf-8'), code_hash.encode('utf-8')):
+            code_hash = verification["code_hash"]
+            if not bcrypt.checkpw(code.encode("utf-8"), code_hash.encode("utf-8")):
                 # Increment attempts
                 await self.db_service.update_one(
-                    self.COLLECTION_NAME,
-                    {'_id': verification['_id']},
-                    {'$inc': {'attempts': 1}}
+                    self.COLLECTION_NAME, {"_id": verification["_id"]}, {"$inc": {"attempts": 1}}
                 )
                 return Result.failure(EmailAuthError("Invalid code"))
 
             # Mark as verified
             await self.db_service.update_one(
                 self.COLLECTION_NAME,
-                {'_id': verification['_id']},
-                {'verified_at': datetime.now(timezone.utc)}
+                {"_id": verification["_id"]},
+                {"verified_at": datetime.now(timezone.utc)},
             )
 
             return Result.success(True)
@@ -263,8 +272,7 @@ class EmailAuthService:
 
             # Delete expired verifications
             result = await self.db_service.delete_many(
-                self.COLLECTION_NAME,
-                {'expires_at': {'$lt': current_time}}
+                self.COLLECTION_NAME, {"expires_at": {"$lt": current_time}}
             )
 
             deleted_count = result.deleted_count if result else 0
