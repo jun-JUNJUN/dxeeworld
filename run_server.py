@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
+""" """
+
 """
-サーバー起動スクリプト
+# Server startup script
+# サーバー起動スクリプト
+# 启动服务器脚本
 """
+
 import sys
 import os
 
