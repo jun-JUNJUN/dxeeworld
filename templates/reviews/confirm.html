@@ -1,5 +1,5 @@
 {% extends "../base.html" %}
-{% block title %}レビュー確認 - {{ company.get('name') or company.get('company_name') or '企業' }}{% end %}
+{% block title %}{{ i18n['page_title'] }} - {{ company.get('name') or company.get('company_name') or i18n['company_name_unknown'] }}{% end %}
 {% block head %}
 <style>
     /* Task 8.2: エラーメッセージ表示用スタイル */
@@ -266,80 +266,72 @@
         <div class="col-lg-8 mx-auto">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="mb-0">レビュー確認</h2>
+                    <h2 class="mb-0">{{ i18n['page_title'] }}</h2>
                 </div>
                 <div class="card-body">
-                    <!-- Task 8.2: エラーメッセージ表示 -->
                     {% if error_message %}
                     <div class="error-message">
                         <span class="error-message-icon">⚠️</span>
-                        <span><strong>エラー:</strong> {{ error_message }}</span>
+                        <span><strong>{{ i18n['error_label'] }}</strong> {{ error_message }}</span>
                     </div>
                     {% end %}
 
-                    <!-- 企業情報 -->
                     <div class="company-info-section">
-                        <h4 class="company-name">{{ company.get('name') or company.get('company_name') or '企業名未設定' }}</h4>
+                        <h4 class="company-name">{{ company.get('name') or company.get('company_name') or i18n['company_name_unknown'] }}</h4>
                         <p class="company-location">
                             <span class="location-icon">📍</span>
                             {% if company.get('location') %}
                                 {{ company['location'].split(',')[0].strip() }}
                             {% else %}
-                                所在地未設定
+                                {{ i18n['location_unknown'] }}
                             {% end %}
                         </p>
                     </div>
 
-                    <!-- 翻訳注意事項（元言語の表示） -->
                     <div class="translation-note">
                         <span class="translation-note-icon">🌐</span>
-                        <strong>入力言語:</strong>
+                        <strong>{{ i18n['input_language_label'] }}</strong>
                         {% if selected_language == 'ja' %}
-                            日本語
+                            {{ i18n['language_ja'] }}
                         {% elif selected_language == 'en' %}
-                            英語（English）
+                            {{ i18n['language_en'] }}
                         {% elif selected_language == 'zh' %}
-                            中国語（中文）
+                            {{ i18n['language_zh'] }}
                         {% else %}
-                            不明
+                            {{ i18n['language_unknown'] }}
                         {% end %}
                         <br>
-                        <small>以下に元のコメントと他の言語への翻訳を表示します。翻訳内容を確認してください。</small>
+                        <small>{{ i18n['translation_note'] }}</small>
                     </div>
 
-                    <!-- 在職状況 -->
                     <div class="confirmation-section">
-                        <h3 class="confirmation-title">在職状況</h3>
+                        <h3 class="confirmation-title">{{ i18n['employment_status_title'] }}</h3>
                         <div class="employment-info">
-                            <div class="employment-label">在職状況</div>
+                            <div class="employment-label">{{ i18n['employment_status_label'] }}</div>
                             <div class="employment-value">
                                 {% if review_data['employment_status'] == 'current' %}
-                                    現従業員
+                                    {{ i18n['employment_current'] }}
                                 {% elif review_data['employment_status'] == 'former' %}
-                                    元従業員
+                                    {{ i18n['employment_former'] }}
                                 {% else %}
-                                    未設定
+                                    {{ i18n['employment_unknown'] }}
                                 {% end %}
                             </div>
                         </div>
                     </div>
 
-                    <!-- レビューカテゴリー -->
                     <div class="confirmation-section">
-                        <h3 class="confirmation-title">評価とコメント</h3>
+                        <h3 class="confirmation-title">{{ i18n['ratings_comments_title'] }}</h3>
 
                         {% for category in categories %}
                         <div class="review-category-section">
                             <div class="category-header">
-                                <h4 class="category-title">
-                                    {{ category['index'] }}. {{ category['title'] }}
-                                </h4>
+                                <h4 class="category-title">{{ category['index'] }}. {{ category['title'] }}</h4>
                                 <p class="category-question">{{ category['question'] }}</p>
                             </div>
 
-                            <!-- 評価表示 -->
                             <div class="rating-display">
-                                <span class="rating-label">評価:</span>
+                                <span class="rating-label">{{ i18n['rating_label'] }}</span>
                                 {% set rating = review_data['ratings'].get(category['key']) %}
                                 {% if rating %}
                                     <div class="rating-stars">
@@ -353,66 +345,57 @@
                                     </div>
                                     <span class="rating-score">{{ rating }}/5</span>
                                 {% else %}
-                                    <span class="no-rating">評価なし</span>
+                                    <span class="no-rating">{{ i18n['no_rating'] }}</span>
                                 {% end %}
                             </div>
 
-                            <!-- コメント表示（多言語対応） -->
                             <div class="comment-section">
                                 {% set original_comment = review_data['comments'].get(category['key']) %}
                                 {% if original_comment %}
-                                    <!-- 元言語のコメント -->
                                     <div class="comment-label">
                                         {% if selected_language == 'ja' %}
-                                            コメント（日本語・原文）:
+                                            {{ i18n['comment_label_original_ja'] }}
                                         {% elif selected_language == 'en' %}
-                                            Comment (English - Original):
+                                            {{ i18n['comment_label_original_en'] }}
                                         {% elif selected_language == 'zh' %}
-                                            评论（中文 - 原文）:
+                                            {{ i18n['comment_label_original_zh'] }}
                                         {% else %}
-                                            コメント（原文）:
+                                            {{ i18n['comment_label_original_default'] }}
                                         {% end %}
                                     </div>
                                     <div class="comment-text">{{ original_comment }}</div>
 
-                                    <!-- 翻訳されたコメント（元言語以外の2言語） -->
                                     {% if translated_comments_all %}
                                         {% if selected_language != 'ja' and translated_comments_all.get('ja', {}).get(category['key']) %}
-                                            <div class="comment-label" style="margin-top: 16px;">翻訳（日本語）:</div>
-                                            <div class="comment-text" style="background: #f0f8ff;">{{ translated_comments_all['ja'][category['key']] }}</div>
+                                            <div class="comment-label" style="margin-top: 16px">{{ i18n['comment_label_translated_ja'] }}</div>
+                                            <div class="comment-text" style="background: #f0f8ff">{{ translated_comments_all['ja'][category['key']] }}</div>
                                         {% end %}
 
                                         {% if selected_language != 'en' and translated_comments_all.get('en', {}).get(category['key']) %}
-                                            <div class="comment-label" style="margin-top: 16px;">Translation (English):</div>
-                                            <div class="comment-text" style="background: #f0fff0;">{{ translated_comments_all['en'][category['key']] }}</div>
+                                            <div class="comment-label" style="margin-top: 16px">{{ i18n['comment_label_translated_en'] }}</div>
+                                            <div class="comment-text" style="background: #f0fff0">{{ translated_comments_all['en'][category['key']] }}</div>
                                         {% end %}
 
                                         {% if selected_language != 'zh' and translated_comments_all.get('zh', {}).get(category['key']) %}
-                                            <div class="comment-label" style="margin-top: 16px;">翻译（中文）:</div>
-                                            <div class="comment-text" style="background: #fff8f0;">{{ translated_comments_all['zh'][category['key']] }}</div>
+                                            <div class="comment-label" style="margin-top: 16px">{{ i18n['comment_label_translated_zh'] }}</div>
+                                            <div class="comment-text" style="background: #fff8f0">{{ translated_comments_all['zh'][category['key']] }}</div>
                                         {% end %}
                                     {% end %}
                                 {% else %}
-                                    <div class="comment-label">コメント:</div>
-                                    <div class="no-comment">コメントなし</div>
+                                    <div class="comment-label">{{ i18n['comment_label'] }}</div>
+                                    <div class="no-comment">{{ i18n['no_comment'] }}</div>
                                 {% end %}
                             </div>
                         </div>
                         {% end %}
                     </div>
 
-                    <!-- アクションボタン -->
                     <div class="action-buttons">
-                        <button type="button" class="btn btn-secondary" onclick="goBack()">
-                            ← 戻って編集
-                        </button>
-                        <button type="button" class="btn btn-primary" onclick="submitReview()">
-                            投稿する →
-                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="goBack()">{{ i18n['button_back'] }}</button>
+                        <button type="button" class="btn btn-primary" onclick="submitReview()">{{ i18n['button_submit'] }}</button>
                     </div>
 
-                    <!-- 非表示フォーム（投稿データを保持） -->
-                    <form method="post" id="submitForm" style="display: none;">
+                    <form method="post" id="submitForm" style="display: none">
                         {% module xsrf_form_html() %}
                         <input type="hidden" name="mode" value="submit" />
                         <input type="hidden" name="selected_language" value="{{ selected_language }}" />
@@ -440,14 +423,12 @@
 
 <script>
     function goBack() {
-        // 前のページに戻る
         window.history.back();
     }
 
     function submitReview() {
-        // 確認ダイアログ
-        if (confirm('レビューを投稿してもよろしいですか？')) {
-            document.getElementById('submitForm').submit();
+        if (confirm("{{ i18n['confirm_dialog'] }}")) {
+            document.getElementById("submitForm").submit();
         }
     }
 </script>

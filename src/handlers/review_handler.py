@@ -457,6 +457,9 @@ class ReviewCreateHandler(BaseHandler):
             # 後方互換性のため、translated_commentsも渡す（日本語翻訳）
             translated_comments = translated_comments_all.get("ja", review_data["comments"].copy())
 
+            # 確認画面用の翻訳辞書
+            confirm_i18n = self._get_confirmation_i18n(selected_language)
+
             # 確認画面をレンダリング
             self.render(
                 "reviews/confirm.html",
@@ -467,6 +470,7 @@ class ReviewCreateHandler(BaseHandler):
                 selected_language=selected_language,
                 categories=self._get_review_categories(),
                 error_message=None,  # テンプレートでエラーチェックに使用
+                i18n=confirm_i18n,  # 確認画面の翻訳
             )
 
         except Exception as e:
@@ -568,6 +572,108 @@ class ReviewCreateHandler(BaseHandler):
         for i, category in enumerate(categories):
             category["index"] = i + 1
         return categories
+
+    def _get_confirmation_i18n(self, language: str) -> dict:
+        """確認画面の翻訳辞書を取得"""
+        translations = {
+            "ja": {
+                "page_title": "レビュー確認",
+                "error_label": "エラー:",
+                "input_language_label": "入力言語:",
+                "language_ja": "日本語",
+                "language_en": "英語（English）",
+                "language_zh": "中国語（中文）",
+                "language_unknown": "不明",
+                "translation_note": "以下に元のコメントと他の言語への翻訳を表示します。翻訳内容を確認してください。",
+                "employment_status_title": "在職状況",
+                "employment_status_label": "在職状況",
+                "employment_current": "現従業員",
+                "employment_former": "元従業員",
+                "employment_unknown": "未設定",
+                "ratings_comments_title": "評価とコメント",
+                "rating_label": "評価:",
+                "no_rating": "評価なし",
+                "comment_label_original_ja": "コメント（日本語・原文）:",
+                "comment_label_original_en": "Comment (English - Original):",
+                "comment_label_original_zh": "评论（中文 - 原文）:",
+                "comment_label_original_default": "コメント（原文）:",
+                "comment_label_translated_ja": "翻訳（日本語）:",
+                "comment_label_translated_en": "Translation (English):",
+                "comment_label_translated_zh": "翻译（中文）:",
+                "comment_label": "コメント:",
+                "no_comment": "コメントなし",
+                "button_back": "← 戻って編集",
+                "button_submit": "投稿する →",
+                "confirm_dialog": "レビューを投稿してもよろしいですか？",
+                "location_unknown": "所在地未設定",
+                "company_name_unknown": "企業名未設定",
+            },
+            "en": {
+                "page_title": "Review Confirmation",
+                "error_label": "Error:",
+                "input_language_label": "Input Language:",
+                "language_ja": "Japanese (日本語)",
+                "language_en": "English",
+                "language_zh": "Chinese (中文)",
+                "language_unknown": "Unknown",
+                "translation_note": "Below are your original comments and translations to other languages. Please review the translations.",
+                "employment_status_title": "Employment Status",
+                "employment_status_label": "Employment Status",
+                "employment_current": "Current Employee",
+                "employment_former": "Former Employee",
+                "employment_unknown": "Not Set",
+                "ratings_comments_title": "Ratings and Comments",
+                "rating_label": "Rating:",
+                "no_rating": "No Rating",
+                "comment_label_original_ja": "Comment (Japanese - Original):",
+                "comment_label_original_en": "Comment (English - Original):",
+                "comment_label_original_zh": "Comment (Chinese - Original):",
+                "comment_label_original_default": "Comment (Original):",
+                "comment_label_translated_ja": "Translation (Japanese):",
+                "comment_label_translated_en": "Translation (English):",
+                "comment_label_translated_zh": "Translation (Chinese):",
+                "comment_label": "Comment:",
+                "no_comment": "No Comment",
+                "button_back": "← Back to Edit",
+                "button_submit": "Submit Review →",
+                "confirm_dialog": "Are you sure you want to submit this review?",
+                "location_unknown": "Location Not Set",
+                "company_name_unknown": "Company Name Not Set",
+            },
+            "zh": {
+                "page_title": "评价确认",
+                "error_label": "错误:",
+                "input_language_label": "输入语言:",
+                "language_ja": "日语（日本語）",
+                "language_en": "英语（English）",
+                "language_zh": "中文",
+                "language_unknown": "未知",
+                "translation_note": "以下是您的原始评论和其他语言的翻译。请确认翻译内容。",
+                "employment_status_title": "在职状况",
+                "employment_status_label": "在职状况",
+                "employment_current": "现员工",
+                "employment_former": "前员工",
+                "employment_unknown": "未设置",
+                "ratings_comments_title": "评分和评论",
+                "rating_label": "评分:",
+                "no_rating": "无评分",
+                "comment_label_original_ja": "评论（日语 - 原文）:",
+                "comment_label_original_en": "Comment (English - Original):",
+                "comment_label_original_zh": "评论（中文 - 原文）:",
+                "comment_label_original_default": "评论（原文）:",
+                "comment_label_translated_ja": "翻译（日语）:",
+                "comment_label_translated_en": "Translation (English):",
+                "comment_label_translated_zh": "翻译（中文）:",
+                "comment_label": "评论:",
+                "no_comment": "无评论",
+                "button_back": "← 返回编辑",
+                "button_submit": "提交评价 →",
+                "confirm_dialog": "确定要提交此评价吗？",
+                "location_unknown": "地址未设置",
+                "company_name_unknown": "公司名称未设置",
+            },
+        }
+        return translations.get(language, translations["ja"])
 
 
 class ReviewEditHandler(BaseHandler):
