@@ -466,6 +466,7 @@ class ReviewCreateHandler(BaseHandler):
                 translated_comments_all=translated_comments_all,  # 3言語すべて
                 selected_language=selected_language,
                 categories=self._get_review_categories(),
+                error_message=None,  # テンプレートでエラーチェックに使用
             )
 
         except Exception as e:
