@@ -1,0 +1,454 @@
+{% extends "../base.html" %}
+{% block title %}レビュー確認 - {{ company.get('name') or company.get('company_name') or '企業' }}{% end %}
+{% block head %}
+<style>
+    /* Task 8.2: エラーメッセージ表示用スタイル */
+    .error-message {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #f5c6cb;
+        margin-bottom: 20px;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .error-message-icon {
+        font-size: 1.5rem;
+    }
+    .review-confirm-container {
+        max-width: 90%;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .company-info-section {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 32px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .company-name {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 12px;
+    }
+
+    .company-location {
+        color: #6c757d;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .location-icon {
+        color: #007bff;
+    }
+
+    .confirmation-section {
+        margin-bottom: 32px;
+        padding: 20px;
+        background: #ffffff;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+    }
+
+    .confirmation-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #f8f9fa;
+    }
+
+    .employment-info {
+        background: #f8f9fa;
+        padding: 16px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+
+    .employment-label {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 4px;
+    }
+
+    .employment-value {
+        font-size: 1.1rem;
+        color: #2c3e50;
+        font-weight: 500;
+    }
+
+    .review-category-section {
+        margin-bottom: 28px;
+        padding: 20px;
+        background: #ffffff;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+    }
+
+    .category-header {
+        margin-bottom: 16px;
+    }
+
+    .category-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 8px;
+    }
+
+    .category-question {
+        color: #6c757d;
+        font-size: 0.95rem;
+        margin-bottom: 12px;
+    }
+
+    .rating-display {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .rating-label {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .rating-stars {
+        display: flex;
+        gap: 4px;
+        font-size: 1.4rem;
+    }
+
+    .star-filled {
+        color: #ffc107;
+    }
+
+    .star-empty {
+        color: #e9ecef;
+    }
+
+    .rating-score {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-left: 8px;
+    }
+
+    .no-rating {
+        color: #adb5bd;
+        font-style: italic;
+        font-size: 0.95rem;
+    }
+
+    .comment-section {
+        margin-top: 16px;
+    }
+
+    .comment-label {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+
+    .comment-text {
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 6px;
+        color: #2c3e50;
+        white-space: pre-wrap;
+        line-height: 1.6;
+        border-left: 3px solid #007bff;
+    }
+
+    .no-comment {
+        color: #adb5bd;
+        font-style: italic;
+        font-size: 0.95rem;
+    }
+
+    .translation-note {
+        background: #e7f3ff;
+        border-left: 3px solid #007bff;
+        padding: 12px 16px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        font-size: 0.95rem;
+    }
+
+    .translation-note-icon {
+        color: #007bff;
+        margin-right: 8px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 2px solid #e9ecef;
+    }
+
+    .btn {
+        border-radius: 6px;
+        padding: 12px 32px;
+        font-weight: 500;
+        font-size: 1rem;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        min-width: 140px;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        min-width: 140px;
+    }
+
+    .btn-secondary:hover {
+        background-color: #5a6268;
+        border-color: #545b62;
+    }
+
+    @media (max-width: 768px) {
+        .review-confirm-container {
+            max-width: 100%;
+            padding: 15px;
+        }
+
+        .company-info-section {
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .company-name {
+            font-size: 1.3rem;
+        }
+
+        .action-buttons {
+            flex-direction: column-reverse;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% end %}
+
+{% block content %}
+<div class="review-confirm-container">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">レビュー確認</h2>
+                </div>
+                <div class="card-body">
+                    <!-- Task 8.2: エラーメッセージ表示 -->
+                    {% if error_message %}
+                    <div class="error-message">
+                        <span class="error-message-icon">⚠️</span>
+                        <span><strong>エラー:</strong> {{ error_message }}</span>
+                    </div>
+                    {% end %}
+
+                    <!-- 企業情報 -->
+                    <div class="company-info-section">
+                        <h4 class="company-name">{{ company.get('name') or company.get('company_name') or '企業名未設定' }}</h4>
+                        <p class="company-location">
+                            <span class="location-icon">📍</span>
+                            {% if company.get('location') %}
+                                {{ company['location'].split(',')[0].strip() }}
+                            {% else %}
+                                所在地未設定
+                            {% end %}
+                        </p>
+                    </div>
+
+                    <!-- 翻訳注意事項（元言語の表示） -->
+                    <div class="translation-note">
+                        <span class="translation-note-icon">🌐</span>
+                        <strong>入力言語:</strong>
+                        {% if selected_language == 'ja' %}
+                            日本語
+                        {% elif selected_language == 'en' %}
+                            英語（English）
+                        {% elif selected_language == 'zh' %}
+                            中国語（中文）
+                        {% else %}
+                            不明
+                        {% end %}
+                        <br>
+                        <small>以下に元のコメントと他の言語への翻訳を表示します。翻訳内容を確認してください。</small>
+                    </div>
+
+                    <!-- 在職状況 -->
+                    <div class="confirmation-section">
+                        <h3 class="confirmation-title">在職状況</h3>
+                        <div class="employment-info">
+                            <div class="employment-label">在職状況</div>
+                            <div class="employment-value">
+                                {% if review_data['employment_status'] == 'current' %}
+                                    現従業員
+                                {% elif review_data['employment_status'] == 'former' %}
+                                    元従業員
+                                {% else %}
+                                    未設定
+                                {% end %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- レビューカテゴリー -->
+                    <div class="confirmation-section">
+                        <h3 class="confirmation-title">評価とコメント</h3>
+
+                        {% for category in categories %}
+                        <div class="review-category-section">
+                            <div class="category-header">
+                                <h4 class="category-title">
+                                    {{ category['index'] }}. {{ category['title'] }}
+                                </h4>
+                                <p class="category-question">{{ category['question'] }}</p>
+                            </div>
+
+                            <!-- 評価表示 -->
+                            <div class="rating-display">
+                                <span class="rating-label">評価:</span>
+                                {% set rating = review_data['ratings'].get(category['key']) %}
+                                {% if rating %}
+                                    <div class="rating-stars">
+                                        {% for i in range(1, 6) %}
+                                            {% if i <= rating %}
+                                                <span class="star-filled">★</span>
+                                            {% else %}
+                                                <span class="star-empty">★</span>
+                                            {% end %}
+                                        {% end %}
+                                    </div>
+                                    <span class="rating-score">{{ rating }}/5</span>
+                                {% else %}
+                                    <span class="no-rating">評価なし</span>
+                                {% end %}
+                            </div>
+
+                            <!-- コメント表示（多言語対応） -->
+                            <div class="comment-section">
+                                {% set original_comment = review_data['comments'].get(category['key']) %}
+                                {% if original_comment %}
+                                    <!-- 元言語のコメント -->
+                                    <div class="comment-label">
+                                        {% if selected_language == 'ja' %}
+                                            コメント（日本語・原文）:
+                                        {% elif selected_language == 'en' %}
+                                            Comment (English - Original):
+                                        {% elif selected_language == 'zh' %}
+                                            评论（中文 - 原文）:
+                                        {% else %}
+                                            コメント（原文）:
+                                        {% end %}
+                                    </div>
+                                    <div class="comment-text">{{ original_comment }}</div>
+
+                                    <!-- 翻訳されたコメント（元言語以外の2言語） -->
+                                    {% if translated_comments_all %}
+                                        {% if selected_language != 'ja' and translated_comments_all.get('ja', {}).get(category['key']) %}
+                                            <div class="comment-label" style="margin-top: 16px;">翻訳（日本語）:</div>
+                                            <div class="comment-text" style="background: #f0f8ff;">{{ translated_comments_all['ja'][category['key']] }}</div>
+                                        {% end %}
+
+                                        {% if selected_language != 'en' and translated_comments_all.get('en', {}).get(category['key']) %}
+                                            <div class="comment-label" style="margin-top: 16px;">Translation (English):</div>
+                                            <div class="comment-text" style="background: #f0fff0;">{{ translated_comments_all['en'][category['key']] }}</div>
+                                        {% end %}
+
+                                        {% if selected_language != 'zh' and translated_comments_all.get('zh', {}).get(category['key']) %}
+                                            <div class="comment-label" style="margin-top: 16px;">翻译（中文）:</div>
+                                            <div class="comment-text" style="background: #fff8f0;">{{ translated_comments_all['zh'][category['key']] }}</div>
+                                        {% end %}
+                                    {% end %}
+                                {% else %}
+                                    <div class="comment-label">コメント:</div>
+                                    <div class="no-comment">コメントなし</div>
+                                {% end %}
+                            </div>
+                        </div>
+                        {% end %}
+                    </div>
+
+                    <!-- アクションボタン -->
+                    <div class="action-buttons">
+                        <button type="button" class="btn btn-secondary" onclick="goBack()">
+                            ← 戻って編集
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="submitReview()">
+                            投稿する →
+                        </button>
+                    </div>
+
+                    <!-- 非表示フォーム（投稿データを保持） -->
+                    <form method="post" id="submitForm" style="display: none;">
+                        {% module xsrf_form_html() %}
+                        <input type="hidden" name="mode" value="submit" />
+                        <input type="hidden" name="selected_language" value="{{ selected_language }}" />
+                        <input type="hidden" name="employment_status" value="{{ review_data['employment_status'] }}" />
+
+                        {% for category in categories %}
+                            {% set rating = review_data['ratings'].get(category['key']) %}
+                            {% if rating %}
+                                <input type="hidden" name="ratings[{{ category['key'] }}]" value="{{ rating }}" />
+                            {% else %}
+                                <input type="hidden" name="ratings[{{ category['key'] }}]" value="no_answer" />
+                            {% end %}
+
+                            {% set comment = review_data['comments'].get(category['key']) %}
+                            {% if comment %}
+                                <input type="hidden" name="comments[{{ category['key'] }}]" value="{{ comment }}" />
+                            {% end %}
+                        {% end %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function goBack() {
+        // 前のページに戻る
+        window.history.back();
+    }
+
+    function submitReview() {
+        // 確認ダイアログ
+        if (confirm('レビューを投稿してもよろしいですか？')) {
+            document.getElementById('submitForm').submit();
+        }
+    }
+</script>
+{% end %}

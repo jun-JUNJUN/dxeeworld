@@ -1,6 +1,7 @@
 """
 レビュー投稿システムサービス
 """
+
 import html
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
@@ -132,26 +133,22 @@ class ReviewSubmissionService:
 
             # 評価値バリデーション
             rating_errors = self.calc_service.validate_rating_values(review_data["ratings"])
-            if hasattr(rating_errors, '__await__'):
+            if hasattr(rating_errors, "__await__"):
                 rating_errors = await rating_errors
             validation_errors.extend(rating_errors)
 
             # 必須カテゴリーバリデーション
             category_errors = self.calc_service.validate_required_categories(review_data["ratings"])
-            if hasattr(category_errors, '__await__'):
+            if hasattr(category_errors, "__await__"):
                 category_errors = await category_errors
             validation_errors.extend(category_errors)
 
             if validation_errors:
-                return {
-                    "success": False,
-                    "errors": validation_errors
-                }
+                return {"success": False, "errors": validation_errors}
 
             # 2. 重複投稿チェック
             permission_check = await self.validate_review_permissions(
-                review_data["user_id"],
-                review_data["company_id"]
+                review_data["user_id"], review_data["company_id"]
             )
 
             if not permission_check["can_create"]:
@@ -159,7 +156,7 @@ class ReviewSubmissionService:
                     "success": False,
                     "error_code": "duplicate_review",
                     "existing_review_id": permission_check["existing_review_id"],
-                    "days_until_next": permission_check["days_until_next"]
+                    "days_until_next": permission_check["days_until_next"],
                 }
 
             # 3. データサニタイズ
@@ -167,7 +164,7 @@ class ReviewSubmissionService:
 
             # 4. 平均点計算
             calc_result = self.calc_service.calculate_individual_average(sanitized_data["ratings"])
-            if hasattr(calc_result, '__await__'):
+            if hasattr(calc_result, "__await__"):
                 individual_average, answered_count = await calc_result
             else:
                 individual_average, answered_count = calc_result
@@ -182,27 +179,31 @@ class ReviewSubmissionService:
 
             # 7. 履歴記録
             await self.create_review_history(
-                review_id, review_data["user_id"], review_data["company_id"],
-                ReviewAction.CREATE, None
+                review_id,
+                review_data["user_id"],
+                review_data["company_id"],
+                ReviewAction.CREATE,
+                None,
             )
 
-            # 8. 企業平均点再計算
-            recalc_result = self.calc_service.recalculate_company_averages(review_data["company_id"])
-            if hasattr(recalc_result, '__await__'):
+            # 8. Task 7.2: User.last_review_posted_atを更新
+            await self._update_user_last_review_time(review_data["user_id"])
+
+            # 9. 企業平均点再計算
+            recalc_result = self.calc_service.recalculate_company_averages(
+                review_data["company_id"]
+            )
+            if hasattr(recalc_result, "__await__"):
                 await recalc_result
 
             return {
                 "success": True,
                 "review_id": review_id,
-                "individual_average": individual_average
+                "individual_average": individual_average,
             }
 
         except Exception as e:
-            return {
-                "success": False,
-                "error_code": "database_error",
-                "message": str(e)
-            }
+            return {"success": False, "error_code": "database_error", "message": str(e)}
 
     async def validate_review_permissions(self, user_id: str, company_id: str) -> Dict[str, Any]:
         """
@@ -217,12 +218,7 @@ class ReviewSubmissionService:
         """
         # 既存レビューを検索
         existing_review = await self.db.find_one(
-            "reviews",
-            {
-                "user_id": user_id,
-                "company_id": company_id,
-                "is_active": True
-            }
+            "reviews", {"user_id": user_id, "company_id": company_id, "is_active": True}
         )
 
         if not existing_review:
@@ -230,7 +226,7 @@ class ReviewSubmissionService:
                 "can_create": True,
                 "can_update": False,
                 "existing_review_id": None,
-                "days_until_next": 0
+                "days_until_next": 0,
             }
 
         # 1年経過チェック
@@ -243,7 +239,7 @@ class ReviewSubmissionService:
                 "can_create": True,
                 "can_update": False,
                 "existing_review_id": None,
-                "days_until_next": 0
+                "days_until_next": 0,
             }
 
         # 1年以内 - 更新のみ可能
@@ -253,7 +249,7 @@ class ReviewSubmissionService:
             "can_create": False,
             "can_update": True,
             "existing_review_id": str(existing_review["_id"]),
-            "days_until_next": days_until_next
+            "days_until_next": days_until_next,
         }
 
     async def sanitize_review_data(self, review_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -300,39 +296,45 @@ class ReviewSubmissionService:
 
         # 危険なプロトコルスキーマを除去
         dangerous_protocols = [
-            'javascript:', 'data:', 'vbscript:', 'onload=', 'onerror=',
-            'onclick=', 'onmouseover=', 'onfocus=', 'onblur='
+            "javascript:",
+            "data:",
+            "vbscript:",
+            "onload=",
+            "onerror=",
+            "onclick=",
+            "onmouseover=",
+            "onfocus=",
+            "onblur=",
         ]
 
         filtered_text = text
         for protocol in dangerous_protocols:
             # 大文字小文字を区別せずに除去
-            filtered_text = re.sub(re.escape(protocol), '', filtered_text, flags=re.IGNORECASE)
+            filtered_text = re.sub(re.escape(protocol), "", filtered_text, flags=re.IGNORECASE)
 
         # 悪意のあるHTMLタグパターンを除去（HTMLエスケープ後でも確認）
         dangerous_patterns = [
-            r'&lt;script.*?&gt;',
-            r'&lt;iframe.*?&gt;',
-            r'&lt;object.*?&gt;',
-            r'&lt;embed.*?&gt;',
-            r'&lt;link.*?&gt;',
-            r'&lt;meta.*?&gt;',
-            r'&lt;img.*?&gt;'
+            r"&lt;script.*?&gt;",
+            r"&lt;iframe.*?&gt;",
+            r"&lt;object.*?&gt;",
+            r"&lt;embed.*?&gt;",
+            r"&lt;link.*?&gt;",
+            r"&lt;meta.*?&gt;",
+            r"&lt;img.*?&gt;",
         ]
 
         for pattern in dangerous_patterns:
-            filtered_text = re.sub(pattern, '', filtered_text, flags=re.IGNORECASE | re.DOTALL)
+            filtered_text = re.sub(pattern, "", filtered_text, flags=re.IGNORECASE | re.DOTALL)
 
         return filtered_text
 
     async def build_review_object(
-        self,
-        review_data: Dict[str, Any],
-        individual_average: float,
-        answered_count: int
+        self, review_data: Dict[str, Any], individual_average: float, answered_count: int
     ) -> Review:
         """
         Reviewオブジェクトを構築
+
+        Task 7.1: 多言語データストレージ対応
 
         Args:
             review_data: レビューデータ
@@ -344,19 +346,29 @@ class ReviewSubmissionService:
         """
         now = datetime.utcnow()
 
-        return Review(
-            id="",  # データベース保存時に設定される
-            company_id=review_data["company_id"],
-            user_id=review_data["user_id"],
-            employment_status=EmploymentStatus(review_data["employment_status"]),
-            ratings=review_data["ratings"],
-            comments=review_data["comments"],
-            individual_average=individual_average,
-            answered_count=answered_count,
-            created_at=now,
-            updated_at=now,
-            is_active=True
-        )
+        # Task 7.1: 選択言語をレビューデータに保存
+        review_language = review_data.get("language", "ja")
+
+        review_dict = {
+            "id": "",  # データベース保存時に設定される
+            "company_id": review_data["company_id"],
+            "user_id": review_data["user_id"],
+            "employment_status": review_data["employment_status"],
+            "ratings": review_data["ratings"],
+            "comments": review_data["comments"],
+            "individual_average": individual_average,
+            "answered_count": answered_count,
+            "created_at": now,
+            "updated_at": now,
+            "is_active": True,
+            # Task 7.1: レビュー言語と翻訳データを保存
+            "language": review_language,
+            "comments_ja": review_data.get("comments_ja"),
+            "comments_en": review_data.get("comments_en"),
+            "comments_zh": review_data.get("comments_zh"),
+        }
+
+        return Review(**review_dict)
 
     async def create_review_history(
         self,
@@ -364,7 +376,7 @@ class ReviewSubmissionService:
         user_id: str,
         company_id: str,
         action: ReviewAction,
-        previous_data: Optional[Dict[str, Any]]
+        previous_data: Optional[Dict[str, Any]],
     ) -> str:
         """
         レビュー履歴を記録
@@ -386,7 +398,7 @@ class ReviewSubmissionService:
             company_id=company_id,
             action=action,
             previous_data=previous_data,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
         )
 
         history_id = await self.db.create("review_history", history.to_dict())
@@ -409,6 +421,7 @@ class ReviewSubmissionService:
         try:
             from bson import ObjectId
             import logging
+
             logger = logging.getLogger(__name__)
 
             # ObjectIdに変換してクエリ
@@ -418,10 +431,14 @@ class ReviewSubmissionService:
                 company = await self.db.find_one("companies", {"_id": object_id})
             except Exception as oid_error:
                 # ObjectId変換に失敗した場合は文字列としてもクエリ
-                logger.warning(f"ObjectId conversion failed for {company_id}: {oid_error}, trying string search")
+                logger.warning(
+                    f"ObjectId conversion failed for {company_id}: {oid_error}, trying string search"
+                )
                 company = await self.db.find_one("companies", {"_id": company_id})
 
-            logger.info(f"Company lookup result for {company_id}: {'Found' if company else 'Not Found'}")
+            logger.info(
+                f"Company lookup result for {company_id}: {'Found' if company else 'Not Found'}"
+            )
 
             if not company:
                 # 企業が見つからない場合はNoneを返す
@@ -435,12 +452,13 @@ class ReviewSubmissionService:
                 "size": company.get("size"),
                 "founded_year": company.get("founded_year"),
                 "employee_count": company.get("employee_count"),
-                "description": company.get("description")
+                "description": company.get("description"),
             }
 
         except Exception as e:
             # エラー時はログを出力してNoneを返す
             import logging
+
             logger = logging.getLogger(__name__)
             logger.error(f"Error fetching company info for {company_id}: {e}")
             return None
@@ -461,7 +479,7 @@ class ReviewSubmissionService:
             "can_create": True,
             "can_update": False,
             "existing_review_id": None,
-            "days_until_next": 0
+            "days_until_next": 0,
         }
 
     async def submit_review(self, review_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -482,22 +500,18 @@ class ReviewSubmissionService:
                 return {
                     "status": "success",
                     "review_id": result.get("review_id"),
-                    "individual_average": result.get("individual_average")
+                    "individual_average": result.get("individual_average"),
                 }
             else:
                 return {
                     "status": "error",
                     "message": result.get("message", "レビューの投稿に失敗しました"),
                     "error_code": result.get("error_code"),
-                    "errors": result.get("errors")
+                    "errors": result.get("errors"),
                 }
         else:
             # モック実装（データベースまたは計算サービスが未設定の場合）
-            return {
-                "status": "success",
-                "review_id": "new_review_id",
-                "individual_average": 3.5
-            }
+            return {"status": "success", "review_id": "new_review_id", "individual_average": 3.5}
 
     async def check_edit_permission(self, user_id: str, review_id: str) -> bool:
         """
@@ -558,7 +572,7 @@ class ReviewSubmissionService:
                 "company_culture": None,
                 "employee_relations": 5,
                 "evaluation_system": None,
-                "promotion_treatment": 2
+                "promotion_treatment": 2,
             },
             "comments": {
                 "recommendation": "Great company",
@@ -566,12 +580,12 @@ class ReviewSubmissionService:
                 "company_culture": None,
                 "employee_relations": "Good relationships",
                 "evaluation_system": None,
-                "promotion_treatment": "Limited opportunities"
+                "promotion_treatment": "Limited opportunities",
             },
             "individual_average": 3.5,
             "answered_count": 4,
             "created_at": datetime(2024, 1, 1),
-            "updated_at": datetime(2024, 1, 1)
+            "updated_at": datetime(2024, 1, 1),
         }
 
     async def update_review(self, review_id: str, review_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -591,7 +605,9 @@ class ReviewSubmissionService:
 
         try:
             # 1. 既存レビューを取得
-            existing_review = await self.db.find_one("reviews", {"_id": review_id, "is_active": True})
+            existing_review = await self.db.find_one(
+                "reviews", {"_id": review_id, "is_active": True}
+            )
             if not existing_review:
                 return {"status": "error", "message": "Review not found"}
 
@@ -600,15 +616,19 @@ class ReviewSubmissionService:
 
             # 3. 平均点再計算
             if self.calc_service:
-                calc_result = self.calc_service.calculate_individual_average(sanitized_data["ratings"])
-                if hasattr(calc_result, '__await__'):
+                calc_result = self.calc_service.calculate_individual_average(
+                    sanitized_data["ratings"]
+                )
+                if hasattr(calc_result, "__await__"):
                     individual_average, answered_count = await calc_result
                 else:
                     individual_average, answered_count = calc_result
             else:
                 # 簡易計算（テスト用）
                 valid_ratings = [r for r in sanitized_data["ratings"].values() if r is not None]
-                individual_average = round(sum(valid_ratings) / len(valid_ratings), 1) if valid_ratings else 0.0
+                individual_average = (
+                    round(sum(valid_ratings) / len(valid_ratings), 1) if valid_ratings else 0.0
+                )
                 answered_count = len(valid_ratings)
 
             # 4. 更新データ準備
@@ -618,7 +638,7 @@ class ReviewSubmissionService:
                 "comments": sanitized_data["comments"],
                 "individual_average": individual_average,
                 "answered_count": answered_count,
-                "updated_at": datetime.utcnow()
+                "updated_at": datetime.utcnow(),
             }
 
             # 5. 履歴記録（更新前データを保存）
@@ -627,7 +647,7 @@ class ReviewSubmissionService:
                 existing_review["user_id"],
                 existing_review["company_id"],
                 ReviewAction.UPDATE,
-                existing_review
+                existing_review,
             )
 
             # 6. データベース更新
@@ -635,21 +655,20 @@ class ReviewSubmissionService:
 
             # 7. 企業平均点再計算
             if self.calc_service:
-                recalc_result = self.calc_service.recalculate_company_averages(existing_review["company_id"])
-                if hasattr(recalc_result, '__await__'):
+                recalc_result = self.calc_service.recalculate_company_averages(
+                    existing_review["company_id"]
+                )
+                if hasattr(recalc_result, "__await__"):
                     await recalc_result
 
             return {
                 "status": "success",
                 "individual_average": individual_average,
-                "company_id": existing_review["company_id"]
+                "company_id": existing_review["company_id"],
             }
 
         except Exception as e:
-            return {
-                "status": "error",
-                "message": str(e)
-            }
+            return {"status": "error", "message": str(e)}
 
     async def get_company_reviews(self, company_id: str, limit: int = 5) -> List[Dict[str, Any]]:
         """
@@ -672,7 +691,7 @@ class ReviewSubmissionService:
                     "employment_status": "former",
                     "overall_rating": 4.2,
                     "comment": "とても働きやすい職場で、外国人への支援も充実していました。上司との関係も良好で、成果もしっかりと評価してもらえました。",
-                    "created_at": "2024-09-01"
+                    "created_at": "2024-09-01",
                 },
                 {
                     "id": "review2",
@@ -681,7 +700,7 @@ class ReviewSubmissionService:
                     "employment_status": "current",
                     "overall_rating": 3.8,
                     "comment": "職場環境は良いですが、昇進の機会がもう少しあると良いと思います。",
-                    "created_at": "2024-08-15"
+                    "created_at": "2024-08-15",
                 },
                 {
                     "id": "review3",
@@ -690,8 +709,8 @@ class ReviewSubmissionService:
                     "employment_status": "former",
                     "overall_rating": 3.5,
                     "comment": "会社の文化は素晴らしく、多様性を重視していました。",
-                    "created_at": "2024-07-20"
-                }
+                    "created_at": "2024-07-20",
+                },
             ]
 
         try:
@@ -700,21 +719,25 @@ class ReviewSubmissionService:
                 "reviews",
                 {"company_id": company_id, "is_active": True},
                 limit=limit,
-                sort=[("created_at", -1)]  # 新しい順
+                sort=[("created_at", -1)],  # 新しい順
             )
 
             # レビューデータの整形
             formatted_reviews = []
             for review in reviews:
-                formatted_reviews.append({
-                    "id": str(review.get("_id", "")),
-                    "user_id": review.get("user_id", ""),
-                    "company_id": review.get("company_id", ""),
-                    "employment_status": review.get("employment_status", ""),
-                    "overall_rating": review.get("individual_average", 0.0),
-                    "comment": self._get_primary_comment(review.get("comments", {})),
-                    "created_at": review.get("created_at", "").strftime("%Y-%m-%d") if review.get("created_at") else ""
-                })
+                formatted_reviews.append(
+                    {
+                        "id": str(review.get("_id", "")),
+                        "user_id": review.get("user_id", ""),
+                        "company_id": review.get("company_id", ""),
+                        "employment_status": review.get("employment_status", ""),
+                        "overall_rating": review.get("individual_average", 0.0),
+                        "comment": self._get_primary_comment(review.get("comments", {})),
+                        "created_at": review.get("created_at", "").strftime("%Y-%m-%d")
+                        if review.get("created_at")
+                        else "",
+                    }
+                )
 
             return formatted_reviews
 
@@ -741,3 +764,37 @@ class ReviewSubmissionService:
                 return comment.strip()
 
         return "コメントなし"
+
+    async def _update_user_last_review_time(self, user_id: str) -> None:
+        """
+        Task 7.2: User.last_review_posted_atを更新
+
+        Args:
+            user_id: ユーザーID
+        """
+        try:
+            from bson import ObjectId
+            import logging
+
+            logger = logging.getLogger(__name__)
+
+            # ObjectIdに変換
+            try:
+                object_id = ObjectId(user_id)
+            except Exception:
+                # ObjectId変換失敗時は文字列として扱う
+                object_id = user_id
+
+            # ユーザーのlast_review_posted_atを更新
+            await self.db.update(
+                "users", {"_id": object_id}, {"$set": {"last_review_posted_at": datetime.utcnow()}}
+            )
+
+            logger.info(f"Updated last_review_posted_at for user {user_id}")
+
+        except Exception as e:
+            # エラーログを出力するが、レビュー投稿自体は失敗させない
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to update last_review_posted_at for user {user_id}: {e}")

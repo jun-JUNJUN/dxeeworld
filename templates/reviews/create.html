@@ -423,7 +423,8 @@ block head %}
                             </div>
                         </div>
 
-                        <!-- 投稿ボタン -->
+                        <!-- Task 6.3: プレビューボタン -->
+                        <input type="hidden" name="mode" id="formMode" value="preview" />
                         <div class="d-flex justify-content-between">
                             <a
                                 href="/companies/{{ company['id'] }}"
@@ -436,7 +437,7 @@ block head %}
                                 id="submitBtn"
                                 disabled
                             >
-                                レビューを投稿
+                                プレビュー →
                             </button>
                         </div>
                     </form>

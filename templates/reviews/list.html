@@ -2,61 +2,147 @@
 
 {% block title %}企業レビュー一覧{% end %}
 
+{% block head %}
+<style>
+    /* Task 9.2: レビュー評価スライダーのカスタムスタイル */
+    .rating-slider-container {
+        padding: 10px 0;
+    }
+
+    .rating-slider {
+        width: 100%;
+        height: 6px;
+        border-radius: 3px;
+        background: linear-gradient(to right, #dc3545 0%, #ffc107 50%, #28a745 100%);
+        outline: none;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+    }
+
+    .rating-slider:hover {
+        opacity: 1;
+    }
+
+    .rating-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #007bff;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .rating-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #007bff;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        border: none;
+    }
+
+    .rating-value-display {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #007bff;
+        text-align: center;
+        margin-top: 5px;
+    }
+
+    .filter-section-title {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-control:disabled,
+    .form-select:disabled {
+        background-color: #e9ecef;
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+</style>
+{% end %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
             <h1 class="mb-4">企業レビュー検索</h1>
 
+            <!-- Task 9.1: アクセス拒否メッセージ表示 -->
+            {% if access_level == 'denied' %}
+            <div class="alert alert-warning" role="alert">
+                <h4 class="alert-heading">⚠️ アクセス制限</h4>
+                <p>{{ access_message if access_message else "このページへのアクセスは制限されています。" }}</p>
+                <hr>
+                <p class="mb-0">レビュー一覧を閲覧するには、ログインしてレビューを投稿してください。</p>
+            </div>
+            {% else %}
+
+            <!-- Task 9.1: プレビューアクセス通知 -->
+            {% if access_level == 'preview' %}
+            <div class="alert alert-info" role="alert">
+                <h4 class="alert-heading">ℹ️ プレビューモード</h4>
+                <p>現在、プレビューモードで閲覧しています。完全なレビュー内容を見るには、レビューを投稿してください。</p>
+            </div>
+            {% end %}
+
+            <!-- Task 9.1: Webクローラーアクセス通知 -->
+            {% if access_level == 'crawler' %}
+            <div class="alert alert-secondary" role="alert">
+                <h4 class="alert-heading">🤖 検索エンジン向け表示</h4>
+                <p>検索エンジン最適化のための最小限の情報を表示しています。</p>
+            </div>
+            {% end %}
+
             <!-- 検索フォーム -->
             <div class="card mb-4">
                 <div class="card-body">
                     <form method="get" action="/review">
+                        <!-- Task 9.1: フィルター無効化通知 -->
+                        {% if not can_filter %}
+                        <div class="alert alert-warning mb-3" role="alert">
+                            <strong>🔒 フィルター機能は制限されています。</strong>
+                            レビューを投稿すると、詳細なフィルター機能が使えるようになります。
+                        </div>
+                        {% end %}
+
+                        <!-- Task 9.2: フィルターUI改善 -->
                         <div class="row">
-                            <div class="col-md-3 mb-3">
-                                <label for="name" class="form-label">企業名</label>
+                            <!-- Task 9.2: 企業名フィルター -->
+                            <div class="col-md-4 mb-3">
+                                <label for="name" class="form-label filter-section-title">🏢 企業名</label>
                                 <input type="text" class="form-control" id="name" name="name"
-                                       value="{{ search_params.get('name', '') }}" placeholder="企業名で検索">
+                                       value="{{ search_params.get('name', '') }}" placeholder="企業名で検索"
+                                       {% if not can_filter %}disabled{% end %}>
                             </div>
-                            <div class="col-md-3 mb-3">
-                                <label for="location" class="form-label">所在地</label>
+
+                            <!-- Task 9.2: 地域フィルター -->
+                            <div class="col-md-4 mb-3">
+                                <label for="location" class="form-label filter-section-title">📍 所在地</label>
                                 <input type="text" class="form-control" id="location" name="location"
-                                       value="{{ search_params.get('location', '') }}" placeholder="東京都">
+                                       value="{{ search_params.get('location', '') }}" placeholder="東京都、大阪府など"
+                                       {% if not can_filter %}disabled{% end %}>
                             </div>
-                            <div class="col-md-2 mb-3">
-                                <label for="min_rating" class="form-label">最低評価</label>
-                                <select class="form-select" id="min_rating" name="min_rating">
-                                    <option value="">指定なし</option>
-                                    {% for i in range(1, 6) %}
-                                    <option value="{{ i }}"
-                                        {% if search_params.get('min_rating') == i %}selected{% end %}>
-                                        {{ i }}.0以上
-                                    </option>
-                                    {% end %}
-                                </select>
-                            </div>
-                            <div class="col-md-2 mb-3">
-                                <label for="max_rating" class="form-label">最高評価</label>
-                                <select class="form-select" id="max_rating" name="max_rating">
-                                    <option value="">指定なし</option>
-                                    {% for i in range(1, 6) %}
-                                    <option value="{{ i }}"
-                                        {% if search_params.get('max_rating') == i %}selected{% end %}>
-                                        {{ i }}.0以下
-                                    </option>
-                                    {% end %}
-                                </select>
-                            </div>
-                            <div class="col-md-2 mb-3">
-                                <label for="sort" class="form-label">並び順</label>
+
+                            <!-- Task 9.2: 並び順 -->
+                            <div class="col-md-4 mb-3">
+                                <label for="sort" class="form-label filter-section-title">🔽 並び順</label>
                                 <select class="form-select" id="sort" name="sort">
                                     <option value="rating_high"
                                         {% if search_params.get('sort') == 'rating_high' %}selected{% end %}>
-                                        評価順（高）
+                                        評価順（高→低）
                                     </option>
                                     <option value="rating_low"
                                         {% if search_params.get('sort') == 'rating_low' %}selected{% end %}>
-                                        評価順（低）
+                                        評価順（低→高）
                                     </option>
                                     <option value="review_count"
                                         {% if search_params.get('sort') == 'review_count' %}selected{% end %}>
@@ -69,11 +155,61 @@
                                 </select>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary">検索</button>
-                        <a href="/review" class="btn btn-secondary">リセット</a>
+
+                        <!-- Task 9.2: レビュー評価範囲スライダー -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="min_rating_slider" class="form-label filter-section-title">⭐ 最低評価</label>
+                                <div class="rating-slider-container">
+                                    <input type="range" class="rating-slider" id="min_rating_slider"
+                                           min="0" max="5" step="0.5"
+                                           value="{{ search_params.get('min_rating', 0) }}"
+                                           {% if not can_filter %}disabled{% end %}
+                                           oninput="updateMinRatingDisplay(this.value)">
+                                    <input type="hidden" id="min_rating" name="min_rating" value="{{ search_params.get('min_rating', '') }}">
+                                    <div class="rating-value-display" id="min_rating_display">
+                                        {% if search_params.get('min_rating') %}
+                                            {{ search_params.get('min_rating') }} 以上
+                                        {% else %}
+                                            指定なし
+                                        {% end %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="max_rating_slider" class="form-label filter-section-title">⭐ 最高評価</label>
+                                <div class="rating-slider-container">
+                                    <input type="range" class="rating-slider" id="max_rating_slider"
+                                           min="0" max="5" step="0.5"
+                                           value="{{ search_params.get('max_rating', 5) }}"
+                                           {% if not can_filter %}disabled{% end %}
+                                           oninput="updateMaxRatingDisplay(this.value)">
+                                    <input type="hidden" id="max_rating" name="max_rating" value="{{ search_params.get('max_rating', '') }}">
+                                    <div class="rating-value-display" id="max_rating_display">
+                                        {% if search_params.get('max_rating') %}
+                                            {{ search_params.get('max_rating') }} 以下
+                                        {% else %}
+                                            指定なし
+                                        {% end %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Task 9.2: フィルター適用ボタン -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" {% if not can_filter %}disabled{% end %}>
+                                🔍 検索
+                            </button>
+                            <a href="/review" class="btn btn-secondary" {% if not can_filter %}disabled{% end %}>
+                                🔄 リセット
+                            </a>
+                        </div>
                     </form>
                 </div>
             </div>
+            {% end %}
 
             <!-- 検索結果 -->
             <div class="search-results">
@@ -203,4 +339,50 @@
         </div>
     </div>
 </div>
+
+{% block scripts %}
+<script>
+    // Task 9.2: レビュー評価スライダーのJavaScript
+    function updateMinRatingDisplay(value) {
+        const display = document.getElementById('min_rating_display');
+        const hiddenInput = document.getElementById('min_rating');
+
+        if (parseFloat(value) === 0) {
+            display.textContent = '指定なし';
+            hiddenInput.value = '';
+        } else {
+            display.textContent = value + ' 以上';
+            hiddenInput.value = value;
+        }
+    }
+
+    function updateMaxRatingDisplay(value) {
+        const display = document.getElementById('max_rating_display');
+        const hiddenInput = document.getElementById('max_rating');
+
+        if (parseFloat(value) === 5) {
+            display.textContent = '指定なし';
+            hiddenInput.value = '';
+        } else {
+            display.textContent = value + ' 以下';
+            hiddenInput.value = value;
+        }
+    }
+
+    // Task 9.2: ページロード時にスライダーの初期値を設定
+    document.addEventListener('DOMContentLoaded', function() {
+        const minSlider = document.getElementById('min_rating_slider');
+        const maxSlider = document.getElementById('max_rating_slider');
+
+        if (minSlider) {
+            updateMinRatingDisplay(minSlider.value);
+        }
+
+        if (maxSlider) {
+            updateMaxRatingDisplay(maxSlider.value);
+        }
+    });
+</script>
+{% end %}
+
 {% end %}

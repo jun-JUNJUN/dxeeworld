@@ -20,6 +20,9 @@ class ReviewListHandler(BaseHandler):
     def initialize(self):
         """ハンドラー初期化"""
         self.company_search_service = CompanySearchService()
+        # Task 2.4: AccessControlMiddleware統合
+        from ..middleware.access_control_middleware import AccessControlMiddleware
+        self.access_control = AccessControlMiddleware()
 
     @staticmethod
     def truncate_comment_for_preview(comment: str, max_chars: int = 128) -> dict:
@@ -61,8 +64,41 @@ class ReviewListHandler(BaseHandler):
             }
 
     async def get(self):
-        """レビュー一覧ページを表示"""
+        """Task 2.4: レビュー一覧ページを表示 - アクセス制御とフィルター統合"""
         try:
+            # Task 2.4: アクセス制御チェック
+            session_id = self.get_secure_cookie("session_id")
+            if session_id:
+                session_id = session_id.decode("utf-8")
+
+            # ユーザーIDを取得
+            user_id = None
+            if session_id:
+                from ..services.session_service import SessionService
+                session_service = SessionService()
+                session_result = await session_service.validate_session(session_id)
+                if session_result.is_success:
+                    user_id = session_result.data.get("identity_id")
+
+            # アクセスレベルの判定
+            access_result = await self.access_control.check_review_list_access(user_id)
+            access_level = access_result.get("access_level", "preview")
+            can_filter = access_result.get("can_filter", False)
+
+            # Task 2.4: アクセスレベルに応じた処理
+            if access_level == "denied":
+                # アクセス拒否メッセージを表示
+                self.render(
+                    "reviews/list.html",
+                    companies=[],
+                    pagination={"page": 1, "total": 0, "pages": 0},
+                    search_params={},
+                    access_level=access_level,
+                    can_filter=False,
+                    access_message=access_result.get("message", "")
+                )
+                return
+
             # 検索パラメータを取得
             search_params = {
                 "name": self.get_argument("name", ""),
@@ -73,6 +109,14 @@ class ReviewListHandler(BaseHandler):
                 "limit": int(self.get_argument("limit", "20")),
                 "sort": self.get_argument("sort", "rating_high"),
             }
+
+            # Task 2.4: フィルターはcan_filter=Trueの場合のみ適用
+            if not can_filter:
+                # フィルターを無効化
+                search_params["name"] = ""
+                search_params["location"] = ""
+                search_params["min_rating"] = None
+                search_params["max_rating"] = None
 
             # 評価範囲の型変換
             if search_params["min_rating"]:
@@ -91,6 +135,9 @@ class ReviewListHandler(BaseHandler):
                 companies=search_result["companies"],
                 pagination=search_result["pagination"],
                 search_params=search_params,
+                access_level=access_level,
+                can_filter=can_filter,
+                access_message=access_result.get("message", "")
             )
 
         except Exception as e:
@@ -100,6 +147,9 @@ class ReviewListHandler(BaseHandler):
                 companies=[],
                 pagination={"page": 1, "total": 0, "pages": 0},
                 search_params={},
+                access_level="preview",
+                can_filter=False,
+                access_message=""
             )
 
 
@@ -119,8 +169,12 @@ class ReviewCreateHandler(BaseHandler):
         # Task 3.2: I18nFormService統合
         from ..services.i18n_form_service import I18nFormService
 
+        # Task 6.1: TranslationService統合
+        from ..services.translation_service import TranslationService
+
         self.access_control = AccessControlMiddleware()
         self.i18n_service = I18nFormService()
+        self.translation_service = TranslationService()
 
     async def get(self, company_id):
         """Task 4.2: レビュー投稿フォーム表示 - AccessControlMiddleware統合"""
@@ -220,7 +274,7 @@ class ReviewCreateHandler(BaseHandler):
             raise tornado.web.HTTPError(500, "内部エラーが発生しました")
 
     async def post(self, company_id):
-        """Task 5.3: レビュー投稿処理"""
+        """Task 7.1: レビュー投稿処理 - 多言語データ保存対応"""
         try:
             # 企業IDの検証
             if not company_id or len(company_id.strip()) == 0:
@@ -228,6 +282,9 @@ class ReviewCreateHandler(BaseHandler):
 
             # 認証必須
             user_id = await self.require_authentication()
+
+            # モード判定: confirm=1の場合は確認画面を表示
+            mode = self.get_argument("mode", "")
 
             # フォームデータを解析
             review_data = self._parse_review_form()
@@ -245,29 +302,167 @@ class ReviewCreateHandler(BaseHandler):
                     422, f"入力データが無効です: {', '.join(validation_errors)}"
                 )
 
-            # レビュー投稿
-            result = await self.review_service.submit_review(review_data)
+            # Task 6.1: 確認画面モード
+            if mode == "preview":
+                await self._show_confirmation_screen(company_id, review_data)
+                return
 
-            if result and result.get("status") == "success":
-                logger.info(
-                    f"Review successfully submitted for company {company_id} by user {user_id}"
-                )
-                # Task 5.3: 成功時は企業詳細ページにリダイレクト
-                self.redirect(f"/companies/{company_id}")
+            # Task 7.1: 投稿モード（mode="submit"）- 多言語データ保存
+            if mode == "submit":
+                # Task 7.1: 選択言語を取得
+                selected_language = self.get_argument("selected_language", "ja")
+                review_data["language"] = selected_language
+
+                # Task 7.1: 元言語以外の2言語に翻訳して保存
+                translated_comments_all = {}
+                target_languages = []
+
+                # 元言語に応じて翻訳先言語を決定
+                if selected_language == "ja":
+                    target_languages = ["en", "zh"]  # 日本語 → 英語 + 中国語
+                elif selected_language == "en":
+                    target_languages = ["ja", "zh"]  # 英語 → 日本語 + 中国語
+                elif selected_language == "zh":
+                    target_languages = ["ja", "en"]  # 中国語 → 日本語 + 英語
+                else:
+                    # デフォルト: 日本語を選択言語とする
+                    selected_language = "ja"
+                    target_languages = ["en", "zh"]
+
+                # 各言語への翻訳
+                for target_lang in target_languages:
+                    translated_comments_all[target_lang] = {}
+                    for category, comment in review_data["comments"].items():
+                        if comment:
+                            translation_result = await self.translation_service.translate_text(
+                                text=comment,
+                                source_lang=selected_language,
+                                target_lang=target_lang,
+                                context="company review",
+                            )
+                            if translation_result.is_success:
+                                translated_comments_all[target_lang][category] = translation_result.data
+                            else:
+                                # 翻訳失敗時はログ出力のみ（Graceful Degradation）
+                                logger.warning(
+                                    f"Translation failed for {category} to {target_lang}: {translation_result.error}"
+                                )
+                                translated_comments_all[target_lang][category] = None
+                        else:
+                            translated_comments_all[target_lang][category] = None
+
+                # Task 7.1: 翻訳データをreview_dataに追加
+                review_data["comments_ja"] = translated_comments_all.get("ja")
+                review_data["comments_en"] = translated_comments_all.get("en")
+                review_data["comments_zh"] = translated_comments_all.get("zh")
+
+                # レビュー投稿
+                result = await self.review_service.submit_review(review_data)
+
+                if result and result.get("status") == "success":
+                    logger.info(
+                        f"Review successfully submitted for company {company_id} by user {user_id}"
+                    )
+                    # Task 8.1: 投稿成功メッセージを設定
+                    self.set_flash_message("Review投稿しました。ありがとうございました。", "success")
+                    # Task 5.3: 成功時は企業詳細ページにリダイレクト
+                    self.redirect(f"/companies/{company_id}")
+                else:
+                    # Task 8.2: 投稿失敗時のエラーハンドリング
+                    error_message = (
+                        result.get("message", "レビューの投稿に失敗しました")
+                        if result
+                        else "レビューサービスでエラーが発生しました"
+                    )
+                    logger.error(
+                        f"Review submission failed for company {company_id}: {error_message}"
+                    )
+                    # Task 8.2: エラー発生時にユーザーを確認画面に留める
+                    # 確認画面を再表示し、エラーメッセージを表示
+                    company = await self.review_service.get_company_info(company_id)
+                    self.render(
+                        "reviews/confirm.html",
+                        company=company,
+                        review_data=review_data,
+                        translated_comments={},  # 翻訳データは再取得不要
+                        translated_comments_all={"ja": {}, "en": {}, "zh": {}},
+                        selected_language=review_data.get("language", "ja"),
+                        categories=self._get_review_categories(),
+                        error_message=error_message,  # Task 8.2: エラーメッセージを渡す
+                    )
+                    return
             else:
-                error_message = (
-                    result.get("message", "レビューの投稿に失敗しました")
-                    if result
-                    else "レビューサービスでエラーが発生しました"
-                )
-                logger.error(f"Review submission failed for company {company_id}: {error_message}")
-                raise tornado.web.HTTPError(400, error_message)
+                # モード不明の場合はエラー
+                raise tornado.web.HTTPError(400, "Invalid mode parameter")
 
         except tornado.web.HTTPError:
             raise
         except Exception as e:
             logger.error(f"Review submission error for company {company_id}: {e}")
             raise tornado.web.HTTPError(500, "レビュー投稿中に内部エラーが発生しました")
+
+    async def _show_confirmation_screen(self, company_id: str, review_data: dict):
+        """Task 6: 確認画面を表示 - 3言語すべての翻訳対応"""
+        try:
+            # 会社情報を取得
+            company = await self.review_service.get_company_info(company_id)
+            if not company:
+                raise tornado.web.HTTPError(404, "企業が見つかりません")
+
+            # 選択された言語を取得
+            selected_language = self.get_argument("selected_language", "ja")
+
+            # Task 6: 元言語以外の2言語に翻訳
+            translated_comments_all = {}
+            target_languages = []
+
+            # 元言語に応じて翻訳先言語を決定
+            if selected_language == "ja":
+                target_languages = ["en", "zh"]  # 日本語 → 英語 + 中国語
+            elif selected_language == "en":
+                target_languages = ["ja", "zh"]  # 英語 → 日本語 + 中国語
+            elif selected_language == "zh":
+                target_languages = ["ja", "en"]  # 中国語 → 日本語 + 英語
+
+            # 各言語への翻訳
+            for target_lang in target_languages:
+                translated_comments_all[target_lang] = {}
+                for category, comment in review_data["comments"].items():
+                    if comment:
+                        translation_result = await self.translation_service.translate_text(
+                            text=comment,
+                            source_lang=selected_language,
+                            target_lang=target_lang,
+                            context="company review",
+                        )
+                        if translation_result.is_success:
+                            translated_comments_all[target_lang][category] = translation_result.data
+                        else:
+                            # 翻訳失敗時は元のテキストを使用（Graceful Degradation）
+                            logger.warning(
+                                f"Translation failed for {category} to {target_lang}, using original text: {translation_result.error}"
+                            )
+                            translated_comments_all[target_lang][category] = f"[翻訳失敗] {comment}"
+                    else:
+                        translated_comments_all[target_lang][category] = None
+
+            # 後方互換性のため、translated_commentsも渡す（日本語翻訳）
+            translated_comments = translated_comments_all.get("ja", review_data["comments"].copy())
+
+            # 確認画面をレンダリング
+            self.render(
+                "reviews/confirm.html",
+                company=company,
+                review_data=review_data,
+                translated_comments=translated_comments,  # 後方互換性
+                translated_comments_all=translated_comments_all,  # 3言語すべて
+                selected_language=selected_language,
+                categories=self._get_review_categories(),
+            )
+
+        except Exception as e:
+            logger.exception(f"Failed to show confirmation screen: {e}")
+            raise tornado.web.HTTPError(500, "確認画面の表示に失敗しました")
 
     def _parse_review_form(self):
         """フォームデータを解析"""

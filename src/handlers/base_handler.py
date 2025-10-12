@@ -134,3 +134,36 @@ class BaseHandler(tornado.web.RequestHandler):
             </body>
             </html>
             """)
+
+    def set_flash_message(self, message: str, category: str = "success"):
+        """
+        Task 8.1: フラッシュメッセージを設定
+
+        Args:
+            message: 表示するメッセージ
+            category: メッセージカテゴリー（success, error, warning, info）
+        """
+        import json
+        # フラッシュメッセージをセキュアクッキーに保存（1回限りの表示）
+        flash_data = {"message": message, "category": category}
+        self.set_secure_cookie("flash_message", json.dumps(flash_data), expires_days=None)
+
+    def get_flash_message(self):
+        """
+        Task 8.1: フラッシュメッセージを取得して削除
+
+        Returns:
+            dict or None: {"message": str, "category": str} または None
+        """
+        import json
+        flash_cookie = self.get_secure_cookie("flash_message")
+        if not flash_cookie:
+            return None
+
+        try:
+            flash_data = json.loads(flash_cookie.decode('utf-8'))
+            # クッキーをクリア（1回限りの表示）
+            self.clear_cookie("flash_message")
+            return flash_data
+        except Exception:
+            return None
