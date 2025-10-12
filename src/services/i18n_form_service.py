@@ -123,6 +123,12 @@ class I18nFormService:
         """
         return {
             "labels": {
+                # ページタイトル
+                "review_form_title": {
+                    "en": "Submit Review",
+                    "ja": "レビュー投稿",
+                    "zh": "提交评价",
+                },
                 # 言語選択
                 "review_language": {
                     "en": "Review Language",
@@ -177,10 +183,50 @@ class I18nFormService:
                     "ja": "評価",
                     "zh": "评分",
                 },
+                "rating_1": {
+                    "en": "1 - Poor",
+                    "ja": "1点",
+                    "zh": "1分",
+                },
+                "rating_2": {
+                    "en": "2 - Fair",
+                    "ja": "2点",
+                    "zh": "2分",
+                },
+                "rating_3": {
+                    "en": "3 - Neutral",
+                    "ja": "3点",
+                    "zh": "3分",
+                },
+                "rating_4": {
+                    "en": "4 - Good",
+                    "ja": "4点",
+                    "zh": "4分",
+                },
+                "rating_5": {
+                    "en": "5 - Excellent",
+                    "ja": "5点",
+                    "zh": "5分",
+                },
                 "no_answer": {
                     "en": "No Answer",
                     "ja": "回答しない",
                     "zh": "不回答",
+                },
+                "year_suffix": {
+                    "en": "",
+                    "ja": "年",
+                    "zh": "年",
+                },
+                "select_start_year": {
+                    "en": "Select start year",
+                    "ja": "開始年を選択",
+                    "zh": "选择开始年份",
+                },
+                "select_end_year": {
+                    "en": "Select end year",
+                    "ja": "終了年を選択",
+                    "zh": "选择结束年份",
                 },
                 # レビューカテゴリー
                 "recommendation": {
@@ -188,30 +234,60 @@ class I18nFormService:
                     "ja": "推薦度合い",
                     "zh": "推荐度",
                 },
+                "recommendation_question": {
+                    "en": "Would you recommend this company to other foreign nationals?",
+                    "ja": "他の外国人に就業を推薦したい会社ですか？",
+                    "zh": "您会向其他外国人推荐这家公司吗？",
+                },
                 "foreign_support": {
                     "en": "Foreign Employee Support",
                     "ja": "外国人の受け入れ制度",
                     "zh": "外籍员工支持",
+                },
+                "foreign_support_question": {
+                    "en": "Does the company have adequate support systems for foreign employees?",
+                    "ja": "外国人の受け入れ制度が整っていますか？",
+                    "zh": "公司是否有完善的外籍员工支持制度？",
                 },
                 "company_culture": {
                     "en": "Company Culture",
                     "ja": "会社風土",
                     "zh": "公司文化",
                 },
+                "company_culture_question": {
+                    "en": "Are company policies clear and does it respect cultural diversity?",
+                    "ja": "会社方針は明確で、文化的多様性を尊重していますか？",
+                    "zh": "公司政策明确且尊重文化多样性吗？",
+                },
                 "employee_relations": {
                     "en": "Employee Relations",
                     "ja": "社員との関係性",
                     "zh": "员工关系",
+                },
+                "employee_relations_question": {
+                    "en": "Can you build respectful relationships with supervisors and colleagues?",
+                    "ja": "上司・部下とも尊敬の念を持って関係が構築できますか？",
+                    "zh": "能否与上司和同事建立相互尊重的关系？",
                 },
                 "evaluation_system": {
                     "en": "Evaluation System",
                     "ja": "成果・評価制度",
                     "zh": "评价制度",
                 },
+                "evaluation_system_question": {
+                    "en": "Are foreign employees' achievements properly recognized?",
+                    "ja": "外国人従業員の成果が認められる制度が整っていますか？",
+                    "zh": "外籍员工的成就是否得到适当认可？",
+                },
                 "promotion_treatment": {
                     "en": "Promotion & Treatment",
                     "ja": "昇進・昇給・待遇",
                     "zh": "晋升与待遇",
+                },
+                "promotion_treatment_question": {
+                    "en": "Are promotion and salary increase opportunities given fairly?",
+                    "ja": "昇進・昇給機会は平等に与えられていますか？",
+                    "zh": "晋升和加薪机会是否公平？",
                 },
                 # コメント
                 "comment": {
@@ -221,8 +297,13 @@ class I18nFormService:
                 },
                 # プレビュー
                 "preview_rating": {
-                    "en": "Your Review Score:",
-                    "ja": "あなたのレビュー点数:",
+                    "en": "Review Score Preview",
+                    "ja": "レビュー点数プレビュー",
+                    "zh": "评分预览",
+                },
+                "your_rating": {
+                    "en": "Your rating:",
+                    "ja": "あなたの評価:",
                     "zh": "您的评分:",
                 },
                 "items_answered": {
@@ -269,6 +350,11 @@ class I18nFormService:
                     "en": "Submit Review",
                     "ja": "レビューを投稿",
                     "zh": "提交评价",
+                },
+                "preview": {
+                    "en": "Preview →",
+                    "ja": "プレビュー →",
+                    "zh": "预览 →",
                 },
                 "cancel": {
                     "en": "Cancel",

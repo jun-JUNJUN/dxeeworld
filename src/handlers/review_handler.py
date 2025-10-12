@@ -22,6 +22,7 @@ class ReviewListHandler(BaseHandler):
         self.company_search_service = CompanySearchService()
         # Task 2.4: AccessControlMiddleware統合
         from ..middleware.access_control_middleware import AccessControlMiddleware
+
         self.access_control = AccessControlMiddleware()
 
     @staticmethod
@@ -75,6 +76,7 @@ class ReviewListHandler(BaseHandler):
             user_id = None
             if session_id:
                 from ..services.session_service import SessionService
+
                 session_service = SessionService()
                 session_result = await session_service.validate_session(session_id)
                 if session_result.is_success:
@@ -95,7 +97,7 @@ class ReviewListHandler(BaseHandler):
                     search_params={},
                     access_level=access_level,
                     can_filter=False,
-                    access_message=access_result.get("message", "")
+                    access_message=access_result.get("message", ""),
                 )
                 return
 
@@ -137,7 +139,7 @@ class ReviewListHandler(BaseHandler):
                 search_params=search_params,
                 access_level=access_level,
                 can_filter=can_filter,
-                access_message=access_result.get("message", "")
+                access_message=access_result.get("message", ""),
             )
 
         except Exception as e:
@@ -149,7 +151,7 @@ class ReviewListHandler(BaseHandler):
                 search_params={},
                 access_level="preview",
                 can_filter=False,
-                access_message=""
+                access_message="",
             )
 
 
@@ -247,7 +249,7 @@ class ReviewCreateHandler(BaseHandler):
                 # 権限チェックが失敗した場合でも投稿フォームは表示（デフォルト許可）
 
             # Task 3.2: ブラウザ言語検出と翻訳辞書取得
-            import json
+            import tornado.escape
 
             accept_language = self.request.headers.get("Accept-Language", "")
             default_language = self.i18n_service.detect_browser_language(accept_language)
@@ -263,7 +265,9 @@ class ReviewCreateHandler(BaseHandler):
                 show_login_panel=False,
                 review_form_visible=True,
                 default_language=default_language,
-                translations=json.dumps(translations),  # JSON文字列に変換
+                translations=tornado.escape.json_encode(
+                    translations
+                ),  # JSON文字列に変換（エスケープなし）
                 supported_languages=supported_languages,
             )
 
@@ -341,7 +345,9 @@ class ReviewCreateHandler(BaseHandler):
                                 context="company review",
                             )
                             if translation_result.is_success:
-                                translated_comments_all[target_lang][category] = translation_result.data
+                                translated_comments_all[target_lang][category] = (
+                                    translation_result.data
+                                )
                             else:
                                 # 翻訳失敗時はログ出力のみ（Graceful Degradation）
                                 logger.warning(
@@ -364,7 +370,9 @@ class ReviewCreateHandler(BaseHandler):
                         f"Review successfully submitted for company {company_id} by user {user_id}"
                     )
                     # Task 8.1: 投稿成功メッセージを設定
-                    self.set_flash_message("Review投稿しました。ありがとうございました。", "success")
+                    self.set_flash_message(
+                        "Review投稿しました。ありがとうございました。", "success"
+                    )
                     # Task 5.3: 成功時は企業詳細ページにリダイレクト
                     self.redirect(f"/companies/{company_id}")
                 else:

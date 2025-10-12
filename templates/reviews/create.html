@@ -153,6 +153,50 @@ block head %}
         }
     }
 
+    /* 評価ラジオボタンの垂直整列 */
+    .form-check {
+        display: flex;
+        align-items: center;
+        min-height: 1.5rem;
+    }
+
+    .form-check-input {
+        margin-top: 0;
+        flex-shrink: 0;
+    }
+
+    .form-check-label {
+        margin-left: 0.5rem;
+        margin-bottom: 0;
+        line-height: 1.5;
+    }
+
+    /* 評価ラジオボタンの行間調整 */
+    .row > [class*="col-"] .form-check {
+        margin-bottom: 0.5rem;
+    }
+
+    /* 評価ラジオボタンを垂直に並べて中央配置 */
+    .mb-3 > .row {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .mb-3 > .row > [class*="col-"] {
+        width: auto !important;
+        max-width: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        flex: none !important;
+    }
+
+    .mb-3 > .row .form-check {
+        justify-content: flex-start;
+        margin-bottom: 0.5rem;
+        padding-left: 0;
+    }
+
     @media (max-width: 768px) {
         .review-form-container {
             max-width: 100%;
@@ -175,7 +219,7 @@ block head %}
         <div class="col-lg-8 mx-auto">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="mb-0">レビュー投稿</h2>
+                    <h2 class="mb-0" data-i18n-label="review_form_title">レビュー投稿</h2>
                 </div>
                 <div class="card-body">
                     <!-- 企業情報（改善版） -->
@@ -221,8 +265,10 @@ block head %}
 
                         <!-- Task 3.2: 言語選択ドロップダウン -->
                         <div class="mb-4">
-                            <label class="form-label fw-bold" data-i18n-label="review_language">
-                                レビュー言語
+                            <label class="form-label fw-bold">
+                                <span class="language-label-multilang">
+                                    Review Language / レビュー言語 / 评价语言
+                                </span>
                             </label>
                             <select
                                 class="form-select"
@@ -235,8 +281,10 @@ block head %}
                                 </option>
                                 {% end %}
                             </select>
-                            <small class="form-text text-muted" data-i18n-label="select_language">
-                                レビューを投稿する言語を選択してください
+                            <small class="form-text text-muted">
+                                <span class="language-hint-multilang">
+                                    Select the language for your review / レビューを投稿する言語を選択してください / 请选择评价语言
+                                </span>
                             </small>
                         </div>
 
@@ -298,9 +346,8 @@ block head %}
                                     name="employment_start_year"
                                     id="employmentStartYear"
                                     class="period-select"
-                                    data-i18n-placeholder="select_start_year"
                                 >
-                                    <option value="" data-i18n-placeholder="select_start_year">開始年を選択</option>
+                                    <option value="" data-i18n-label="select_start_year">開始年を選択</option>
                                     <!-- JavaScriptで動的生成 -->
                                 </select>
                                 <span class="period-separator">〜</span>
@@ -308,9 +355,8 @@ block head %}
                                     name="employment_end_year"
                                     id="employmentEndYear"
                                     class="period-select"
-                                    data-i18n-placeholder="select_end_year"
                                 >
-                                    <option value="" data-i18n-placeholder="select_end_year">終了年を選択</option>
+                                    <option value="" data-i18n-label="select_end_year">終了年を選択</option>
                                     <option value="present" data-i18n-label="present">現在勤務</option>
                                     <!-- JavaScriptで動的生成 -->
                                 </select>
@@ -321,15 +367,16 @@ block head %}
                         {% for category in categories %}
                         <div class="mb-4 border rounded p-3">
                             <h5 class="mb-3">
-                                {{ category['index'] }}. {{ category['title'] }}
+                                <span>{{ category['index'] }}.</span>
+                                <span data-i18n-label="{{ category['key'] }}">{{ category['title'] }}</span>
                             </h5>
-                            <p class="text-muted mb-3">
+                            <p class="text-muted mb-3" data-i18n-label="{{ category['key'] }}_question">
                                 {{ category['question'] }}
                             </p>
 
                             <!-- 評価選択 -->
                             <div class="mb-3">
-                                <label class="form-label fw-bold">評価</label>
+                                <label class="form-label fw-bold" data-i18n-label="rating">評価</label>
                                 <div class="row">
                                     {% for score in range(1, 6) %}
                                     <div class="col-2">
@@ -344,6 +391,7 @@ block head %}
                                             <label
                                                 class="form-check-label"
                                                 for="{{ category['key'] }}_{{ score }}"
+                                                data-i18n-label="rating_{{ score }}"
                                             >
                                                 {{ score }}点
                                             </label>
@@ -362,6 +410,7 @@ block head %}
                                             <label
                                                 class="form-check-label"
                                                 for="{{ category['key'] }}_no_answer"
+                                                data-i18n-label="no_answer"
                                             >
                                                 回答しない
                                             </label>
@@ -375,6 +424,7 @@ block head %}
                                 <label
                                     for="comment_{{ category['key'] }}"
                                     class="form-label fw-bold"
+                                    data-i18n-label="comment"
                                 >
                                     コメント（任意）
                                 </label>
@@ -385,6 +435,7 @@ block head %}
                                     rows="3"
                                     maxlength="1000"
                                     placeholder="具体的な経験やエピソードがあれば教えてください（最大1000文字）"
+                                    data-i18n-placeholder="comment"
                                 ></textarea>
                                 <div class="form-text">
                                     <span id="count_{{ category['key'] }}"
@@ -397,11 +448,11 @@ block head %}
 
                         <!-- プレビュー表示 -->
                         <div class="mb-4">
-                            <h5>レビュー点数プレビュー</h5>
+                            <h5 data-i18n-label="preview_rating">レビュー点数プレビュー</h5>
                             <div class="bg-light p-3 rounded">
                                 <div class="row align-items-center">
                                     <div class="col-md-8">
-                                        <span class="fw-bold"
+                                        <span class="fw-bold" data-i18n-label="your_rating"
                                             >あなたのレビュー点数:
                                         </span>
                                         <span
@@ -410,12 +461,12 @@ block head %}
                                             >-.-</span
                                         >
                                         <small class="text-muted"
-                                            >（<span id="answeredCount">0</span
-                                            >項目回答）</small
+                                            >（<span id="answeredCount">0</span>
+                                            <span data-i18n-label="items_answered">項目回答</span>）</small
                                         >
                                     </div>
                                     <div class="col-md-4 text-end">
-                                        <small class="text-muted"
+                                        <small class="text-muted" data-i18n-label="average_of_answered"
                                             >回答した項目の平均点</small
                                         >
                                     </div>
@@ -429,6 +480,7 @@ block head %}
                             <a
                                 href="/companies/{{ company['id'] }}"
                                 class="btn btn-secondary"
+                                data-i18n-button="cancel"
                                 >キャンセル</a
                             >
                             <button
@@ -436,6 +488,7 @@ block head %}
                                 class="btn btn-primary btn-lg"
                                 id="submitBtn"
                                 disabled
+                                data-i18n-button="preview"
                             >
                                 プレビュー →
                             </button>
@@ -470,7 +523,7 @@ block head %}
 <script src="/static/js/reviewForm.js"></script>
 <script>
     // Task 3.2: 翻訳辞書をJavaScriptで利用可能にする
-    const translations = {{ translations }};
+    const translations = {% raw translations %};
 
     document.addEventListener("DOMContentLoaded", function () {
         const form = document.getElementById("reviewForm");
@@ -563,11 +616,15 @@ block head %}
             );
             const endYearSelect = document.getElementById("employmentEndYear");
 
+            // 年の接尾辞を取得（日本語：「年」、英語：「」、中国語：「年」）
+            const yearSuffix = translations.labels.year_suffix[reviewForm.currentLanguage] || "";
+
             // 開始年ドロップダウンを生成（1970年から現在年まで）
             for (let year = currentYear; year >= startYear; year--) {
                 const option = document.createElement("option");
                 option.value = year;
-                option.textContent = year + "年";
+                option.textContent = year + yearSuffix;
+                option.setAttribute('data-year', year); // 年の値を保存
                 startYearSelect.appendChild(option);
             }
 
@@ -576,7 +633,8 @@ block head %}
             for (let year = currentYear; year >= startYear; year--) {
                 const option = document.createElement("option");
                 option.value = year;
-                option.textContent = year + "年";
+                option.textContent = year + yearSuffix;
+                option.setAttribute('data-year', year); // 年の値を保存
                 endYearSelect.appendChild(option);
             }
 
@@ -602,11 +660,15 @@ block head %}
             if (emptyOption) endYearSelect.appendChild(emptyOption);
             if (currentOption) endYearSelect.appendChild(currentOption);
 
+            // 年の接尾辞を取得
+            const yearSuffix = translations.labels.year_suffix[reviewForm.currentLanguage] || "";
+
             // 開始年以降の年数のみを追加
             for (let year = currentYear; year >= startYear; year--) {
                 const option = document.createElement("option");
                 option.value = year;
-                option.textContent = year + "年";
+                option.textContent = year + yearSuffix;
+                option.setAttribute('data-year', year); // 年の値を保存
                 endYearSelect.appendChild(option);
             }
         }
