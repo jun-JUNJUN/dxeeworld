@@ -158,15 +158,19 @@ block head %}
         display: flex;
         align-items: center;
         min-height: 1.5rem;
+        position: relative;
     }
 
     .form-check-input {
         margin-top: 0;
         flex-shrink: 0;
+        position: absolute;
+        left: 0;
     }
 
     .form-check-label {
-        margin-left: 0.5rem;
+        margin-left: 0;
+        padding-left: 1.75rem;
         margin-bottom: 0;
         line-height: 1.5;
     }
@@ -180,8 +184,9 @@ block head %}
     .border.rounded.p-3 .mb-3 .row {
         display: flex;
         flex-direction: column;
-        align-items: center;
+        align-items: flex-start;
         gap: 0;
+        margin-left: 0;
     }
 
     .border.rounded.p-3 .mb-3 .row > div {
@@ -196,12 +201,97 @@ block head %}
         justify-content: flex-start;
         margin-bottom: 0.5rem;
         padding-left: 0 !important;
-        width: auto;
+        width: 200px;
+        text-align: left;
     }
 
     /* 投稿ボタンの下にスペースを追加 */
     .card-body > form {
         margin-bottom: 80px;
+    }
+
+    /* 在職状況、勤務期間、評価を同じ位置に左揃え */
+
+    /* 在職状況セクション全体を中央配置 */
+    .mb-4:has(.form-check) {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .mb-4:has(.form-check) .form-label {
+        width: 100%;
+        text-align: center;
+    }
+
+    .mb-4:has(.form-check) .row {
+        justify-content: center;
+        width: auto;
+    }
+
+    .mb-4:has(.form-check) .row .col-md-6 {
+        width: auto;
+        flex: none;
+    }
+
+    /* 勤務期間セクション全体を中央配置 */
+    .employment-period-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .employment-period-section .period-inputs {
+        justify-content: center;
+    }
+
+    /* 評価セクション全体を左揃え */
+    .border.rounded.p-3 {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding-left: 20px !important;
+    }
+
+    .border.rounded.p-3 > h5 {
+        width: 100%;
+        text-align: left;
+        margin-bottom: 12px;
+    }
+
+    .border.rounded.p-3 > p {
+        width: 100%;
+        text-align: left;
+        margin-left: 0;
+        padding-left: 0;
+    }
+
+    .border.rounded.p-3 > .mb-3 {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        margin-left: 0;
+    }
+
+    .border.rounded.p-3 > .mb-3 > .form-label {
+        text-align: left;
+        margin-left: 0;
+        padding-left: 0;
+    }
+
+    .border.rounded.p-3 > .mb-2 {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .border.rounded.p-3 > .mb-2 > .form-label {
+        text-align: left;
+    }
+
+    .border.rounded.p-3 > .mb-2 > textarea {
+        width: 100%;
+        max-width: 100%;
     }
 
     @media (max-width: 768px) {
