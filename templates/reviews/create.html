@@ -177,24 +177,31 @@ block head %}
     }
 
     /* 評価ラジオボタンを垂直に並べて中央配置 */
-    .mb-3 > .row {
+    .border.rounded.p-3 .mb-3 .row {
         display: flex;
         flex-direction: column;
         align-items: center;
+        gap: 0;
     }
 
-    .mb-3 > .row > [class*="col-"] {
-        width: auto !important;
+    .border.rounded.p-3 .mb-3 .row > div {
+        width: fit-content !important;
         max-width: none !important;
         padding: 0 !important;
         margin: 0 !important;
         flex: none !important;
     }
 
-    .mb-3 > .row .form-check {
+    .border.rounded.p-3 .mb-3 .row .form-check {
         justify-content: flex-start;
         margin-bottom: 0.5rem;
-        padding-left: 0;
+        padding-left: 0 !important;
+        width: auto;
+    }
+
+    /* 投稿ボタンの下にスペースを追加 */
+    .card-body > form {
+        margin-bottom: 80px;
     }
 
     @media (max-width: 768px) {
