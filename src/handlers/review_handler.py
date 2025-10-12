@@ -417,8 +417,8 @@ class ReviewCreateHandler(BaseHandler):
             if not company:
                 raise tornado.web.HTTPError(404, "企業が見つかりません")
 
-            # 選択された言語を取得
-            selected_language = self.get_argument("selected_language", "ja")
+            # 選択された言語を取得（review_dataから）
+            selected_language = review_data.get("selected_language", "ja")
 
             # Task 6: 元言語以外の2言語に翻訳
             translated_comments_all = {}
@@ -504,6 +504,9 @@ class ReviewCreateHandler(BaseHandler):
             "employment_status": self.get_argument("employment_status"),
             "ratings": ratings,
             "comments": comments,
+            "selected_language": self.get_argument(
+                "review_language", "ja"
+            ),  # フォームの name="review_language" から取得
         }
 
     def _validate_review_data(self, data):
