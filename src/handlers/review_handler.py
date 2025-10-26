@@ -260,7 +260,7 @@ class ReviewCreateHandler(BaseHandler):
             self.render(
                 "reviews/create.html",
                 company=company,
-                categories=self._get_review_categories(),
+                categories=self._get_review_categories(default_language),
                 company_id=company_id,
                 show_login_panel=False,
                 review_form_visible=True,
@@ -388,14 +388,15 @@ class ReviewCreateHandler(BaseHandler):
                     # Task 8.2: エラー発生時にユーザーを確認画面に留める
                     # 確認画面を再表示し、エラーメッセージを表示
                     company = await self.review_service.get_company_info(company_id)
+                    selected_language = review_data.get("language", "ja")
                     self.render(
                         "reviews/confirm.html",
                         company=company,
                         review_data=review_data,
                         translated_comments={},  # 翻訳データは再取得不要
                         translated_comments_all={"ja": {}, "en": {}, "zh": {}},
-                        selected_language=review_data.get("language", "ja"),
-                        categories=self._get_review_categories(),
+                        selected_language=selected_language,
+                        categories=self._get_review_categories(selected_language),
                         error_message=error_message,  # Task 8.2: エラーメッセージを渡す
                     )
                     return
@@ -468,7 +469,7 @@ class ReviewCreateHandler(BaseHandler):
                 translated_comments=translated_comments,  # 後方互換性
                 translated_comments_all=translated_comments_all,  # 3言語すべて
                 selected_language=selected_language,
-                categories=self._get_review_categories(),
+                categories=self._get_review_categories(selected_language),
                 error_message=None,  # テンプレートでエラーチェックに使用
                 i18n=confirm_i18n,  # 確認画面の翻訳
             )
@@ -534,43 +535,49 @@ class ReviewCreateHandler(BaseHandler):
 
         return errors
 
-    def _get_review_categories(self):
-        """レビューカテゴリー定義を取得"""
-        categories = [
-            {
-                "key": "recommendation",
-                "title": "推薦度合い",
-                "question": "他の外国人に就業を推薦したい会社ですか？",
-            },
-            {
-                "key": "foreign_support",
-                "title": "外国人の受け入れ制度",
-                "question": "外国人の受け入れ制度が整っていますか？",
-            },
-            {
-                "key": "company_culture",
-                "title": "会社風土",
-                "question": "会社方針は明確で、文化的多様性を尊重していますか？",
-            },
-            {
-                "key": "employee_relations",
-                "title": "社員との関係性",
-                "question": "上司・部下とも尊敬の念を持って関係が構築できますか？",
-            },
-            {
-                "key": "evaluation_system",
-                "title": "成果・評価制度",
-                "question": "外国人従業員の成果が認められる制度が整っていますか？",
-            },
-            {
-                "key": "promotion_treatment",
-                "title": "昇進・昇給・待遇",
-                "question": "昇進・昇給機会は平等に与えられていますか？",
-            },
+    def _get_review_categories(self, language: str = "ja"):
+        """
+        レビューカテゴリー定義を取得（多言語対応）
+
+        Args:
+            language: 言語コード ("ja", "en", "zh")
+
+        Returns:
+            カテゴリーのリスト（title と question が指定言語で翻訳済み）
+        """
+        # 翻訳辞書を取得
+        translations = self.i18n_service.get_form_translations()
+        labels = translations.get("labels", {})
+
+        # カテゴリーキーのリスト
+        category_keys = [
+            "recommendation",
+            "foreign_support",
+            "company_culture",
+            "employee_relations",
+            "evaluation_system",
+            "promotion_treatment",
         ]
+
+        categories = []
+        for key in category_keys:
+            title_key = key
+            question_key = f"{key}_question"
+
+            # 翻訳辞書から title と question を取得
+            title = labels.get(title_key, {}).get(language, labels.get(title_key, {}).get("ja", ""))
+            question = labels.get(question_key, {}).get(language, labels.get(question_key, {}).get("ja", ""))
+
+            categories.append({
+                "key": key,
+                "title": title,
+                "question": question,
+            })
+
         # Add index to each category for Tornado template compatibility
         for i, category in enumerate(categories):
             category["index"] = i + 1
+
         return categories
 
     def _get_confirmation_i18n(self, language: str) -> dict:
@@ -688,8 +695,11 @@ class ReviewEditHandler(BaseHandler):
         )
         # Task 4.3: AccessControlMiddleware統合
         from ..middleware.access_control_middleware import AccessControlMiddleware
+        # I18nFormService統合（多言語対応）
+        from ..services.i18n_form_service import I18nFormService
 
         self.access_control = AccessControlMiddleware()
+        self.i18n_service = I18nFormService()
 
     async def get(self, review_id):
         """Task 4.3: レビュー編集フォーム表示 - AccessControlMiddleware統合"""
@@ -762,43 +772,49 @@ class ReviewEditHandler(BaseHandler):
             logger.error(f"Review edit form error for review {review_id}: {e}")
             raise tornado.web.HTTPError(500, "内部エラーが発生しました")
 
-    def _get_review_categories(self):
-        """レビューカテゴリー定義を取得"""
-        categories = [
-            {
-                "key": "recommendation",
-                "title": "推薦度合い",
-                "question": "他の外国人に就業を推薦したい会社ですか？",
-            },
-            {
-                "key": "foreign_support",
-                "title": "外国人の受け入れ制度",
-                "question": "外国人の受け入れ制度が整っていますか？",
-            },
-            {
-                "key": "company_culture",
-                "title": "会社風土",
-                "question": "会社方針は明確で、文化的多様性を尊重していますか？",
-            },
-            {
-                "key": "employee_relations",
-                "title": "社員との関係性",
-                "question": "上司・部下とも尊敬の念を持って関係が構築できますか？",
-            },
-            {
-                "key": "evaluation_system",
-                "title": "成果・評価制度",
-                "question": "外国人従業員の成果が認められる制度が整っていますか？",
-            },
-            {
-                "key": "promotion_treatment",
-                "title": "昇進・昇給・待遇",
-                "question": "昇進・昇給機会は平等に与えられていますか？",
-            },
+    def _get_review_categories(self, language: str = "ja"):
+        """
+        レビューカテゴリー定義を取得（多言語対応）
+
+        Args:
+            language: 言語コード ("ja", "en", "zh")
+
+        Returns:
+            カテゴリーのリスト（title と question が指定言語で翻訳済み）
+        """
+        # 翻訳辞書を取得
+        translations = self.i18n_service.get_form_translations()
+        labels = translations.get("labels", {})
+
+        # カテゴリーキーのリスト
+        category_keys = [
+            "recommendation",
+            "foreign_support",
+            "company_culture",
+            "employee_relations",
+            "evaluation_system",
+            "promotion_treatment",
         ]
+
+        categories = []
+        for key in category_keys:
+            title_key = key
+            question_key = f"{key}_question"
+
+            # 翻訳辞書から title と question を取得
+            title = labels.get(title_key, {}).get(language, labels.get(title_key, {}).get("ja", ""))
+            question = labels.get(question_key, {}).get(language, labels.get(question_key, {}).get("ja", ""))
+
+            categories.append({
+                "key": key,
+                "title": title,
+                "question": question,
+            })
+
         # Add index to each category for Tornado template compatibility
         for i, category in enumerate(categories):
             category["index"] = i + 1
+
         return categories
 
     async def post(self, review_id):
