@@ -5,9 +5,10 @@
 ### Web Application Architecture
 - **Framework**: Tornado 6.5.2 - 高性能 Python Web フレームワーク
 - **Database**: MongoDB 7.0+ with Motor (非同期ドライバー)
-- **Authentication**: OAuth 2.0 (Google, Facebook) + Email verification
+- **Authentication**: OAuth 2.0 (Google, Facebook) + Email verification + Logout support
 - **Session Management**: Secure cookie-based sessions with encryption
-- **Template Engine**: Jinja2 3.1.3 - サーバーサイドレンダリング
+- **Internationalization**: Multilingual support (EN/ZH/JA) with translation service
+- **Template Engine**: Jinja2 3.1.3 - サーバーサイドレンダリング with i18n integration
 
 ### Development Framework (Kiro)
 - **Command System**: Markdown ベースのスラッシュコマンド定義
@@ -20,9 +21,13 @@
 
 ### User Interface
 - **Design Framework**: Kaggle-inspired responsive design
-- **Template System**: Jinja2 templates with base template inheritance
+- **Template System**: Jinja2 templates with base template inheritance and multilingual support
 - **Styling**: Custom CSS with mobile-first responsive layout
 - **JavaScript**: Vanilla JavaScript for interactive features
+  - `reviewForm.js`: Multilingual review form handling
+  - `login-panel.js`: Authentication UI management
+  - `main.js`: Global navigation and user info display
+- **Internationalization**: Language selection (EN/ZH/JA) with translation service
 - **Static Assets**: CSS/JS served via Tornado static file handler
 
 ### Page Structure
@@ -35,7 +40,8 @@ templates/
 │   └── detail.html    # Company detail pages
 ├── reviews/           # Review system pages
 │   ├── list.html      # Review listings
-│   ├── create.html    # Review creation form
+│   ├── create.html    # Review creation form (multilingual)
+│   ├── confirm.html   # Review confirmation page (multilingual)
 │   └── edit.html      # Review editing
 ├── jobs/              # Job listings
 └── errors/            # Error pages
@@ -59,15 +65,25 @@ src/
 ├── handlers/            # Request handlers (MVC Controllers)
 │   ├── auth_handler.py  # Authentication endpoints
 │   ├── company_handler.py # Company CRUD operations
-│   ├── review_handler.py  # Review system
-│   └── email_auth_handler.py # Email verification
+│   ├── review_handler.py  # Review system (multilingual support)
+│   ├── email_auth_handler.py # Email verification
+│   └── user_info_handler.py # User information and logout
 ├── models/              # Data models
 │   ├── user.py          # User model with authentication
 │   ├── company.py       # Company data model
-│   ├── review.py        # Review model with 7-point rating
+│   ├── review.py        # Review model with 7-point rating (multilingual)
+│   ├── review_history.py # Review edit history tracking
 │   └── job.py           # Job listings model
 ├── services/            # Business logic services
+│   ├── translation_service.py    # Multilingual translation (EN/ZH/JA)
+│   ├── i18n_form_service.py      # Internationalized form handling
+│   ├── email_auth_service.py     # Email authentication and verification
+│   ├── oauth_session_service.py  # OAuth session management
+│   └── review_submission_service.py # Review creation and validation
 ├── middleware/          # Authentication and access control
+├── tools/               # Data migration and import utilities
+│   ├── migrate_multilingual.py   # Multilingual data migration
+│   └── show_mongodb_structure.py # Database structure inspection
 └── utils/               # Utility functions
 ```
 

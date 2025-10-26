@@ -23,13 +23,22 @@ dxeeworld/
 │   └── errors/         # Error pages
 ├── static/              # Static assets (CSS, JS, images)
 │   ├── css/            # Stylesheets
+│   │   └── main.css    # Main stylesheet
 │   └── js/             # JavaScript files
+│       ├── main.js     # Global navigation and user info
+│       ├── reviewForm.js # Multilingual review form handling
+│       └── login-panel.js # Authentication UI management
 ├── tests/               # Test suite
+├── docs/                # Documentation files
+│   ├── MIGRATION_MULTILINGUAL.md # Multilingual migration guide
+│   └── MONGODB_STRUCTURE.md # Database structure documentation
 ├── pyproject.toml       # Python project configuration
 ├── run_server.py        # Server startup script
 ├── activate_server.sh   # Development server launcher
 ├── CLAUDE.md           # Main project configuration
-└── README.md           # Project documentation
+├── README.md           # Project documentation
+├── SETUP.md            # Setup and installation guide
+└── TESTING_TRANSLATION_SERVICE.md # Translation service testing guide
 ```
 
 ## Subdirectory Structures
@@ -85,29 +94,37 @@ src/
 ├── config.py              # Configuration management
 ├── database.py            # MongoDB connection utilities
 ├── handlers/              # HTTP request handlers
-│   ├── auth_handler.py    # Authentication (register, login, logout)
+│   ├── auth_handler.py    # Authentication (register, login)
 │   ├── company_handler.py # Company CRUD operations
-│   ├── review_handler.py  # Review system (create, edit, list)
+│   ├── review_handler.py  # Review system (create, edit, list, multilingual)
 │   ├── email_auth_handler.py # Email verification system
+│   ├── user_info_handler.py # User information and logout
 │   ├── home_handler.py    # Landing page
 │   └── health_handler.py  # Health check endpoint
 ├── models/                # Data models (MongoDB documents)
 │   ├── user.py           # User model with authentication
 │   ├── company.py        # Company data model
-│   ├── review.py         # Review model with 7-point rating
-│   ├── job.py            # Job listings model
-│   └── review_history.py # Review edit history
+│   ├── review.py         # Review model with 7-point rating (multilingual)
+│   ├── review_history.py # Review edit history tracking
+│   └── job.py            # Job listings model
 ├── services/              # Business logic services
 │   ├── auth_service.py   # Authentication business logic
 │   ├── company_service.py # Company data management
 │   ├── review_service.py # Review calculation and management
+│   ├── review_submission_service.py # Review creation and validation
+│   ├── translation_service.py # Multilingual translation (EN/ZH/JA)
+│   ├── i18n_form_service.py # Internationalized form handling
 │   ├── search_service.py # Search functionality
-│   └── oauth_service.py  # OAuth integration
+│   ├── oauth_service.py  # OAuth integration
+│   ├── oauth_session_service.py # OAuth session management
+│   └── email_auth_service.py # Email authentication and verification
 ├── middleware/            # Request processing middleware
 │   ├── auth_middleware.py # Session management
 │   └── access_control_middleware.py # Authorization
 ├── tools/                 # Data import/export tools
-│   └── csv_import_tool.py # Company data CSV import
+│   ├── csv_import_tool.py # Company data CSV import
+│   ├── migrate_multilingual.py # Multilingual data migration
+│   └── show_mongodb_structure.py # Database structure inspection
 └── utils/                 # Utility functions
     └── result.py         # Result wrapper classes
 ```
@@ -123,8 +140,9 @@ templates/
 │   ├── list.html        # Company listings with filters
 │   └── detail.html      # Company detail with reviews
 ├── reviews/             # Review system pages
-│   ├── list.html        # Review listings
-│   ├── create.html      # Review creation form
+│   ├── list.html        # Review listings with filtering
+│   ├── create.html      # Review creation form (multilingual)
+│   ├── confirm.html     # Review confirmation page (multilingual)
 │   └── edit.html        # Review editing interface
 ├── jobs/                # Job listing pages
 │   └── list.html        # Job search and listings
@@ -226,7 +244,11 @@ spec-init → spec-requirements → spec-design → spec-tasks → [implementati
 
 ### Static Assets
 - **CSS**: `snake_case.css` in `static/css/`
+  - `main.css`: Core styling and responsive design
 - **JavaScript**: `camelCase.js` in `static/js/`
+  - `main.js`: Global navigation and user info display
+  - `reviewForm.js`: Multilingual review form handling
+  - `login-panel.js`: Authentication UI management
 - **Images**: descriptive names in `static/images/`
 
 ### Development Framework Files
