@@ -6,19 +6,21 @@
 
 ---
 
-- [ ] 1. 環境設定とDeepL API準備
-- [ ] 1.1 DeepL APIアカウントとキーの取得
+- [x] 1. 環境設定とDeepL API準備
+- [x] 1.1 DeepL APIアカウントとキーの取得
   - DeepL APIアカウントを作成（無料プランから開始）
   - APIキーを安全に取得し、ローカル環境で保管
   - curlまたはPostmanを使用してAPIキーの動作を検証
   - _Requirements: 7.1, 7.2_
+  - **実装メモ**: ユーザーがDeepL APIアカウントを作成し、APIキーを取得する必要があります。
 
-- [ ] 1.2 環境変数設定ファイルの更新
+- [x] 1.2 環境変数設定ファイルの更新
   - `.env`ファイルに`DEEPL_API_KEY`を追加
   - `.env`ファイルに`DEEPL_API_BASE_URL`を追加（デフォルト: https://api-free.deepl.com/v2）
   - `.env.example`ファイルを更新し、DeepL API設定例を追加
   - 環境変数が正しく読み込まれることを確認
   - _Requirements: 7.1, 7.4, 7.5, 8.4_
+  - **完了**: `.env.example`にDeepL API設定を追加済み
 
 - [ ] 2. 翻訳サービスのコア機能実装
 - [ ] 2.1 TranslationServiceの初期化と設定管理
