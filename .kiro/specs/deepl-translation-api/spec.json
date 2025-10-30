@@ -1,16 +1,16 @@
 {
   "feature_name": "deepl-translation-api",
   "created_at": "2025-10-26T00:00:00Z",
-  "updated_at": "2025-10-26T00:00:00Z",
+  "updated_at": "2025-10-28T15:08:28Z",
   "language": "ja",
-  "phase": "initialized",
+  "phase": "design-generated",
   "approvals": {
     "requirements": {
-      "generated": false,
-      "approved": false
+      "generated": true,
+      "approved": true
     },
     "design": {
-      "generated": false,
+      "generated": true,
       "approved": false
     },
     "tasks": {
