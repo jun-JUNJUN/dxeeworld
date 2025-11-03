@@ -413,6 +413,24 @@
                             {% if comment %}
                                 <input type="hidden" name="comments[{{ category['key'] }}]" value="{{ comment }}" />
                             {% end %}
+
+                            {# 翻訳データをhidden fieldとして埋め込み（DeepL API呼び出し削減のため） #}
+                            {% if translated_comments_all %}
+                                {% set ja_comment = translated_comments_all.get('ja', {}).get(category['key']) %}
+                                {% if ja_comment %}
+                                    <input type="hidden" name="translated_comments_ja[{{ category['key'] }}]" value="{{ ja_comment }}" />
+                                {% end %}
+
+                                {% set en_comment = translated_comments_all.get('en', {}).get(category['key']) %}
+                                {% if en_comment %}
+                                    <input type="hidden" name="translated_comments_en[{{ category['key'] }}]" value="{{ en_comment }}" />
+                                {% end %}
+
+                                {% set zh_comment = translated_comments_all.get('zh', {}).get(category['key']) %}
+                                {% if zh_comment %}
+                                    <input type="hidden" name="translated_comments_zh[{{ category['key'] }}]" value="{{ zh_comment }}" />
+                                {% end %}
+                            {% end %}
                         {% end %}
                     </form>
                 </div>

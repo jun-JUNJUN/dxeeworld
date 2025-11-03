@@ -349,11 +349,18 @@ class ReviewSubmissionService:
         # Task 7.1: 選択言語をレビューデータに保存
         review_language = review_data.get("language", "ja")
 
+        # employment_statusを文字列からEnumに変換
+        employment_status_str = review_data["employment_status"]
+        if isinstance(employment_status_str, str):
+            employment_status = EmploymentStatus(employment_status_str)
+        else:
+            employment_status = employment_status_str
+
         review_dict = {
             "id": "",  # データベース保存時に設定される
             "company_id": review_data["company_id"],
             "user_id": review_data["user_id"],
-            "employment_status": review_data["employment_status"],
+            "employment_status": employment_status,
             "ratings": review_data["ratings"],
             "comments": review_data["comments"],
             "individual_average": individual_average,
@@ -651,7 +658,8 @@ class ReviewSubmissionService:
             )
 
             # 6. データベース更新
-            await self.db.update("reviews", {"_id": review_id}, {"$set": update_data})
+            # DatabaseServiceには update() メソッドがないため update_one() を使用
+            await self.db.update_one("reviews", {"_id": review_id}, {"$set": update_data})
 
             # 7. 企業平均点再計算
             if self.calc_service:
@@ -786,7 +794,8 @@ class ReviewSubmissionService:
                 object_id = user_id
 
             # ユーザーのlast_review_posted_atを更新
-            await self.db.update(
+            # DatabaseServiceには update() メソッドがないため update_one() を使用
+            await self.db.update_one(
                 "users", {"_id": object_id}, {"$set": {"last_review_posted_at": datetime.utcnow()}}
             )
 

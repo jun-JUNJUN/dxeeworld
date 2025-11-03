@@ -317,45 +317,54 @@ class ReviewCreateHandler(BaseHandler):
                 selected_language = self.get_argument("selected_language", "ja")
                 review_data["language"] = selected_language
 
-                # Task 7.1: 元言語以外の2言語に翻訳して保存
-                translated_comments_all = {}
-                target_languages = []
+                # 最適化: hidden fieldから翻訳データを取得（DeepL API呼び出しを削減）
+                has_cached_translations = self._check_cached_translations()
 
-                # 元言語に応じて翻訳先言語を決定
-                if selected_language == "ja":
-                    target_languages = ["en", "zh"]  # 日本語 → 英語 + 中国語
-                elif selected_language == "en":
-                    target_languages = ["ja", "zh"]  # 英語 → 日本語 + 中国語
-                elif selected_language == "zh":
-                    target_languages = ["ja", "en"]  # 中国語 → 日本語 + 英語
+                if has_cached_translations:
+                    # 確認画面からの翻訳データを再利用
+                    logger.info("Reusing cached translations from confirmation screen (no API calls)")
+                    translated_comments_all = self._parse_cached_translations()
                 else:
-                    # デフォルト: 日本語を選択言語とする
-                    selected_language = "ja"
-                    target_languages = ["en", "zh"]
+                    # 翻訳データがない場合のみAPI呼び出し（フォールバック）
+                    logger.info("No cached translations found, calling DeepL API")
+                    translated_comments_all = {}
+                    target_languages = []
 
-                # 各言語への翻訳
-                for target_lang in target_languages:
-                    translated_comments_all[target_lang] = {}
-                    for category, comment in review_data["comments"].items():
-                        if comment:
-                            translation_result = await self.translation_service.translate_text(
-                                text=comment,
-                                source_lang=selected_language,
-                                target_lang=target_lang,
-                                context="company review",
-                            )
-                            if translation_result.is_success:
-                                translated_comments_all[target_lang][category] = (
-                                    translation_result.data
+                    # 元言語に応じて翻訳先言語を決定
+                    if selected_language == "ja":
+                        target_languages = ["en", "zh"]  # 日本語 → 英語 + 中国語
+                    elif selected_language == "en":
+                        target_languages = ["ja", "zh"]  # 英語 → 日本語 + 中国語
+                    elif selected_language == "zh":
+                        target_languages = ["ja", "en"]  # 中国語 → 日本語 + 英語
+                    else:
+                        # デフォルト: 日本語を選択言語とする
+                        selected_language = "ja"
+                        target_languages = ["en", "zh"]
+
+                    # 各言語への翻訳
+                    for target_lang in target_languages:
+                        translated_comments_all[target_lang] = {}
+                        for category, comment in review_data["comments"].items():
+                            if comment:
+                                translation_result = await self.translation_service.translate_text(
+                                    text=comment,
+                                    source_lang=selected_language,
+                                    target_lang=target_lang,
+                                    context="company review",
                                 )
+                                if translation_result.is_success:
+                                    translated_comments_all[target_lang][category] = (
+                                        translation_result.data
+                                    )
+                                else:
+                                    # 翻訳失敗時はログ出力のみ（Graceful Degradation）
+                                    logger.warning(
+                                        f"Translation failed for {category} to {target_lang}: {translation_result.error}"
+                                    )
+                                    translated_comments_all[target_lang][category] = None
                             else:
-                                # 翻訳失敗時はログ出力のみ（Graceful Degradation）
-                                logger.warning(
-                                    f"Translation failed for {category} to {target_lang}: {translation_result.error}"
-                                )
                                 translated_comments_all[target_lang][category] = None
-                        else:
-                            translated_comments_all[target_lang][category] = None
 
                 # Task 7.1: 翻訳データをreview_dataに追加
                 review_data["comments_ja"] = translated_comments_all.get("ja")
@@ -389,6 +398,7 @@ class ReviewCreateHandler(BaseHandler):
                     # 確認画面を再表示し、エラーメッセージを表示
                     company = await self.review_service.get_company_info(company_id)
                     selected_language = review_data.get("language", "ja")
+                    confirm_i18n = self._get_confirmation_i18n(selected_language)
                     self.render(
                         "reviews/confirm.html",
                         company=company,
@@ -398,6 +408,7 @@ class ReviewCreateHandler(BaseHandler):
                         selected_language=selected_language,
                         categories=self._get_review_categories(selected_language),
                         error_message=error_message,  # Task 8.2: エラーメッセージを渡す
+                        i18n=confirm_i18n,  # 確認画面の翻訳辞書
                     )
                     return
             else:
@@ -579,6 +590,70 @@ class ReviewCreateHandler(BaseHandler):
             category["index"] = i + 1
 
         return categories
+
+    def _check_cached_translations(self) -> bool:
+        """
+        確認画面からの翻訳データが存在するかチェック
+
+        Returns:
+            翻訳データが存在する場合True
+        """
+        # 少なくとも1つの言語の翻訳データが存在するかチェック
+        categories = [
+            "recommendation",
+            "foreign_support",
+            "company_culture",
+            "employee_relations",
+            "evaluation_system",
+            "promotion_treatment",
+        ]
+
+        for category in categories:
+            # 日本語、英語、中国語のいずれかの翻訳が存在するかチェック
+            if (
+                self.get_argument(f"translated_comments_ja[{category}]", None)
+                or self.get_argument(f"translated_comments_en[{category}]", None)
+                or self.get_argument(f"translated_comments_zh[{category}]", None)
+            ):
+                return True
+
+        return False
+
+    def _parse_cached_translations(self) -> dict:
+        """
+        確認画面からの翻訳データを解析
+
+        Returns:
+            翻訳データの辞書 {"ja": {...}, "en": {...}, "zh": {...}}
+        """
+        categories = [
+            "recommendation",
+            "foreign_support",
+            "company_culture",
+            "employee_relations",
+            "evaluation_system",
+            "promotion_treatment",
+        ]
+
+        translated_comments_all = {"ja": {}, "en": {}, "zh": {}}
+
+        for category in categories:
+            # 日本語翻訳
+            ja_translation = self.get_argument(f"translated_comments_ja[{category}]", None)
+            if ja_translation:
+                translated_comments_all["ja"][category] = ja_translation
+
+            # 英語翻訳
+            en_translation = self.get_argument(f"translated_comments_en[{category}]", None)
+            if en_translation:
+                translated_comments_all["en"][category] = en_translation
+
+            # 中国語翻訳
+            zh_translation = self.get_argument(f"translated_comments_zh[{category}]", None)
+            if zh_translation:
+                translated_comments_all["zh"][category] = zh_translation
+
+        return translated_comments_all
 
     def _get_confirmation_i18n(self, language: str) -> dict:
         """確認画面の翻訳辞書を取得"""
