@@ -164,25 +164,28 @@
   - 翻訳結果が自然で正確であることを確認
   - _Requirements: 8.2_
 
-- [ ] 6. ドキュメントとコメントの充実
-- [ ] 6.1 TranslationServiceモジュールdocstringの作成
+- [x] 6. ドキュメントとコメントの充実
+- [x] 6.1 TranslationServiceモジュールdocstringの作成
   - モジュールレベルのdocstringを作成し、DeepL API統合の概要を記述
   - 使用例を含むdocstringを作成
   - _Requirements: 8.3_
+  - **完了**: モジュールdocstringに主な機能、サポート言語、環境変数、使用例、エラーハンドリングの詳細を追加
 
-- [ ] 6.2 TranslationServiceメソッドdocstringの作成
+- [x] 6.2 TranslationServiceメソッドdocstringの作成
   - `translate_text()`メソッドのdocstringを作成（引数、戻り値、例外の説明）
   - `translate_batch()`メソッドのdocstringを作成（引数、戻り値、例外の説明）
   - `is_language_supported()`メソッドのdocstringを作成
   - `get_supported_languages()`メソッドのdocstringを作成
   - `close()`、`__aenter__()`、`__aexit__()`メソッドのdocstringを作成
   - _Requirements: 8.3_
+  - **完了**: すべてのパブリックメソッドに詳細なdocstringを追加（引数、戻り値、使用例を含む）
 
-- [ ] 6.3 エラークラスdocstringの作成
+- [x] 6.3 エラークラスdocstringの作成
   - TranslationErrorクラスのdocstringを作成（基底クラスの説明）
   - APIRateLimitErrorクラスのdocstringを作成（発生条件の説明）
   - APITimeoutErrorクラスのdocstringを作成（発生条件の説明）
   - _Requirements: 8.3_
+  - **完了**: 全エラークラスに詳細なdocstringを追加（発生条件、対処方法、注意事項、使用例を含む）
 
 - [ ] 7. 最終的なテストとデプロイ準備
 - [ ] 7.1 全テストスイートの実行と検証

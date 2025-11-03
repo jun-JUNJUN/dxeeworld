@@ -1,9 +1,54 @@
 """
 翻訳サービス - DeepL API統合
-レビューテキストの多言語翻訳を提供
 
-DeepL Translation APIを使用して高品質な翻訳を実現。
-サポート言語: 日本語(ja)、英語(en)、中国語(zh)
+このモジュールは、DeepL Translation APIを使用したテキスト翻訳機能を提供します。
+レビューフォームのコメント翻訳など、多言語コンテンツの自動翻訳に使用されます。
+
+主な機能:
+- 単一テキストの翻訳 (translate_text)
+- 複数テキストのバッチ翻訳 (translate_batch)
+- 言語サポート確認 (is_language_supported, get_supported_languages)
+- エラーハンドリングとリトライ機能
+- 非同期コンテキストマネージャーによるリソース管理
+
+サポート言語:
+- 日本語 (ja)
+- 英語 (en)
+- 中国語 (zh)
+
+環境変数:
+- DEEPL_API_KEY: DeepL APIキー (必須)
+- DEEPL_API_BASE_URL: DeepL API Base URL (オプション、デフォルト: https://api-free.deepl.com/v2)
+
+使用例:
+    >>> import asyncio
+    >>> from src.services.translation_service import TranslationService
+    >>>
+    >>> async def main():
+    ...     async with TranslationService() as service:
+    ...         # 単一テキストの翻訳
+    ...         result = await service.translate_text("こんにちは、世界！", "ja", "en")
+    ...         if result.is_success:
+    ...             print(result.data)  # "Hello, world!"
+    ...
+    ...         # バッチ翻訳
+    ...         texts = ["おはよう", "こんばんは"]
+    ...         batch_result = await service.translate_batch(texts, "ja", "en")
+    ...         if batch_result.is_success:
+    ...             print(batch_result.data)  # ["Good morning", "Good evening"]
+    >>>
+    >>> asyncio.run(main())
+
+エラーハンドリング:
+    翻訳エラーは Result[T, TranslationError] 型で返されます。
+    - Result.is_success: 成功時True
+    - Result.data: 翻訳結果（成功時）
+    - Result.error: エラーオブジェクト（失敗時）
+
+    エラータイプ:
+    - TranslationError: 一般的な翻訳エラー
+    - APIRateLimitError: APIレート制限エラー (429)
+    - APITimeoutError: APIタイムアウトエラー (504, 408, TimeoutException)
 """
 
 import os
@@ -16,7 +61,20 @@ logger = logging.getLogger(__name__)
 
 
 class TranslationError(Exception):
-    """翻訳エラーの基底クラス"""
+    """
+    翻訳エラーの基底クラス
+
+    すべての翻訳関連のエラーはこのクラスを継承します。
+    Result[T, TranslationError]型のエラーオブジェクトとして使用されます。
+
+    Attributes:
+        message (str): エラーメッセージ
+
+    使用例:
+        >>> result = await service.translate_text("テキスト", "ja", "invalid_lang")
+        >>> if not result.is_success:
+        ...     print(f"エラー: {result.error.message}")
+    """
 
     def __init__(self, message: str):
         self.message = message
@@ -24,13 +82,64 @@ class TranslationError(Exception):
 
 
 class APIRateLimitError(TranslationError):
-    """APIレート制限エラー (HTTPステータス429)"""
+    """
+    APIレート制限エラー
+
+    DeepL APIがレート制限を適用した場合に発生します。
+    HTTPステータスコード429が返された際にこのエラーが発生します。
+
+    発生条件:
+        - DeepL APIのリクエスト数が上限に達した場合
+        - 短時間に大量のリクエストを送信した場合
+
+    対処方法:
+        - リクエスト頻度を減らす
+        - しばらく待ってから再試行する
+        - DeepL APIの有料プランにアップグレードする
+
+    注意:
+        このエラーが発生した場合、自動リトライは実行されません。
+        レート制限は一時的なリトライでは解決しないためです。
+
+    使用例:
+        >>> result = await service.translate_text("テキスト", "ja", "en")
+        >>> if not result.is_success:
+        ...     if isinstance(result.error, APIRateLimitError):
+        ...         print("レート制限に達しました。しばらく待ってください。")
+    """
 
     pass
 
 
 class APITimeoutError(TranslationError):
-    """APIタイムアウトエラー (HTTPステータス504, 408, または httpx.TimeoutException)"""
+    """
+    APIタイムアウトエラー
+
+    DeepL APIへのリクエストがタイムアウトした場合に発生します。
+    最大2回のリトライ後も失敗した場合にこのエラーが返されます。
+
+    発生条件:
+        - DeepL APIが504 (Gateway Timeout)を返した場合
+        - DeepL APIが408 (Request Timeout)を返した場合
+        - httpx.TimeoutExceptionが発生した場合（ネットワークタイムアウト）
+        - 上記のいずれかが最大リトライ回数（2回）後も継続した場合
+
+    対処方法:
+        - ネットワーク接続を確認する
+        - DeepL APIのステータスページを確認する
+        - タイムアウト設定を増やす（DEFAULT_TIMEOUT）
+        - しばらく待ってから再試行する
+
+    注意:
+        タイムアウトエラーの場合、自動的に最大2回のリトライが実行されます。
+        このエラーが返された時点で既にリトライが完了しています。
+
+    使用例:
+        >>> result = await service.translate_text("テキスト", "ja", "en")
+        >>> if not result.is_success:
+        ...     if isinstance(result.error, APITimeoutError):
+        ...         print("APIがタイムアウトしました。後で再試行してください。")
+    """
 
     pass
 
@@ -304,13 +413,58 @@ class TranslationService:
             return Result.failure(TranslationError(f"Unexpected API error: {str(e)}"))
 
     async def close(self) -> None:
-        """HTTPクライアントをクローズしリソースを解放"""
+        """
+        HTTPクライアントをクローズしリソースを解放
+
+        TranslationServiceの使用が終了したら、このメソッドを呼び出して
+        httpx.AsyncClientのリソースを適切に解放する必要があります。
+
+        非同期コンテキストマネージャー (async with) を使用する場合、
+        このメソッドは自動的に呼び出されます。
+
+        使用例:
+            >>> service = TranslationService()
+            >>> try:
+            ...     result = await service.translate_text("テキスト", "ja", "en")
+            ... finally:
+            ...     await service.close()
+
+            または、推奨される非同期コンテキストマネージャーの使用:
+            >>> async with TranslationService() as service:
+            ...     result = await service.translate_text("テキスト", "ja", "en")
+        """
         await self.client.aclose()
 
     async def __aenter__(self) -> "TranslationService":
-        """非同期コンテキストマネージャーのエントリー"""
+        """
+        非同期コンテキストマネージャーのエントリーポイント
+
+        async withステートメントで使用される際に呼び出されます。
+        TranslationServiceインスタンス自身を返します。
+
+        Returns:
+            TranslationService: 初期化済みのTranslationServiceインスタンス
+
+        使用例:
+            >>> async with TranslationService() as service:
+            ...     # serviceはTranslationServiceインスタンス
+            ...     result = await service.translate_text("テキスト", "ja", "en")
+        """
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        """非同期コンテキストマネージャーの終了"""
+        """
+        非同期コンテキストマネージャーの終了処理
+
+        async withブロックの終了時に自動的に呼び出されます。
+        HTTPクライアントのリソースを解放します。
+
+        Args:
+            exc_type: 例外の型（例外が発生していない場合はNone）
+            exc_val: 例外の値（例外が発生していない場合はNone）
+            exc_tb: トレースバック（例外が発生していない場合はNone）
+
+        注意:
+            例外が発生した場合でも、close()が呼び出されてリソースが解放されます。
+        """
         await self.close()
