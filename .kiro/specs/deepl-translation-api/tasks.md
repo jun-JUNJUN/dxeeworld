@@ -126,25 +126,28 @@
   - _Requirements: 6.5, 6.6, 8.1_
   - **完了**: TestAsyncContextManagerクラスに3個のテストを実装済み（全てパス）
 
-- [ ] 4. 統合テストの実装
-- [ ] 4.1 ReviewHandlerとの統合テストの実装
+- [x] 4. 統合テストの実装
+- [x] 4.1 ReviewHandlerとの統合テストの実装
   - review_handler.pyがTranslationServiceを呼び出して翻訳を実行できることを検証するテストを実装
   - 翻訳結果がreview_handler.pyで正しく処理されることを検証するテストを実装
   - バッチ翻訳がreview_handler.pyの複数コメント翻訳で正しく動作することを検証するテストを実装
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
+  - **完了**: test_translation_integration.py に4個のテストを実装済み（全てパス）
 
-- [ ] 4.2 環境変数読み込み統合テストの実装
+- [x] 4.2 環境変数読み込み統合テストの実装
   - .envファイルからDEEPL_API_KEYが正しく読み込まれることを検証するテストを実装
   - .envファイルからDEEPL_API_BASE_URLが正しく読み込まれることを検証するテストを実装
   - TranslationServiceが正しく初期化されることを検証するテストを実装
   - _Requirements: 7.1, 7.4, 7.5_
+  - **完了**: TestEnvironmentVariableIntegrationクラスに5個のテストを実装済み（全てパス）
 
-- [ ] 4.3 Result型互換性統合テストの実装
+- [x] 4.3 Result型互換性統合テストの実装
   - 既存のResult型との互換性を検証するテストを実装
   - `is_success`プロパティが正しく機能することを検証するテストを実装
   - `data`プロパティが正しく翻訳結果を返すことを検証するテストを実装
   - `error`プロパティが正しくエラーオブジェクトを返すことを検証するテストを実装
   - _Requirements: 6.4_
+  - **完了**: TestResultTypeCompatibilityクラスに7個のテストを実装済み（全てパス）
 
 - [ ] 5. マニュアルテストスクリプトの更新と実行
 - [ ] 5.1 test_translation_manual.pyの更新
