@@ -76,49 +76,55 @@
   - `close()`メソッドを実装し、httpx.AsyncClientのリソースを解放
   - _Requirements: 6.5, 6.6_
 
-- [ ] 3. 単体テストの実装と更新
-- [ ] 3.1 TranslationService初期化テストの実装
+- [x] 3. 単体テストの実装と更新
+- [x] 3.1 TranslationService初期化テストの実装
   - 環境変数からAPIキーを正しく読み込むことを検証するテストを実装
   - APIキー未設定時にValueErrorが発生することを検証するテストを実装
   - API Base URLが環境変数またはデフォルト値から正しく設定されることを検証するテストを実装
   - _Requirements: 1.1, 1.2, 1.3, 7.1, 7.4, 7.5_
+  - **完了**: test_translation_service_deepl.py に7個のテストを実装済み（全てパス）
 
-- [ ] 3.2 言語コード変換テストの実装
+- [x] 3.2 言語コード変換テストの実装
   - ja→JA、en→EN、zh→ZHの言語コード変換が正しく動作することを検証するテストを実装
   - サポート外言語コードに対してエラーが返されることを検証するテストを実装
   - `is_language_supported()`が正しい判定結果を返すことを検証するテストを実装
   - `get_supported_languages()`が正しいマッピング辞書を返すことを検証するテストを実装
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+  - **完了**: TestLanguageCodeConversionクラスに5個のテストを実装済み（全てパス）
 
-- [ ] 3.3 translate_text正常系テストの実装
+- [x] 3.3 translate_text正常系テストの実装
   - モック化されたDeepL APIレスポンス（200ステータス）を使用したテストを実装
   - 翻訳成功時にResult.successが返されることを検証
   - 翻訳テキストが正しく抽出されることを検証
   - 同一言語入力時に元テキストが返されることを検証
   - 空テキスト入力時に空文字列が返されることを検証
   - _Requirements: 2.1, 2.2, 2.3, 2.5, 8.1_
+  - **完了**: TestTranslateTextクラスに6個のテストを実装済み（全てパス）
 
-- [ ] 3.4 translate_textエラー系テストの実装
+- [x] 3.4 translate_textエラー系テストの実装
   - HTTPステータス429（レート制限）時にAPIRateLimitErrorが返されることを検証するテストを実装
   - HTTPステータス504（タイムアウト）時にリトライが実行されることを検証するテストを実装
   - リトライ上限到達時にAPITimeoutErrorが返されることを検証するテストを実装
   - httpx.TimeoutException発生時にリトライが実行されることを検証するテストを実装
   - 予期しないエラー時にTranslationErrorが返されることを検証するテストを実装
   - _Requirements: 2.6, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 8.1_
+  - **完了**: TestErrorHandlingAndRetryクラスに4個のテストを実装済み（全てパス）
 
-- [ ] 3.5 translate_batchテストの実装
+- [x] 3.5 translate_batchテストの実装
   - 空リスト入力時に空リストが返されることを検証するテストを実装
   - 複数テキストの正常翻訳が動作することを検証するテストを実装
   - 一部テキスト翻訳失敗時にGraceful Degradationが動作することを検証するテストを実装
   - 失敗したテキストが元テキストとして返されることを検証
   - 結果リスト長が入力リスト長と同じことを検証
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 8.1_
+  - **完了**: TestBatchTranslationクラスに4個のテストを実装済み（全てパス）
 
-- [ ] 3.6 非同期コンテキストマネージャーテストの実装
+- [x] 3.6 非同期コンテキストマネージャーテストの実装
   - async withブロックでTranslationServiceが正しく動作することを検証するテストを実装
   - `__aexit__()`後にHTTPクライアントが正しくクローズされることを検証するテストを実装
   - `close()`メソッドが正しくリソースを解放することを検証するテストを実装
   - _Requirements: 6.5, 6.6, 8.1_
+  - **完了**: TestAsyncContextManagerクラスに3個のテストを実装済み（全てパス）
 
 - [ ] 4. 統合テストの実装
 - [ ] 4.1 ReviewHandlerとの統合テストの実装
