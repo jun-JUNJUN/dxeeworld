@@ -547,6 +547,19 @@
 
                 <!-- Task 5.1: レビューが存在する場合の表示 -->
                 {% if has_reviews %}
+                <!-- レビュー投稿促進セクション（レビューが既に存在する場合も表示） -->
+                <div class="review-prompt-section" style="margin-bottom: 20px;">
+                    <div class="prompt-message">
+                        この企業に勤めていますか？勤めたことがありますか？
+                    </div>
+                    <a href="/companies/{{ company['id'] }}/reviews/new"
+                       class="review-submit-btn"
+                       aria-label="{{ company['name'] }}のレビューを投稿する"
+                       title="この企業のレビューを投稿する">
+                        Reviewを投稿する
+                    </a>
+                </div>
+                
                 <div class="reviews-list-mobile">
                     {% for review in reviews %}
                     <div class="review-card-mobile">
