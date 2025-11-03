@@ -64,12 +64,12 @@ class TestTranslationServiceInitialization:
             assert "Authorization" in service.client.headers
             assert service.client.headers["Authorization"] == "DeepL-Auth-Key test-key-789"
 
-    def test_init_sets_timeout_to_30_seconds(self):
-        """タイムアウトが30秒に設定される"""
+    def test_init_sets_timeout_to_5_seconds(self):
+        """タイムアウトが5秒に設定される（設計書に基づき30秒から5秒に短縮）"""
         with patch.dict(os.environ, {"DEEPL_API_KEY": "test-key"}):
             service = TranslationService()
             # httpx.AsyncClientのタイムアウト設定を確認
-            assert service.client.timeout.read == 30.0
+            assert service.client.timeout.read == 5.0
 
 
 class TestLanguageCodeConversion:
@@ -393,3 +393,144 @@ class TestAsyncContextManager:
                 await service.close()
 
                 mock_aclose.assert_called_once()
+
+
+class TestTranslateToOtherLanguages:
+    """Task 5.3: 並列翻訳機能（translate_to_other_languages）のテスト"""
+
+    @pytest.mark.asyncio
+    async def test_translate_from_japanese_to_en_zh(self):
+        """日本語から英語+中国語への並列翻訳"""
+        with patch.dict(os.environ, {"DEEPL_API_KEY": "test-key"}):
+            service = TranslationService()
+
+            # translate_textメソッドをモック化
+            with patch.object(service, "translate_text", new_callable=AsyncMock) as mock_translate:
+                # 英語翻訳の成功
+                mock_translate.side_effect = [
+                    Mock(is_success=True, data="Hello"),  # ja -> en
+                    Mock(is_success=True, data="你好"),  # ja -> zh
+                ]
+
+                result = await service.translate_to_other_languages("こんにちは", "ja")
+
+                # 2言語への翻訳が並列実行されたことを確認
+                assert mock_translate.call_count == 2
+                assert result == {"en": "Hello", "zh": "你好"}
+
+    @pytest.mark.asyncio
+    async def test_translate_from_english_to_ja_zh(self):
+        """英語から日本語+中国語への並列翻訳"""
+        with patch.dict(os.environ, {"DEEPL_API_KEY": "test-key"}):
+            service = TranslationService()
+
+            with patch.object(service, "translate_text", new_callable=AsyncMock) as mock_translate:
+                mock_translate.side_effect = [
+                    Mock(is_success=True, data="こんにちは"),  # en -> ja
+                    Mock(is_success=True, data="你好"),  # en -> zh
+                ]
+
+                result = await service.translate_to_other_languages("Hello", "en")
+
+                assert mock_translate.call_count == 2
+                assert result == {"ja": "こんにちは", "zh": "你好"}
+
+    @pytest.mark.asyncio
+    async def test_translate_from_chinese_to_ja_en(self):
+        """中国語から日本語+英語への並列翻訳"""
+        with patch.dict(os.environ, {"DEEPL_API_KEY": "test-key"}):
+            service = TranslationService()
+
+            with patch.object(service, "translate_text", new_callable=AsyncMock) as mock_translate:
+                mock_translate.side_effect = [
+                    Mock(is_success=True, data="こんにちは"),  # zh -> ja
+                    Mock(is_success=True, data="Hello"),  # zh -> en
+                ]
+
+                result = await service.translate_to_other_languages("你好", "zh")
+
+                assert mock_translate.call_count == 2
+                assert result == {"ja": "こんにちは", "en": "Hello"}
+
+    @pytest.mark.asyncio
+    async def test_translate_to_other_languages_graceful_degradation(self):
+        """翻訳失敗時のGraceful Degradation - Noneを返す"""
+        with patch.dict(os.environ, {"DEEPL_API_KEY": "test-key"}):
+            service = TranslationService()
+
+            with patch.object(service, "translate_text", new_callable=AsyncMock) as mock_translate:
+                # 1つ目の翻訳は成功、2つ目は失敗
+                mock_translate.side_effect = [
+                    Mock(is_success=True, data="Hello"),  # ja -> en 成功
+                    Mock(is_success=False, error=TranslationError("API error")),  # ja -> zh 失敗
+                ]
+
+                result = await service.translate_to_other_languages("こんにちは", "ja")
+
+                # 成功した翻訳のみ返され、失敗した翻訳はNone
+                assert result == {"en": "Hello", "zh": None}
+
+    @pytest.mark.asyncio
+    async def test_translate_to_other_languages_exception_handling(self):
+        """例外発生時のGraceful Degradation"""
+        with patch.dict(os.environ, {"DEEPL_API_KEY": "test-key"}):
+            service = TranslationService()
+
+            with patch.object(service, "translate_text", new_callable=AsyncMock) as mock_translate:
+                # 1つ目は成功、2つ目で例外発生
+                mock_translate.side_effect = [
+                    Mock(is_success=True, data="Hello"),  # ja -> en 成功
+                    Exception("Network error"),  # ja -> zh 例外
+                ]
+
+                result = await service.translate_to_other_languages("こんにちは", "ja")
+
+                # 例外が発生した場合もNoneが返される
+                assert result == {"en": "Hello", "zh": None}
+
+    @pytest.mark.asyncio
+    async def test_translate_to_other_languages_excludes_source_language(self):
+        """元言語の翻訳は結果に含まれない"""
+        with patch.dict(os.environ, {"DEEPL_API_KEY": "test-key"}):
+            service = TranslationService()
+
+            with patch.object(service, "translate_text", new_callable=AsyncMock) as mock_translate:
+                mock_translate.side_effect = [
+                    Mock(is_success=True, data="Hello"),
+                    Mock(is_success=True, data="你好"),
+                ]
+
+                result = await service.translate_to_other_languages("こんにちは", "ja")
+
+                # 元言語（ja）のキーは結果に含まれない
+                assert "ja" not in result
+                assert "en" in result
+                assert "zh" in result
+
+    @pytest.mark.asyncio
+    async def test_translate_to_other_languages_parallel_execution(self):
+        """並列実行が正しく動作する（asyncio.gather）"""
+        with patch.dict(os.environ, {"DEEPL_API_KEY": "test-key"}):
+            service = TranslationService()
+
+            # translate_textの呼び出し順序を記録
+            call_order = []
+
+            async def mock_translate_with_delay(text, source_lang, target_lang):
+                call_order.append(target_lang)
+                # 実際の並列実行をシミュレート
+                import asyncio
+
+                await asyncio.sleep(0.01)
+                return Mock(is_success=True, data=f"Translated to {target_lang}")
+
+            with patch.object(service, "translate_text", side_effect=mock_translate_with_delay):
+                result = await service.translate_to_other_languages("Test text", "ja")
+
+                # 2つの翻訳が実行されたことを確認
+                assert len(call_order) == 2
+                # 並列実行のため、順序は保証されない
+                assert set(call_order) == {"en", "zh"}
+                # 結果が正しく返されることを確認
+                assert "en" in result
+                assert "zh" in result

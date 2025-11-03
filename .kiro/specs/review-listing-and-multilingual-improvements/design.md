@@ -137,18 +137,17 @@ graph TB
 
 #### 決定3: 翻訳サービス選定 - 外部API vs ローカルモデル
 
-**Decision**: DeepSeek API（Chat Completion）を使用したLLMベース翻訳サービス統合、3言語すべての相互翻訳を実装
+**Decision**: DeepL API（専用翻訳API）を使用した高品質翻訳サービス統合、3言語すべての相互翻訳を実装
 
-**Context**: レビューコメントを元言語で保存し、他の2言語に翻訳して確認画面とデータベースに保存する必要がある。高品質かつコスト効率の良い翻訳が必要。
+**Context**: レビューコメントを元言語で保存し、他の2言語に翻訳して確認画面とデータベースに保存する必要がある。高品質かつ高速な翻訳が必要。
 
 **Alternatives**:
 1. Google Cloud Translation API（有料、高品質、全言語対応）
 2. DeepL API（有料、最高品質、英語・日本語・中国語対応）
-3. DeepSeek API（低コスト、LLMベース翻訳、高品質）
-4. ローカル翻訳モデル（MarianMT、無料、品質やや低い）
-5. 翻訳なし（将来的に手動翻訳）
+3. ローカル翻訳モデル（MarianMT、無料、品質やや低い）
+4. 翻訳なし（将来的に手動翻訳）
 
-**Selected Approach**: オプション3のDeepSeek API（deepseek-chat）を選択。LLMのChat Completion機能を使用し、元言語に応じて他の2言語に翻訳。すべての翻訳をMongoDBに保存。
+**Selected Approach**: オプション2のDeepL APIを選択。専用の翻訳APIを使用し、元言語に応じて他の2言語に翻訳。すべての翻訳をMongoDBに保存。
 
 翻訳マトリックス:
 - **元言語が日本語**: 英語と中国語に翻訳
@@ -156,27 +155,26 @@ graph TB
 - **元言語が英語**: 日本語と中国語に翻訳
 
 **Rationale**:
-- 非常に低コスト（$0.14 per 1M input tokens, $0.28 per 1M output tokens）
-- LLMベースの翻訳により、コンテキストを考慮した高品質な翻訳
-- ビジネス文書・レビューコメントの翻訳に適したプロンプト設計が可能
+- 業界最高品質の翻訳精度（特にビジネス文書・レビューコメント）
+- 高速なレスポンスタイム（通常 < 1秒）
 - 3言語すべてに対応（英語・日本語・中国語簡体字）
-- OpenAI互換API形式で統合が容易
-- 1つのAPI呼び出しで複数言語への翻訳が可能（効率的）
+- シンプルなREST API（統合が容易）
+- 確実な翻訳品質（プロンプトエンジニアリング不要）
+- 予測可能なレスポンスタイムとコスト
 
 **Trade-offs**:
-- 利点: 圧倒的な低コスト、高品質、柔軟なプロンプト設計、コンテキスト理解
-- 欠点: 専用翻訳APIより若干遅い、プロンプトエンジニアリングが必要、レスポンスタイムが若干長い
+- 利点: 最高品質の翻訳、高速（< 1秒）、安定したレスポンスタイム、シンプルなAPI
+- 欠点: LLMベース翻訳より高コスト、文字数制限あり（5000文字/リクエスト）
 
 実装時の調査事項:
-- DeepSeek APIの認証方法（APIキー、OpenAI互換）
-- エンドポイント: https://api.deepseek.com/v1/chat/completions
-- モデル: deepseek-chat（推奨）
-- レート制限と料金体系の確認
-- プロンプト設計: 「あなたはプロの翻訳者です。以下のレビューコメントを[target_language]に翻訳してください。元の意味とトーンを保ちながら、自然な表現にしてください。」
+- DeepL APIの認証方法（APIキー、Auth-Key HTTPヘッダー）
+- エンドポイント: https://api-free.deepl.com/v2/translate（無料版）または https://api.deepl.com/v2/translate（有料版）
+- 対応言語コード: EN（英語）、JA（日本語）、ZH（中国語簡体字）
+- レート制限と料金体系の確認（Free: 500,000文字/月、Pro: 従量課金）
 - エラーハンドリング戦略（翻訳失敗時は翻訳なしで投稿可能とする）
-- バッチ処理戦略（複数カテゴリーのコメントを1回のAPI呼び出しで翻訳）
-- JSON出力形式の設計（構造化された翻訳結果の取得）
+- バッチ処理戦略（カテゴリー別に個別API呼び出し、並列処理可能）
 - キャッシュ戦略（同一コメントの重複翻訳回避）
+- タイムアウト設定: 5秒（高速なため短めに設定）
 
 ## System Flows
 
@@ -210,7 +208,7 @@ sequenceDiagram
     ReviewCreateHandler->>ReviewService: バリデーション実行
 
     ReviewCreateHandler->>TranslationService: 他の2言語に翻訳リクエスト
-    Note over TranslationService: 日本語→英語+中国語<br/>中国語→英語+日本語<br/>英語→日本語+中国語
+    Note over TranslationService: DeepL API呼び出し<br/>日本語→英語+中国語<br/>中国語→英語+日本語<br/>英語→日本語+中国語
     TranslationService-->>ReviewCreateHandler: 2言語の翻訳結果
 
     ReviewCreateHandler-->>Browser: 確認画面表示（原文 + 2言語の翻訳）
@@ -488,27 +486,33 @@ interface LanguageOption {
 #### TranslationService (新規)
 
 **Responsibility & Boundaries**
-- **Primary Responsibility**: レビューコメントの英語翻訳（Google Cloud Translation API統合）
+- **Primary Responsibility**: レビューコメントの多言語翻訳（DeepL API統合）
 - **Domain Boundary**: 外部サービス統合層
 - **Data Ownership**: 翻訳リクエストとレスポンスのキャッシュ（オプション）
 - **Transaction Boundary**: 単一翻訳リクエスト単位
 
 **Dependencies**
 - **Inbound**: ReviewCreateHandler
-- **Outbound**: DeepSeek API
-- **External**: DeepSeek Chat Completion API (OpenAI互換)
+- **Outbound**: DeepL API
+- **External**: DeepL Translation API (REST API)
 
 **External Dependencies Investigation**:
-- **API Documentation**: https://platform.deepseek.com/api-docs/
-- **API Endpoint**: https://api.deepseek.com/v1/chat/completions
-- **Authentication**: Bearer token（APIキー）をHTTPヘッダーで送信（環境変数で管理）
-- **Model**: deepseek-chat (推奨)
-- **Supported Languages**: 全主要言語対応（EN, JA, ZH含む）
-- **Rate Limits**: 要確認（API Tier による）
-- **Pricing**: $0.14 per 1M input tokens, $0.28 per 1M output tokens（非常に低コスト）
-- **Response Format**: OpenAI互換のJSON形式
+- **API Documentation**: https://www.deepl.com/docs-api/
+- **API Endpoint**:
+  - Free版: https://api-free.deepl.com/v2/translate
+  - Pro版: https://api.deepl.com/v2/translate
+- **Authentication**: Auth-Key HTTPヘッダーでAPIキーを送信（環境変数で管理）
+- **Supported Languages**: EN（英語）、JA（日本語）、ZH（中国語簡体字）
+- **Rate Limits**:
+  - Free版: 500,000文字/月
+  - Pro版: 従量課金（無制限）
+- **Pricing**:
+  - Free版: 無料（500,000文字/月まで）
+  - Pro版: 約$25/100万文字
+- **Response Format**: JSON形式
 - **Error Handling**: APIエラー時は翻訳なしで投稿可能とする（degradation strategy）
-- **Timeout**: 30秒（LLM応答を考慮）
+- **Timeout**: 5秒（高速なレスポンスタイムのため）
+- **Character Limit**: 5000文字/リクエスト
 
 **Contract Definition**
 
@@ -526,11 +530,12 @@ interface TranslationService {
     source_language: LanguageCode
   ): Promise<BatchTranslationResult>;
 
-  // DeepSeek APIへのリクエスト（内部ヘルパー）
-  async call_deepseek_api(
-    prompt: string,
-    system_message: string
-  ): Promise<DeepSeekApiResponse>;
+  // DeepL APIへのリクエスト（内部ヘルパー）
+  async call_deepl_api(
+    text: string,
+    source_lang: string,
+    target_lang: string
+  ): Promise<DeepLApiResponse>;
 }
 
 interface MultiLanguageTranslationResult {
@@ -554,15 +559,11 @@ interface BatchTranslationResult {
   errors: Array<TranslationError>;
 }
 
-interface DeepSeekApiResponse {
+interface DeepLApiResponse {
   success: boolean;
-  content: string;  // LLMの生成テキスト（JSON形式を期待）
+  translated_text: string;
+  detected_source_language?: string;
   error_message: string | None;
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  } | None;
 }
 
 interface TranslationError {
@@ -572,25 +573,24 @@ interface TranslationError {
 }
 ```
 
-**Preconditions**: DeepSeek APIキーが環境変数（DEEPSEEK_API_KEY）に設定されていること、ソース言語が有効な言語コードであること
+**Preconditions**: DeepL APIキーが環境変数（DEEPL_API_KEY）に設定されていること、ソース言語が有効な言語コードであること
 **Postconditions**: 翻訳が成功した場合、元言語以外の2言語の翻訳が返されること
 **Invariants**: 元言語の翻訳は含まれない（例: 日本語で投稿した場合、translations.jaは存在しない）
 
-**Translation Prompt Design**:
-```
-System: あなたはプロの翻訳者です。ビジネス文書やレビューコメントの翻訳を専門としています。
+**DeepL API Request Example**:
+```python
+import httpx
 
-User: 以下のレビューコメントを[target_language]に翻訳してください。
-元の意味とトーンを保ちながら、自然で読みやすい表現にしてください。
-翻訳結果は以下のJSON形式で返してください:
-{
-  "ja": "日本語翻訳（元言語が日本語以外の場合のみ）",
-  "zh": "中国語翻訳（元言語が中国語以外の場合のみ）",
-  "en": "英語翻訳（元言語が英語以外の場合のみ）"
-}
-
-コメント（言語: [source_language]）:
-[original_text]
+async def call_deepl_api(text: str, source_lang: str, target_lang: str):
+    url = "https://api-free.deepl.com/v2/translate"
+    headers = {"Authorization": f"DeepL-Auth-Key {api_key}"}
+    data = {
+        "text": [text],
+        "source_lang": source_lang,  # "JA", "EN", "ZH"
+        "target_lang": target_lang   # "JA", "EN", "ZH"
+    }
+    response = await httpx.post(url, headers=headers, data=data, timeout=5.0)
+    return response.json()
 ```
 
 #### ReviewCreateHandler (拡張)
@@ -791,8 +791,8 @@ interface UserDocument {
 
 **System Errors (5xx)**
 - 500 Internal Server Error: データベース接続失敗、予期しない例外 → エラーページ表示
-- 503 Service Unavailable: DeepSeek API接続失敗 → 翻訳なしで投稿継続（degradation）
-- 504 Gateway Timeout: DeepSeek APIタイムアウト（30秒超過） → 翻訳なしで投稿継続
+- 503 Service Unavailable: DeepL API接続失敗 → 翻訳なしで投稿継続（degradation）
+- 504 Gateway Timeout: DeepL APIタイムアウト（5秒超過） → 翻訳なしで投稿継続
 
 **Business Logic Errors (422)**
 - 雇用期間バリデーションエラー: 開始年 > 終了年 → フィールド近くにエラー表示
@@ -800,12 +800,12 @@ interface UserDocument {
 
 ### エラーカテゴリーと対応
 
-**DeepSeek API失敗時のGraceful Degradation**:
+**DeepL API失敗時のGraceful Degradation**:
 
 ```mermaid
 flowchart TB
     Start[レビュー投稿処理開始]
-    CallAPI[DeepSeek API呼び出し<br/>2言語への翻訳]
+    CallAPI[DeepL API呼び出し<br/>2言語への翻訳]
     APISuccess{API成功?}
     ParseJSON{JSON解析成功?}
     SaveWithTranslation[レビュー保存 + 2言語翻訳]
@@ -853,17 +853,17 @@ flowchart TB
 ### 監視とログ
 
 **エラートラッキング**:
-- DeepSeek API失敗率の監視（Prometheusメトリクス推奨）
-- DeepSeek APIレスポンスタイムの監視（p50, p95, p99）
-- 翻訳トークン使用量の監視（コスト管理）
+- DeepL API失敗率の監視（Prometheusメトリクス推奨）
+- DeepL APIレスポンスタイムの監視（p50, p95, p99）
+- 翻訳文字数使用量の監視（コスト管理、月次制限）
 - バリデーションエラー頻度の分析（ユーザビリティ改善指標）
 - アクセス制御拒否ログ（不正アクセス検知）
 
 **ログレベル**:
-- ERROR: DeepSeek API失敗、データベース接続失敗、予期しない例外
+- ERROR: DeepL API失敗、データベース接続失敗、予期しない例外
 - WARNING: バリデーションエラー、アクセス制御拒否、JSON解析失敗
 - INFO: レビュー投稿成功、ユーザーのlast_review_posted_at更新、翻訳成功
-- DEBUG: DeepSeek APIリクエスト/レスポンス（本番環境では無効化）
+- DEBUG: DeepL APIリクエスト/レスポンス（本番環境では無効化）
 
 ## Testing Strategy
 
@@ -893,10 +893,11 @@ flowchart TB
 - `test_translate_to_other_languages_from_ja()`: 日本語→英語+中国語の翻訳成功
 - `test_translate_to_other_languages_from_zh()`: 中国語→英語+日本語の翻訳成功
 - `test_translate_to_other_languages_from_en()`: 英語→日本語+中国語の翻訳成功
-- `test_deepseek_api_failure()`: DeepSeek APIエラー時のエラーハンドリング
-- `test_deepseek_api_timeout()`: タイムアウト時のGraceful Degradation
-- `test_deepseek_json_parse_error()`: 不正なJSON応答時のエラーハンドリング
+- `test_deepl_api_failure()`: DeepL APIエラー時のエラーハンドリング
+- `test_deepl_api_timeout()`: タイムアウト時のGraceful Degradation
+- `test_deepl_json_parse_error()`: 不正なJSON応答時のエラーハンドリング
 - `test_batch_translate_comments()`: 複数カテゴリーのコメント一括翻訳
+- `test_deepl_character_limit()`: 5000文字制限のハンドリング
 
 **EmploymentPeriodバリデーション**:
 - `test_validate_current_employee()`: 現従業員は終了年なしで有効
@@ -911,7 +912,7 @@ flowchart TB
 - `test_review_submission_flow_chinese()`: 中国語でのレビュー投稿と英語+日本語翻訳保存
 - `test_review_submission_flow_english()`: 英語でのレビュー投稿と日本語+中国語翻訳保存
 - `test_review_submission_updates_last_posted_at()`: レビュー投稿後、User.last_review_posted_at更新確認
-- `test_review_submission_with_translation_failure()`: DeepSeek API失敗時も投稿成功（degradation）
+- `test_review_submission_with_translation_failure()`: DeepL API失敗時も投稿成功（degradation）
 - `test_review_data_structure()`: MongoDBに正しい構造で保存（comments, comments_ja, comments_zh, comments_en）
 
 **アクセス制御統合**:
@@ -935,11 +936,11 @@ flowchart TB
 
 ### パフォーマンステスト
 
-**DeepSeek API負荷テスト**:
-- `test_deepseek_api_concurrency()`: 同時10件のレビュー投稿時のDeepSeek API処理時間
-- `test_deepseek_api_response_time()`: DeepSeek APIのレスポンスタイム測定（p50, p95, p99）
-- `test_deepseek_api_rate_limit()`: APIレート制限到達時の挙動確認
-- `test_translation_token_usage()`: トークン使用量の測定とコスト試算
+**DeepL API負荷テスト**:
+- `test_deepl_api_concurrency()`: 同時10件のレビュー投稿時のDeepL API処理時間
+- `test_deepl_api_response_time()`: DeepL APIのレスポンスタイム測定（p50, p95, p99）
+- `test_deepl_api_rate_limit()`: APIレート制限到達時の挙動確認
+- `test_translation_character_usage()`: 文字数使用量の測定とコスト試算
 
 **レビュー一覧パフォーマンス**:
 - `test_review_list_load_time_with_filters()`: フィルター適用時のレスポンスタイム（< 500ms目標）
@@ -955,9 +956,9 @@ flowchart TB
 - WebクローラーにはSEO用の最小限テキストのみ表示
 
 **多言語データの保護**:
-- DeepSeek APIへの送信データにPII（個人識別情報）が含まれないことを確認
+- DeepL APIへの送信データにPII（個人識別情報）が含まれないことを確認
 - レビューコメントのみを送信し、ユーザー情報や企業情報は含めない
-- DeepSeek APIのデータ保持ポリシーを確認（要調査）
+- DeepL APIのデータ保持ポリシーを確認（送信データは保持されない）
 - 翻訳失敗時のログにコメント全文を記録しない（データ漏洩防止）
 - APIキーの安全な管理（環境変数、シークレット管理システム）
 
@@ -973,10 +974,10 @@ flowchart TB
 - 対策: アクセス制御ミドルウェアでlast_review_posted_atチェック、画像表示
 - 残存リスク: 画像OCRによるデータ抽出（低リスク）
 
-**脅威2: DeepSeek APIの悪用**
-- 攻撃: 大量のレビュー投稿によるAPI費用増加、プロンプトインジェクション
-- 対策: ユーザーあたりのレビュー投稿頻度制限（1企業1レビュー）、翻訳リクエストのログ監視、プロンプトテンプレートの厳格化
-- 残存リスク: 複数アカウント作成による回避（中リスク）、LLM出力の不確実性（低リスク）
+**脅威2: DeepL APIの悪用**
+- 攻撃: 大量のレビュー投稿によるAPI費用増加、文字数制限の超過
+- 対策: ユーザーあたりのレビュー投稿頻度制限（1企業1レビュー）、翻訳リクエストのログ監視、月次文字数制限の設定
+- 残存リスク: 複数アカウント作成による回避（中リスク）、Free版の月次制限超過（低リスク）
 
 **脅威3: XSS攻撃**
 - 攻撃: レビューコメントに悪意のあるスクリプトを埋め込み
@@ -989,15 +990,15 @@ flowchart TB
 
 **レスポンスタイム**:
 - レビュー投稿フォーム表示: < 500ms
-- レビュー確認画面表示（翻訳含む): < 5秒（DeepSeek API応答時間を考慮）
-- レビュー投稿完了: < 6秒
+- レビュー確認画面表示（翻訳含む): < 3秒（DeepL API応答時間を考慮）
+- レビュー投稿完了: < 3秒
 - レビュー一覧表示: < 500ms
 
-**DeepSeek APIパフォーマンス**:
-- DeepSeek API（deepseek-chat）: 通常 1-3秒/リクエスト（LLM推論時間）
-- タイムアウト設定: 30秒（LLM応答を考慮）
+**DeepL APIパフォーマンス**:
+- DeepL API: 通常 < 1秒/リクエスト（高速な専用翻訳API）
+- タイムアウト設定: 5秒（高速なレスポンスのため）
 - リトライ戦略: 1回まで（タイムアウト時のみ、Graceful Degradation優先）
-- バッチ処理: 複数カテゴリーのコメントを1回のAPI呼び出しで翻訳（効率化）
+- 並列処理: 2言語への翻訳を並列実行（asyncio.gather）
 
 ### スケーラビリティ戦略
 
@@ -1012,7 +1013,7 @@ flowchart TB
 
 **最適化施策**:
 - MongoDBインデックスの適切な設計（last_review_posted_at、language）
-- 翻訳APIのバッチリクエスト活用（複数コメントを一括翻訳）
+- DeepL APIの並列リクエスト活用（2言語への翻訳を同時実行）
 - クライアントサイドでのフォーム切り替え（サーバーリクエスト削減）
 
 ## Migration Strategy
@@ -1074,11 +1075,11 @@ flowchart TB
 
 **Phase 4: 翻訳サービス統合（1週間）**
 - `TranslationService`の実装
-- DeepSeek API統合（OpenAI互換エンドポイント）
+- DeepL API統合（REST APIエンドポイント）
 - 確認画面での3言語翻訳表示
 - Feature Flag: `ENABLE_TRANSLATION=false`
-- テスト: 翻訳品質確認、API負荷テスト、プロンプト最適化
-- ロールバックトリガー: 翻訳失敗率 > 10%、APIレスポンスタイム > 10秒、APIコスト予算超過
+- テスト: 翻訳品質確認、API負荷テスト、並列処理最適化
+- ロールバックトリガー: 翻訳失敗率 > 10%、APIレスポンスタイム > 5秒、月次文字数制限超過
 
 **Phase 5: 本番リリース（1週間）**
 - Feature Flagを段階的に有効化（10% → 50% → 100%）
@@ -1094,7 +1095,7 @@ flowchart TB
 |---------|---------|---------------------|----------|
 | Phase 2 | アクセス制御エラー率 > 5% | Feature Flag無効化 | 不要（既存データ維持） |
 | Phase 3 | フォーム送信エラー率 > 10% | Feature Flag無効化、旧フォーム復帰 | 不要 |
-| Phase 4 | 翻訳失敗率 > 10% | Feature Flag無効化、翻訳なし投稿に変更 | 不要（comment_en欠損許容） |
+| Phase 4 | 翻訳失敗率 > 10%、月次制限超過 | Feature Flag無効化、翻訳なし投稿に変更 | 不要（comment_en等欠損許容） |
 | Phase 5 | ユーザークレーム多数 | 段階的ロールバック（100% → 50% → 0%） | 不要 |
 
 ### バリデーションチェックポイント
@@ -1117,9 +1118,11 @@ flowchart TB
 - [ ] 雇用状態選択で終了年フィールドが適切に制御される
 
 **Phase 4完了時**:
-- [ ] 日本語・中国語レビューが英語に翻訳される
+- [ ] 日本語レビューが英語+中国語に翻訳される
+- [ ] 中国語レビューが英語+日本語に翻訳される
+- [ ] 英語レビューが日本語+中国語に翻訳される
 - [ ] 翻訳失敗時もレビュー投稿が成功する
-- [ ] 翻訳結果が確認画面に表示される
+- [ ] 翻訳結果が確認画面に表示される（2言語）
 
 **Phase 5完了時**:
 - [ ] 全機能が本番環境で正常動作

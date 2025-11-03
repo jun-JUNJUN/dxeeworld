@@ -54,6 +54,7 @@
 import os
 import logging
 import httpx
+import asyncio
 from typing import Dict, List, Optional, Any
 from ..utils.result import Result
 
@@ -163,7 +164,7 @@ class TranslationService:
 
     # DeepL API設定
     DEFAULT_BASE_URL = "https://api-free.deepl.com/v2"
-    DEFAULT_TIMEOUT = 30  # 秒
+    DEFAULT_TIMEOUT = 5  # 秒（設計書に基づき30秒から5秒に短縮）
     MAX_RETRIES = 2
 
     def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
@@ -340,6 +341,83 @@ class TranslationService:
         except Exception as e:
             logger.exception("Batch translation failed: %s", e)
             return Result.failure(TranslationError(f"Batch translation failed: {str(e)}"))
+
+    async def translate_to_other_languages(
+        self, text: str, source_language: str
+    ) -> Dict[str, Optional[str]]:
+        """
+        元言語から他の2言語に並列で翻訳
+
+        このメソッドは、レビュー投稿確認画面で使用されます。
+        元言語のテキストを、他の2つのサポート言語に並列で翻訳します。
+
+        Args:
+            text: 翻訳するテキスト
+            source_language: 元言語コード (ja, en, zh)
+
+        Returns:
+            Dict[str, Optional[str]]: 翻訳結果の辞書
+                - "ja": 日本語翻訳（元言語が日本語以外の場合）
+                - "zh": 中国語翻訳（元言語が中国語以外の場合）
+                - "en": 英語翻訳（元言語が英語以外の場合）
+
+        Examples:
+            >>> # 日本語から英語+中国語に翻訳
+            >>> translations = await service.translate_to_other_languages("こんにちは", "ja")
+            >>> print(translations)  # {"en": "Hello", "zh": "你好"}
+
+            >>> # 英語から日本語+中国語に翻訳
+            >>> translations = await service.translate_to_other_languages("Hello", "en")
+            >>> print(translations)  # {"ja": "こんにちは", "zh": "你好"}
+
+        Notes:
+            - 元言語の翻訳は含まれません（例: 日本語で投稿した場合、"ja"キーは存在しない）
+            - 翻訳失敗時はNoneが返されます（Graceful Degradation）
+            - 並列実行（asyncio.gather）により高速化
+        """
+        # サポートされているすべての言語
+        all_languages = ["ja", "en", "zh"]
+
+        # 元言語を除いた他の言語
+        target_languages = [lang for lang in all_languages if lang != source_language]
+
+        # 並列翻訳タスクを作成
+        translation_tasks = [
+            self.translate_text(text, source_language, target_lang)
+            for target_lang in target_languages
+        ]
+
+        # 並列実行
+        results = await asyncio.gather(*translation_tasks, return_exceptions=True)
+
+        # 結果を辞書にまとめる
+        translations = {}
+        for target_lang, result in zip(target_languages, results):
+            if isinstance(result, Exception):
+                logger.warning(
+                    "Translation failed for %s -> %s: %s", source_language, target_lang, result
+                )
+                translations[target_lang] = None
+            elif result.is_success:
+                translations[target_lang] = result.data
+            else:
+                logger.warning(
+                    "Translation failed for %s -> %s: %s",
+                    source_language,
+                    target_lang,
+                    result.error,
+                )
+                translations[target_lang] = None
+
+        logger.info(
+            "Parallel translation completed: %s -> %s (success: %d/%d)",
+            source_language,
+            target_languages,
+            sum(1 for v in translations.values() if v is not None),
+            len(target_languages),
+        )
+
+        return translations
 
     async def _call_deepl_api(
         self, text: List[str], source_lang: str, target_lang: str, retry_count: int = 0

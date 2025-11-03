@@ -325,46 +325,59 @@ class ReviewCreateHandler(BaseHandler):
                     logger.info("Reusing cached translations from confirmation screen (no API calls)")
                     translated_comments_all = self._parse_cached_translations()
                 else:
-                    # 翻訳データがない場合のみAPI呼び出し（フォールバック）
-                    logger.info("No cached translations found, calling DeepL API")
+                    # 翻訳データがない場合のみAPI呼び出し（フォールバック）- 並列翻訳版
+                    logger.info("No cached translations found, calling DeepL API (parallel translation)")
+                    import asyncio
+
                     translated_comments_all = {}
-                    target_languages = []
+                    translation_tasks = []
+                    categories_with_comments = []
 
-                    # 元言語に応じて翻訳先言語を決定
-                    if selected_language == "ja":
-                        target_languages = ["en", "zh"]  # 日本語 → 英語 + 中国語
-                    elif selected_language == "en":
-                        target_languages = ["ja", "zh"]  # 英語 → 日本語 + 中国語
-                    elif selected_language == "zh":
-                        target_languages = ["ja", "en"]  # 中国語 → 日本語 + 英語
-                    else:
-                        # デフォルト: 日本語を選択言語とする
-                        selected_language = "ja"
-                        target_languages = ["en", "zh"]
-
-                    # 各言語への翻訳
-                    for target_lang in target_languages:
-                        translated_comments_all[target_lang] = {}
-                        for category, comment in review_data["comments"].items():
-                            if comment:
-                                translation_result = await self.translation_service.translate_text(
-                                    text=comment,
-                                    source_lang=selected_language,
-                                    target_lang=target_lang,
-                                    context="company review",
+                    # 各カテゴリーのコメントを並列翻訳
+                    for category, comment in review_data["comments"].items():
+                        if comment:
+                            categories_with_comments.append((category, comment))
+                            translation_tasks.append(
+                                self.translation_service.translate_to_other_languages(
+                                    text=comment, source_language=selected_language
                                 )
-                                if translation_result.is_success:
-                                    translated_comments_all[target_lang][category] = (
-                                        translation_result.data
-                                    )
-                                else:
-                                    # 翻訳失敗時はログ出力のみ（Graceful Degradation）
-                                    logger.warning(
-                                        f"Translation failed for {category} to {target_lang}: {translation_result.error}"
-                                    )
-                                    translated_comments_all[target_lang][category] = None
+                            )
+
+                    # 全カテゴリーのコメントを並列翻訳
+                    if translation_tasks:
+                        translation_results = await asyncio.gather(
+                            *translation_tasks, return_exceptions=True
+                        )
+
+                        # 結果を整理
+                        for (category, comment), result in zip(
+                            categories_with_comments, translation_results
+                        ):
+                            if isinstance(result, Exception):
+                                logger.warning(
+                                    f"Translation failed for category {category}: {result}"
+                                )
+                                # 翻訳失敗時はNoneを設定（Graceful Degradation）
+                                for lang in ["ja", "en", "zh"]:
+                                    if lang != selected_language:
+                                        if lang not in translated_comments_all:
+                                            translated_comments_all[lang] = {}
+                                        translated_comments_all[lang][category] = None
                             else:
-                                translated_comments_all[target_lang][category] = None
+                                # 成功した翻訳を結果に追加
+                                for lang, translated_text in result.items():
+                                    if lang not in translated_comments_all:
+                                        translated_comments_all[lang] = {}
+                                    translated_comments_all[lang][category] = translated_text
+
+                    # コメントがないカテゴリーはNoneを設定
+                    for category in review_data["comments"].keys():
+                        if category not in [cat for cat, _ in categories_with_comments]:
+                            for lang in ["ja", "en", "zh"]:
+                                if lang != selected_language:
+                                    if lang not in translated_comments_all:
+                                        translated_comments_all[lang] = {}
+                                    translated_comments_all[lang][category] = None
 
                 # Task 7.1: 翻訳データをreview_dataに追加
                 review_data["comments_ja"] = translated_comments_all.get("ja")
@@ -432,39 +445,55 @@ class ReviewCreateHandler(BaseHandler):
             # 選択された言語を取得（review_dataから）
             selected_language = review_data.get("selected_language", "ja")
 
-            # Task 6: 元言語以外の2言語に翻訳
+            # Task 6: 元言語以外の2言語に並列翻訳（asyncio.gather）
+            import asyncio
+
             translated_comments_all = {}
-            target_languages = []
 
-            # 元言語に応じて翻訳先言語を決定
-            if selected_language == "ja":
-                target_languages = ["en", "zh"]  # 日本語 → 英語 + 中国語
-            elif selected_language == "en":
-                target_languages = ["ja", "zh"]  # 英語 → 日本語 + 中国語
-            elif selected_language == "zh":
-                target_languages = ["ja", "en"]  # 中国語 → 日本語 + 英語
+            # 各カテゴリーのコメントを並列翻訳
+            translation_tasks = []
+            categories_with_comments = []
 
-            # 各言語への翻訳
-            for target_lang in target_languages:
-                translated_comments_all[target_lang] = {}
-                for category, comment in review_data["comments"].items():
-                    if comment:
-                        translation_result = await self.translation_service.translate_text(
-                            text=comment,
-                            source_lang=selected_language,
-                            target_lang=target_lang,
-                            context="company review",
+            for category, comment in review_data["comments"].items():
+                if comment:
+                    categories_with_comments.append((category, comment))
+                    translation_tasks.append(
+                        self.translation_service.translate_to_other_languages(
+                            text=comment, source_language=selected_language
                         )
-                        if translation_result.is_success:
-                            translated_comments_all[target_lang][category] = translation_result.data
-                        else:
-                            # 翻訳失敗時は元のテキストを使用（Graceful Degradation）
-                            logger.warning(
-                                f"Translation failed for {category} to {target_lang}, using original text: {translation_result.error}"
-                            )
-                            translated_comments_all[target_lang][category] = f"[翻訳失敗] {comment}"
+                    )
+
+            # 全カテゴリーのコメントを並列翻訳
+            if translation_tasks:
+                translation_results = await asyncio.gather(*translation_tasks, return_exceptions=True)
+
+                # 結果を整理
+                for (category, comment), result in zip(categories_with_comments, translation_results):
+                    if isinstance(result, Exception):
+                        logger.warning(
+                            f"Translation failed for category {category}: {result}"
+                        )
+                        # 翻訳失敗時は空にする（Graceful Degradation）
+                        for lang in ["ja", "en", "zh"]:
+                            if lang != selected_language:
+                                if lang not in translated_comments_all:
+                                    translated_comments_all[lang] = {}
+                                translated_comments_all[lang][category] = None
                     else:
-                        translated_comments_all[target_lang][category] = None
+                        # 成功した翻訳を結果に追加
+                        for lang, translated_text in result.items():
+                            if lang not in translated_comments_all:
+                                translated_comments_all[lang] = {}
+                            translated_comments_all[lang][category] = translated_text
+
+            # コメントがないカテゴリーはNoneを設定
+            for category in review_data["comments"].keys():
+                if category not in [cat for cat, _ in categories_with_comments]:
+                    for lang in ["ja", "en", "zh"]:
+                        if lang != selected_language:
+                            if lang not in translated_comments_all:
+                                translated_comments_all[lang] = {}
+                            translated_comments_all[lang][category] = None
 
             # 後方互換性のため、translated_commentsも渡す（日本語翻訳）
             translated_comments = translated_comments_all.get("ja", review_data["comments"].copy())
