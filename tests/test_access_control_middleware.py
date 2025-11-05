@@ -317,3 +317,216 @@ class TestAccessControlMiddleware:
         assert result.is_success
         assert 'access_granted' in result.data
         assert 'user_context' in result.data
+
+
+class TestReviewListAccessControl:
+    """
+    Task 10.1: レビュー一覧アクセス制御のテスト
+    Requirements: 1.1, 1.2, 1.3, 1.7
+    """
+
+    @pytest.fixture
+    def access_control_middleware(self):
+        """Access control middleware fixture with mocked UserService"""
+        middleware = AccessControlMiddleware()
+
+        # Mock UserService
+        mock_user_service = MagicMock()
+        mock_user_service.check_review_access_within_one_year = AsyncMock()
+        middleware.user_service = mock_user_service
+
+        return middleware
+
+    @pytest.mark.asyncio
+    async def test_unauthenticated_user_gets_preview_access(self, access_control_middleware):
+        """
+        未認証ユーザーのアクセスレベル判定テスト
+        Requirement 1.1: 未認証ユーザーはプレビューアクセスを取得
+        """
+        result = await access_control_middleware.check_review_list_access(
+            user_id=None,
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        )
+
+        assert result["access_level"] == "preview"
+        assert result["can_filter"] is False
+        assert result["message"] is None
+        assert result["user_last_posted_at"] is None
+
+    @pytest.mark.asyncio
+    async def test_web_crawler_detection_googlebot(self, access_control_middleware):
+        """
+        Webクローラー検出テスト - Googlebot
+        Requirement 1.2: Webクローラーは crawler アクセスレベルを取得
+        """
+        result = await access_control_middleware.check_review_list_access(
+            user_id=None,
+            user_agent="Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+        )
+
+        assert result["access_level"] == "crawler"
+        assert result["can_filter"] is False
+        assert result["message"] is None
+
+    @pytest.mark.asyncio
+    async def test_web_crawler_detection_bingbot(self, access_control_middleware):
+        """
+        Webクローラー検出テスト - Bingbot
+        Requirement 1.2: Webクローラーは crawler アクセスレベルを取得
+        """
+        result = await access_control_middleware.check_review_list_access(
+            user_id=None,
+            user_agent="Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)"
+        )
+
+        assert result["access_level"] == "crawler"
+        assert result["can_filter"] is False
+
+    @pytest.mark.asyncio
+    async def test_web_crawler_detection_case_insensitive(self, access_control_middleware):
+        """
+        Webクローラー検出テスト - 大文字小文字を区別しない
+        Requirement 1.2: User-Agent の大文字小文字を区別せずに検出
+        """
+        result = await access_control_middleware.check_review_list_access(
+            user_id=None,
+            user_agent="Mozilla/5.0 (compatible; GOOGLEBOT/2.1)"
+        )
+
+        assert result["access_level"] == "crawler"
+
+    @pytest.mark.asyncio
+    async def test_user_with_recent_review_gets_full_access(self, access_control_middleware):
+        """
+        1年以内のレビュー投稿者のアクセスレベル判定テスト
+        Requirement 1.3: 1年以内にレビューを投稿したユーザーはフルアクセスを取得
+        """
+        # Mock: ユーザーは1年以内にレビュー投稿済み
+        access_control_middleware.user_service.check_review_access_within_one_year.return_value = True
+
+        result = await access_control_middleware.check_review_list_access(
+            user_id="user_123",
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        )
+
+        assert result["access_level"] == "full"
+        assert result["can_filter"] is True
+        assert result["message"] is None
+
+        # Verify UserService was called with correct user_id
+        access_control_middleware.user_service.check_review_access_within_one_year.assert_called_once_with("user_123")
+
+    @pytest.mark.asyncio
+    async def test_user_with_old_review_gets_denied_access(self, access_control_middleware):
+        """
+        1年以上前の投稿者のアクセスレベル判定テスト
+        Requirement 1.7: 1年以上前に投稿したユーザーはアクセス拒否
+        """
+        # Mock: ユーザーの最終レビュー投稿は1年以上前
+        access_control_middleware.user_service.check_review_access_within_one_year.return_value = False
+
+        result = await access_control_middleware.check_review_list_access(
+            user_id="user_456",
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        )
+
+        assert result["access_level"] == "denied"
+        assert result["can_filter"] is False
+        assert result["message"] == "Reviewを投稿いただいた方に閲覧権限を付与しています"
+
+    @pytest.mark.asyncio
+    async def test_user_without_review_history_gets_denied_access(self, access_control_middleware):
+        """
+        レビュー履歴なしユーザーのアクセスレベル判定テスト
+        Requirement 1.7: レビュー履歴のないユーザーはアクセス拒否
+        """
+        # Mock: ユーザーはレビュー投稿履歴なし
+        access_control_middleware.user_service.check_review_access_within_one_year.return_value = False
+
+        result = await access_control_middleware.check_review_list_access(
+            user_id="new_user_789",
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        )
+
+        assert result["access_level"] == "denied"
+        assert result["can_filter"] is False
+        assert result["message"] == "Reviewを投稿いただいた方に閲覧権限を付与しています"
+
+    @pytest.mark.asyncio
+    async def test_crawler_detection_priority_over_authentication(self, access_control_middleware):
+        """
+        Webクローラー検出の優先度テスト
+        Requirement 1.2: 認証済みユーザーでもクローラーUser-Agentならcrawlerアクセスレベル
+        """
+        # Mock: ユーザーは1年以内にレビュー投稿済み（通常ならfullアクセス）
+        access_control_middleware.user_service.check_review_access_within_one_year.return_value = True
+
+        result = await access_control_middleware.check_review_list_access(
+            user_id="user_123",
+            user_agent="Mozilla/5.0 (compatible; Googlebot/2.1)"
+        )
+
+        # クローラー検出が優先される
+        assert result["access_level"] == "crawler"
+        assert result["can_filter"] is False
+
+    @pytest.mark.asyncio
+    async def test_error_handling_returns_denied_access(self, access_control_middleware):
+        """
+        エラーハンドリングテスト: エラー時は denied アクセスを返す
+        Secure fail: システムエラー時はアクセス拒否
+        """
+        # Mock: UserService がエラーをスロー
+        access_control_middleware.user_service.check_review_access_within_one_year.side_effect = Exception("Database error")
+
+        result = await access_control_middleware.check_review_list_access(
+            user_id="user_123",
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        )
+
+        assert result["access_level"] == "denied"
+        assert result["can_filter"] is False
+        assert "エラーが発生しました" in result["message"]
+
+    @pytest.mark.asyncio
+    async def test_various_crawler_patterns(self, access_control_middleware):
+        """
+        さまざまなクローラーパターンの検出テスト
+        Requirement 1.2: 主要なWebクローラーを検出
+        """
+        crawler_user_agents = [
+            "Mozilla/5.0 (compatible; Yahoo! Slurp; http://help.yahoo.com/help/us/ysearch/slurp)",
+            "DuckDuckBot/1.0; (+http://duckduckgo.com/duckduckbot.html)",
+            "Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)",
+            "Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)",
+            "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+            "Twitterbot/1.0",
+        ]
+
+        for user_agent in crawler_user_agents:
+            result = await access_control_middleware.check_review_list_access(
+                user_id=None,
+                user_agent=user_agent
+            )
+
+            assert result["access_level"] == "crawler", f"Failed to detect crawler: {user_agent}"
+
+    @pytest.mark.asyncio
+    async def test_normal_browser_not_detected_as_crawler(self, access_control_middleware):
+        """
+        通常のブラウザがクローラーとして検出されないことを確認
+        Requirement 1.2: 通常のブラウザUser-Agentはクローラーとして扱わない
+        """
+        normal_user_agents = [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X)",
+        ]
+
+        for user_agent in normal_user_agents:
+            result = await access_control_middleware.check_review_list_access(
+                user_id=None,
+                user_agent=user_agent
+            )
+
+            assert result["access_level"] == "preview", f"Normal browser incorrectly detected as crawler: {user_agent}"

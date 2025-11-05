@@ -534,3 +534,92 @@ class TestTranslateToOtherLanguages:
                 # 結果が正しく返されることを確認
                 assert "en" in result
                 assert "zh" in result
+
+
+class TestTranslationServiceErrorHandling:
+    """Task 10.4: 追加のエラーハンドリングテスト"""
+
+    @pytest.mark.asyncio
+    async def test_json_parse_error_handling(self):
+        """
+        JSON解析失敗時のエラーハンドリングテスト
+        Requirement: Task 10.4 - JSON解析失敗時のエラーハンドリング
+        """
+        with patch.dict(os.environ, {"DEEPL_API_KEY": "test-key"}):
+            service = TranslationService()
+
+            # 不正なJSONレスポンスをモック
+            mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.json = Mock(side_effect=ValueError("Invalid JSON"))
+            mock_response.text = "Invalid JSON response"
+
+            with patch.object(service.client, "post", new_callable=AsyncMock) as mock_post:
+                mock_post.return_value = mock_response
+
+                result = await service.translate_text("Test text", "ja", "en")
+
+                # エラーが適切にハンドリングされることを確認
+                assert not result.is_success
+                assert isinstance(result.error, TranslationError)
+                assert "Unexpected API error" in str(result.error)
+
+    @pytest.mark.asyncio
+    async def test_5000_character_limit_handling(self):
+        """
+        5000文字制限のハンドリングテスト
+        Requirement: Task 10.4 - 5000文字制限のハンドリング
+
+        DeepL APIは1リクエストあたり5000文字の制限があります。
+        この制限を超えるテキストを送信した場合のハンドリングを検証します。
+        """
+        with patch.dict(os.environ, {"DEEPL_API_KEY": "test-key"}):
+            service = TranslationService()
+
+            # 5000文字を超えるテキスト
+            long_text = "a" * 5001
+
+            # APIが400エラーを返すことをモック
+            mock_response = Mock()
+            mock_response.status_code = 400
+            mock_response.text = "Text too long. Maximum 5000 characters allowed."
+
+            with patch.object(service.client, "post", new_callable=AsyncMock) as mock_post:
+                mock_post.return_value = mock_response
+
+                result = await service.translate_text(long_text, "ja", "en")
+
+                # エラーが適切にハンドリングされることを確認
+                assert not result.is_success
+                assert isinstance(result.error, TranslationError)
+                assert "API error: 400" in str(result.error)
+
+    @pytest.mark.asyncio
+    async def test_5000_character_limit_warning_log(self):
+        """
+        5000文字に近いテキストの処理をテスト（警告なし）
+        5000文字未満であれば正常に処理されることを確認
+        """
+        with patch.dict(os.environ, {"DEEPL_API_KEY": "test-key"}):
+            service = TranslationService()
+
+            # 5000文字以内のテキスト（境界値テスト）
+            text_4999 = "a" * 4999
+
+            # 正常なレスポンスをモック
+            mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.json = Mock(return_value={
+                "translations": [{"text": "Translated " + text_4999}]
+            })
+
+            with patch.object(service.client, "post", new_callable=AsyncMock) as mock_post:
+                mock_post.return_value = mock_response
+
+                result = await service.translate_text(text_4999, "ja", "en")
+
+                # 正常に処理されることを確認
+                assert result.is_success
+                assert "Translated" in result.data
+                # APIが正しいパラメータで呼ばれたことを確認
+                mock_post.assert_called_once()

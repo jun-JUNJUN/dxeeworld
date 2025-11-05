@@ -118,13 +118,17 @@ class TestI18nFormService:
         """
         translations = service.get_form_translations()
 
+        # 空文字列が許容されるキー（例：英語の年サフィックスは不要）
+        allowed_empty = {"year_suffix"}
+
         # labels の全キーで3言語が揃っているか検証
         for key, lang_dict in translations["labels"].items():
             assert set(lang_dict.keys()) == {"en", "ja", "zh"}, f"Label '{key}' missing languages"
-            # 翻訳が空でないことを検証
-            assert lang_dict["en"], f"English translation for label '{key}' is empty"
-            assert lang_dict["ja"], f"Japanese translation for label '{key}' is empty"
-            assert lang_dict["zh"], f"Chinese translation for label '{key}' is empty"
+            # 翻訳が空でないことを検証（特定のキーを除く）
+            if key not in allowed_empty:
+                assert lang_dict["en"], f"English translation for label '{key}' is empty"
+                assert lang_dict["ja"], f"Japanese translation for label '{key}' is empty"
+                assert lang_dict["zh"], f"Chinese translation for label '{key}' is empty"
 
         # placeholders の全キーで3言語が揃っているか検証
         for key, lang_dict in translations["placeholders"].items():
