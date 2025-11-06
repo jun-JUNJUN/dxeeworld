@@ -24,6 +24,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - **auth-access-control-enhancements**: Email login code verification, SMTP testing, .env-based URL access control, login panel UI, and multi-review support (Phase: initialized)
 - **review-listing-and-multilingual-improvements**: Review listing with access control, multilingual review form with language selection and confirmation screen, and employment period validation (Phase: initialized)
 - **deepl-translation-api**: Replace DeepSeek LLM with DeepL translation API for review form text translation (Phase: initialized)
+- **review-listing-page**: Review listing page (/review) with real-time aggregation, sorting, filtering, and pagination (Phase: initialized)
 - Check `.kiro/specs/` for active specifications
 - Use `/kiro:spec-status [feature-name]` to check progress
 
