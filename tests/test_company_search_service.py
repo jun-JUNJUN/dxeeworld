@@ -237,13 +237,13 @@ class TestCompanySearchService:
         """無効なページネーションパラメータ"""
         invalid_params = {
             "page": 0,      # 1以上である必要
-            "per_page": 101 # 100以下である必要
+            "per_page": 0   # 1以上である必要
         }
 
         errors = await self.search_service.validate_search_params(invalid_params)
         assert len(errors) >= 2
-        assert any("page" in error for error in errors)
-        assert any("per_page" in error for error in errors)
+        assert any("page" in error.lower() for error in errors)
+        assert any("per_page" in error.lower() for error in errors)
 
     @pytest.mark.asyncio
     async def test_search_database_error(self):

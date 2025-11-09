@@ -19,11 +19,85 @@ class ReviewListHandler(BaseHandler):
 
     def initialize(self):
         """ハンドラー初期化"""
-        self.company_search_service = CompanySearchService()
+        # Task 3.3: データベースサービスを取得してCompanySearchServiceに渡す
+        db_service = get_db_service()
+        self.company_search_service = CompanySearchService(db_service)
         # Task 2.4: AccessControlMiddleware統合
         from ..middleware.access_control_middleware import AccessControlMiddleware
 
         self.access_control = AccessControlMiddleware()
+
+    def parse_search_params(self, can_filter: bool) -> dict:
+        """
+        Task 3.2: 検索パラメータの解析と処理
+
+        Args:
+            can_filter: フィルター機能が有効かどうか
+
+        Returns:
+            dict: 解析された検索パラメータ
+                - name: 企業名（部分一致、can_filter=True時のみ）
+                - location: 所在地（部分一致、can_filter=True時のみ）
+                - min_rating: 最低評価（0.0-5.0、can_filter=True時のみ）
+                - max_rating: 最高評価（0.0-5.0、can_filter=True時のみ）
+                - page: ページ番号（1始まり、デフォルト1）
+                - per_page: 1ページあたりの件数（デフォルト20）
+                - sort_by: ソートキー（デフォルトrating_high）
+        """
+        params = {}
+
+        # ページ番号とソートは常に有効
+        page_str = self.get_argument("page", None)
+        try:
+            params["page"] = int(page_str) if page_str else 1
+            if params["page"] < 1:
+                params["page"] = 1
+        except (ValueError, TypeError):
+            params["page"] = 1
+
+        per_page_str = self.get_argument("per_page", None)
+        try:
+            params["per_page"] = int(per_page_str) if per_page_str else 20
+        except (ValueError, TypeError):
+            params["per_page"] = 20
+
+        # ソートキーの変換（デフォルト: rating_high）
+        sort_param = self.get_argument("sort", None)
+        params["sort_by"] = sort_param if sort_param else "rating_high"
+
+        # can_filter=True の場合のみフィルターパラメータを追加
+        if can_filter:
+            # 企業名フィルター
+            name = self.get_argument("name", None)
+            if name and name.strip():
+                params["name"] = name.strip()
+
+            # 所在地フィルター
+            location = self.get_argument("location", None)
+            if location and location.strip():
+                params["location"] = location.strip()
+
+            # 最低評価フィルター
+            min_rating_str = self.get_argument("min_rating", None)
+            if min_rating_str:
+                try:
+                    min_rating = float(min_rating_str)
+                    if 0.0 <= min_rating <= 5.0:
+                        params["min_rating"] = min_rating
+                except (ValueError, TypeError):
+                    pass  # 不正な値は無視
+
+            # 最高評価フィルター
+            max_rating_str = self.get_argument("max_rating", None)
+            if max_rating_str:
+                try:
+                    max_rating = float(max_rating_str)
+                    if 0.0 <= max_rating <= 5.0:
+                        params["max_rating"] = max_rating
+                except (ValueError, TypeError):
+                    pass  # 不正な値は無視
+
+        return params
 
     @staticmethod
     def truncate_comment_for_preview(comment: str, max_chars: int = 128) -> dict:
@@ -65,35 +139,41 @@ class ReviewListHandler(BaseHandler):
             }
 
     async def get(self):
-        """Task 2.4: レビュー一覧ページを表示 - アクセス制御とフィルター統合"""
+        """
+        Task 3.3: レビュー一覧ページを表示 - 企業検索の実行とページレンダリング
+
+        処理フロー:
+        1. Task 3.1: セッションからユーザーIDを取得し、アクセス制御チェック
+        2. アクセス拒否の場合、エラーメッセージを表示して終了
+        3. Task 3.2: 検索パラメータを解析（can_filterに応じてフィルター無効化）
+        4. Task 3.3: CompanySearchServiceで企業検索を実行
+        5. 検索結果とページネーション情報をテンプレートに渡してレンダリング
+        """
         try:
-            # Task 2.4: アクセス制御チェック
-            session_id = self.get_secure_cookie("session_id")
-            if session_id:
-                session_id = session_id.decode("utf-8")
+            # Task 3.1: セッションIDからユーザーIDを取得
+            user_id = await self.get_current_user_id()
 
-            # ユーザーIDを取得
-            user_id = None
-            if session_id:
-                from ..services.session_service import SessionService
+            # Task 3.1: User-Agentを取得（クローラー検出用）
+            user_agent = self.request.headers.get("User-Agent", "")
 
-                session_service = SessionService()
-                session_result = await session_service.validate_session(session_id)
-                if session_result.is_success:
-                    user_id = session_result.data.get("identity_id")
-
-            # アクセスレベルの判定
-            access_result = await self.access_control.check_review_list_access(user_id)
+            # Task 3.1: アクセス制御チェック
+            access_result = await self.access_control.check_review_list_access(
+                user_id, user_agent
+            )
             access_level = access_result.get("access_level", "preview")
             can_filter = access_result.get("can_filter", False)
 
-            # Task 2.4: アクセスレベルに応じた処理
+            # Task 3.1: アクセス拒否の場合、エラーメッセージを表示
             if access_level == "denied":
-                # アクセス拒否メッセージを表示
                 self.render(
                     "reviews/list.html",
                     companies=[],
-                    pagination={"page": 1, "total": 0, "pages": 0},
+                    pagination={
+                        "page": 1,
+                        "total_count": 0,
+                        "total_pages": 0,
+                        "per_page": 20
+                    },
                     search_params={},
                     access_level=access_level,
                     can_filter=False,
@@ -101,53 +181,63 @@ class ReviewListHandler(BaseHandler):
                 )
                 return
 
-            # 検索パラメータを取得
-            search_params = {
-                "name": self.get_argument("name", ""),
-                "location": self.get_argument("location", ""),
-                "min_rating": self.get_argument("min_rating", None),
-                "max_rating": self.get_argument("max_rating", None),
-                "page": int(self.get_argument("page", "1")),
-                "limit": int(self.get_argument("limit", "20")),
-                "sort": self.get_argument("sort", "rating_high"),
-            }
+            # Task 3.2: 検索パラメータの解析
+            search_params = self.parse_search_params(can_filter)
 
-            # Task 2.4: フィルターはcan_filter=Trueの場合のみ適用
-            if not can_filter:
-                # フィルターを無効化
-                search_params["name"] = ""
-                search_params["location"] = ""
-                search_params["min_rating"] = None
-                search_params["max_rating"] = None
-
-            # 評価範囲の型変換
-            if search_params["min_rating"]:
-                search_params["min_rating"] = float(search_params["min_rating"])
-            if search_params["max_rating"]:
-                search_params["max_rating"] = float(search_params["max_rating"])
-
-            # 企業検索実行
-            search_result = await self.company_search_service.search_companies_with_reviews(
+            # Task 3.3: CompanySearchServiceで企業検索を実行
+            search_result = await self.company_search_service.search_companies(
                 search_params
             )
 
-            # テンプレートレンダリング
-            self.render(
-                "reviews/list.html",
-                companies=search_result["companies"],
-                pagination=search_result["pagination"],
-                search_params=search_params,
-                access_level=access_level,
-                can_filter=can_filter,
-                access_message=access_result.get("message", ""),
-            )
+            # Task 3.3: 検索成功時のレンダリング
+            if search_result.get("success"):
+                self.render(
+                    "reviews/list.html",
+                    companies=search_result["companies"],
+                    pagination={
+                        "page": search_result["current_page"],
+                        "total_count": search_result["total_count"],
+                        "total_pages": search_result["total_pages"],
+                        "per_page": search_result["per_page"]
+                    },
+                    search_params=search_params,
+                    access_level=access_level,
+                    can_filter=can_filter,
+                    access_message=access_result.get("message", ""),
+                )
+            else:
+                # Task 3.3: 検索エラー時の処理（空のリスト表示、エラーログ記録）
+                logger.error(
+                    f"Company search failed: {search_result.get('error_code')} - "
+                    f"{search_result.get('message', 'Unknown error')}"
+                )
+                self.render(
+                    "reviews/list.html",
+                    companies=[],
+                    pagination={
+                        "page": 1,
+                        "total_count": 0,
+                        "total_pages": 0,
+                        "per_page": 20
+                    },
+                    search_params=search_params,
+                    access_level=access_level,
+                    can_filter=can_filter,
+                    access_message="検索中にエラーが発生しました",
+                )
 
         except Exception as e:
-            logger.error(f"Review list error: {e}")
+            # Task 3.3: 予期しないエラー時の処理（空のリスト表示、エラーログ記録）
+            logger.exception(f"Unexpected error in review list handler: {e}")
             self.render(
                 "reviews/list.html",
                 companies=[],
-                pagination={"page": 1, "total": 0, "pages": 0},
+                pagination={
+                    "page": 1,
+                    "total_count": 0,
+                    "total_pages": 0,
+                    "per_page": 20
+                },
                 search_params={},
                 access_level="preview",
                 can_filter=False,
@@ -174,9 +264,13 @@ class ReviewCreateHandler(BaseHandler):
         # Task 6.1: TranslationService統合
         from ..services.translation_service import TranslationService
 
+        # Task 1.3: ReviewAggregationService統合（非同期集計処理）
+        from ..services.review_aggregation_service import ReviewAggregationService
+
         self.access_control = AccessControlMiddleware()
         self.i18n_service = I18nFormService()
         self.translation_service = TranslationService()
+        self.aggregation_service = ReviewAggregationService(self.db_service)
 
     async def get(self, company_id):
         """Task 4.2: レビュー投稿フォーム表示 - AccessControlMiddleware統合"""
@@ -391,6 +485,14 @@ class ReviewCreateHandler(BaseHandler):
                     logger.info(
                         f"Review successfully submitted for company {company_id} by user {user_id}"
                     )
+
+                    # Task 1.3: レビュー投稿成功後、非同期で企業集計処理を起動
+                    import asyncio
+                    asyncio.create_task(
+                        self.aggregation_service.aggregate_and_update_company(company_id)
+                    )
+                    logger.info(f"Async aggregation task created for company {company_id}")
+
                     # Task 8.1: 投稿成功メッセージを設定
                     self.set_flash_message(
                         "Review投稿しました。ありがとうございました。", "success"

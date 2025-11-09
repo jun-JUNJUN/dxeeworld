@@ -134,21 +134,19 @@ class CompanySearchService:
         Returns:
             ソート順序（MongoDBフォーマット）
         """
-        sort_by = search_params.get("sort_by", "overall_average")
-        sort_direction = search_params.get("sort_direction", "desc")
+        sort_by = search_params.get("sort_by", "latest")
 
-        # ソート方向の正規化
-        direction = -1 if sort_direction.lower() == "desc" else 1
-
-        # ソートフィールドのマッピング
-        sort_field_map = {
-            "overall_average": "review_summary.overall_average",
-            "total_reviews": "review_summary.total_reviews",
-            "last_updated": "review_summary.last_updated",
-            "name": "name"
+        # ソートフィールドとソート方向のマッピング
+        sort_config_map = {
+            "latest": ("review_summary.last_review_date", -1),        # 最新レビュー順（降順）
+            "rating_high": ("review_summary.overall_average", -1),    # 評価順（高→低）
+            "rating_low": ("review_summary.overall_average", 1),      # 評価順（低→高）
+            "review_count": ("review_summary.total_reviews", -1),     # レビュー数順（降順）
+            "name": ("name", 1)                                       # 企業名順（昇順）
         }
 
-        sort_field = sort_field_map.get(sort_by, "review_summary.overall_average")
+        # ソート設定を取得（デフォルトは最新レビュー順）
+        sort_field, direction = sort_config_map.get(sort_by, sort_config_map["latest"])
 
         return [(sort_field, direction)]
 
@@ -170,8 +168,8 @@ class CompanySearchService:
             errors.append("Page must be a positive integer")
 
         per_page = search_params.get("per_page", 20)
-        if not isinstance(per_page, int) or per_page < 1 or per_page > 100:
-            errors.append("per_page must be between 1 and 100")
+        if not isinstance(per_page, int) or per_page < 1:
+            errors.append("per_page must be a positive integer")
 
         # 評価範囲の検証
         min_rating = search_params.get("min_rating")
