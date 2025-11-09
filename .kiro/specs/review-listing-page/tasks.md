@@ -127,7 +127,7 @@
   - _Requirements: 3.3, 3.4_
 
 - [ ] 5. MongoDBインデックスの作成
-- [ ] 5.1 検索・ソート用インデックスを作成
+- [x] 5.1 検索・ソート用インデックスを作成
   - review_summary.overall_average の降順インデックス
   - review_summary.total_reviews の降順インデックス
   - review_summary.last_updated の降順インデックス

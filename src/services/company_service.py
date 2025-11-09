@@ -373,6 +373,51 @@ class CompanyService:
             logger.error(f"インデックス作成エラー: {e}")
             return False
 
+    async def create_review_summary_indexes(self) -> bool:
+        """
+        レビュー集計データ用のインデックスを作成
+
+        レビュー一覧ページの検索・ソート機能を最適化するためのインデックス:
+        - review_summary.overall_average: 評価順ソート用
+        - review_summary.total_reviews: レビュー数順ソート用
+        - review_summary.last_updated: 最新レビュー順ソート用
+        - 複合インデックス: 評価範囲フィルタ + レビュー数ソートの最適化
+
+        Returns:
+            bool: インデックス作成が成功した場合True、失敗した場合False
+        """
+        try:
+            # 総合評価平均の降順インデックス（評価順ソート用）
+            await self.db_service.create_index(
+                'companies',
+                [('review_summary.overall_average', -1)]
+            )
+
+            # レビュー総数の降順インデックス（レビュー数順ソート用）
+            await self.db_service.create_index(
+                'companies',
+                [('review_summary.total_reviews', -1)]
+            )
+
+            # 最終更新日時の降順インデックス（最新レビュー順ソート用）
+            await self.db_service.create_index(
+                'companies',
+                [('review_summary.last_updated', -1)]
+            )
+
+            # 複合インデックス（評価範囲フィルタ + レビュー数ソート最適化）
+            await self.db_service.create_index(
+                'companies',
+                [('review_summary.overall_average', -1), ('review_summary.total_reviews', -1)]
+            )
+
+            logger.info("レビュー集計データ用のインデックスを作成しました（4件）")
+            return True
+
+        except Exception as e:
+            logger.exception("レビュー集計インデックス作成エラー: %s", e)
+            return False
+
     async def search_companies_by_text(self, search_text: str, limit: int = 10) -> List[Company]:
         """テキスト検索による企業検索"""
         try:
