@@ -96,9 +96,10 @@ class ReviewAggregationService:
                 }
 
             # 対象企業のすべてのアクティブなレビューを取得
+            # company_idは文字列として保存されているため、文字列で検索
             reviews = await self.db.find_many(
                 "reviews",
-                {"company_id": company_oid, "is_active": True},
+                {"company_id": company_id, "is_active": True},
                 sort=[("created_at", -1)]
             )
 
@@ -182,8 +183,7 @@ class ReviewAggregationService:
                 "total_reviews": aggregation_result["total_reviews"],
                 "overall_average": aggregation_result["overall_average"],
                 "category_averages": aggregation_result["category_averages"],
-                "last_review_date": aggregation_result["last_review_date"],
-                "last_updated": datetime.now()
+                "last_review_date": aggregation_result["last_review_date"]
             }
 
             # 企業レコードを更新

@@ -175,7 +175,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         }
         if (userAvatarEl) {
-          userAvatarEl.src = user.avatar || "/static/images/default-avatar.png";
+          userAvatarEl.src = user.avatar || "/static/images/default-avatar.svg";
           userAvatarEl.alt = `${user.name || "User"}のアバター`;
         }
       } else {

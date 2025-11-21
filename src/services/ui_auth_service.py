@@ -23,10 +23,10 @@ class UIAuthError(Exception):
 class UIAuthService:
     """UI authentication service for login panel and user interface management"""
 
-    def __init__(self):
+    def __init__(self, db_service=None):
         """Initialize UI auth service with dependencies"""
         self.session_service = OAuthSessionService()
-        self.access_control = AccessControlMiddleware()
+        self.access_control = AccessControlMiddleware(db_service)
 
         # UI configuration
         self.auth_base_url = os.getenv("AUTH_BASE_URL", "/auth")

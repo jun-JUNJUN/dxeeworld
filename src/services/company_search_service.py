@@ -59,6 +59,11 @@ class CompanySearchService:
                 sort=sort_order
             )
 
+            # _idを文字列に変換してテンプレート互換性を確保
+            for company in companies:
+                if '_id' in company:
+                    company['id'] = str(company['_id'])
+
             # ページネーション情報計算
             total_pages = math.ceil(total_count / per_page) if total_count > 0 else 0
 

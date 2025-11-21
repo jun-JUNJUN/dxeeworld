@@ -25,7 +25,7 @@ class ReviewListHandler(BaseHandler):
         # Task 2.4: AccessControlMiddleware統合
         from ..middleware.access_control_middleware import AccessControlMiddleware
 
-        self.access_control = AccessControlMiddleware()
+        self.access_control = AccessControlMiddleware(db_service)
 
     def parse_search_params(self, can_filter: bool) -> dict:
         """
@@ -170,6 +170,7 @@ class ReviewListHandler(BaseHandler):
                     companies=[],
                     pagination={
                         "page": 1,
+                        "total": 0,
                         "total_count": 0,
                         "total_pages": 0,
                         "per_page": 20
@@ -189,6 +190,14 @@ class ReviewListHandler(BaseHandler):
                 search_params
             )
 
+            # Debug: Log search results
+            logger.info(
+                "Company search completed: total_count=%d, companies_returned=%d, page=%d",
+                search_result.get("total_count", 0),
+                len(search_result.get("companies", [])),
+                search_result.get("current_page", 1)
+            )
+
             # Task 3.3: 検索成功時のレンダリング
             if search_result.get("success"):
                 self.render(
@@ -196,6 +205,7 @@ class ReviewListHandler(BaseHandler):
                     companies=search_result["companies"],
                     pagination={
                         "page": search_result["current_page"],
+                        "total": search_result["total_count"],
                         "total_count": search_result["total_count"],
                         "total_pages": search_result["total_pages"],
                         "per_page": search_result["per_page"]
@@ -216,6 +226,7 @@ class ReviewListHandler(BaseHandler):
                     companies=[],
                     pagination={
                         "page": 1,
+                        "total": 0,
                         "total_count": 0,
                         "total_pages": 0,
                         "per_page": 20
@@ -234,6 +245,7 @@ class ReviewListHandler(BaseHandler):
                 companies=[],
                 pagination={
                     "page": 1,
+                    "total": 0,
                     "total_count": 0,
                     "total_pages": 0,
                     "per_page": 20
@@ -267,7 +279,7 @@ class ReviewCreateHandler(BaseHandler):
         # Task 1.3: ReviewAggregationService統合（非同期集計処理）
         from ..services.review_aggregation_service import ReviewAggregationService
 
-        self.access_control = AccessControlMiddleware()
+        self.access_control = AccessControlMiddleware(self.db_service)
         self.i18n_service = I18nFormService()
         self.translation_service = TranslationService()
         self.aggregation_service = ReviewAggregationService(self.db_service)
@@ -501,13 +513,38 @@ class ReviewCreateHandler(BaseHandler):
                     self.redirect(f"/companies/{company_id}")
                 else:
                     # Task 8.2: 投稿失敗時のエラーハンドリング
-                    error_message = (
-                        result.get("message", "レビューの投稿に失敗しました")
-                        if result
-                        else "レビューサービスでエラーが発生しました"
-                    )
+                    error_code = result.get("error_code") if result else None
+
+                    # エラーコードに応じたメッセージを生成
+                    if error_code == "duplicate_review":
+                        days_until_next = result.get("days_until_next", 0)
+                        if days_until_next > 0:
+                            error_message = (
+                                f"この企業には既にレビューを投稿済みです。\n"
+                                f"1つの企業に対して投稿できるレビューは1年に1件までです。\n"
+                                f"次のレビューを投稿できるのは約{days_until_next}日後になります。"
+                            )
+                        else:
+                            error_message = (
+                                "この企業には既にレビューを投稿済みです。\n"
+                                "1つの企業に対して投稿できるレビューは1年に1件までです。"
+                            )
+                    elif error_code == "database_error":
+                        error_message = result.get("message", "データベースエラーが発生しました")
+                    elif result and "errors" in result:
+                        # バリデーションエラーの場合
+                        errors = result.get("errors", [])
+                        error_message = "入力内容に問題があります：" + "、".join(errors)
+                    else:
+                        error_message = (
+                            result.get("message", "レビューの投稿に失敗しました")
+                            if result
+                            else "レビューサービスでエラーが発生しました"
+                        )
+
                     logger.error(
-                        f"Review submission failed for company {company_id}: {error_message}"
+                        "Review submission failed for company %s: %s (error_code: %s)",
+                        company_id, error_message, error_code
                     )
                     # Task 8.2: エラー発生時にユーザーを確認画面に留める
                     # 確認画面を再表示し、エラーメッセージを表示
@@ -904,7 +941,7 @@ class ReviewEditHandler(BaseHandler):
         # I18nFormService統合（多言語対応）
         from ..services.i18n_form_service import I18nFormService
 
-        self.access_control = AccessControlMiddleware()
+        self.access_control = AccessControlMiddleware(self.db_service)
         self.i18n_service = I18nFormService()
 
     async def get(self, review_id):

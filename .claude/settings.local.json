@@ -3,7 +3,8 @@
     "allow": [
       "Bash(python:*)",
       "Bash(find:*)",
-      "Bash(uv run pytest:*)"
+      "Bash(uv run pytest:*)",
+      "Bash(mongosh:*)"
     ],
     "deny": [],
     "ask": []

@@ -505,14 +505,26 @@ class UserService:
             最終レビュー投稿日時（存在しない場合はNone）
         """
         try:
-            user_doc = await self.db_service.find_one('users', {'_id': user_id})
-            if not user_doc:
+            from bson import ObjectId
+
+            # ObjectIdに変換
+            try:
+                object_id = ObjectId(user_id)
+            except Exception:
+                # ObjectId変換失敗時は文字列として扱う
+                object_id = user_id
+
+            identity_doc = await self.db_service.find_one('identities', {'_id': object_id})
+            if not identity_doc:
+                logger.warning("Identity not found for ID: %s", user_id)
                 return None
 
-            return user_doc.get('last_review_posted_at')
+            last_posted_at = identity_doc.get('last_review_posted_at')
+            logger.info("Identity %s last_review_posted_at: %s", user_id, last_posted_at)
+            return last_posted_at
 
-        except Exception as e:
-            logger.error(f"最終レビュー投稿日時取得エラー: {e}")
+        except Exception:
+            logger.exception("最終レビュー投稿日時取得エラー for user %s", user_id)
             return None
 
     async def update_last_review_posted_at(

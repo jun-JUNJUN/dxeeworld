@@ -214,7 +214,7 @@ class ReviewSummary:
     total_reviews: int
     overall_average: float
     category_averages: Dict[str, float]
-    last_updated: datetime
+    last_review_date: datetime  # 最新レビューの投稿日時
 
     @classmethod
     def from_dict(cls, data: dict) -> 'ReviewSummary':
@@ -223,7 +223,7 @@ class ReviewSummary:
             total_reviews=data['total_reviews'],
             overall_average=data['overall_average'],
             category_averages=data['category_averages'],
-            last_updated=data['last_updated']
+            last_review_date=data['last_review_date']
         )
 
     def to_dict(self) -> dict:
@@ -232,5 +232,5 @@ class ReviewSummary:
             'total_reviews': self.total_reviews,
             'overall_average': self.overall_average,
             'category_averages': self.category_averages,
-            'last_updated': self.last_updated
+            'last_review_date': self.last_review_date
         }

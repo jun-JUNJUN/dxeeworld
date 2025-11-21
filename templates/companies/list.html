@@ -605,7 +605,7 @@
                 </div>
                 {% if company['description'] %}
                 <div class="company-card-description">
-                    {{ company['description'][:100] }}{% if company['description']|length > 100 %}...{% end %}
+                    {{ company['description'][:100] }}{% if len(company['description']) > 100 %}...{% end %}
                 </div>
                 {% end %}
             </div>

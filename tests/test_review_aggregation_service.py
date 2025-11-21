@@ -322,7 +322,7 @@ class TestReviewAggregationService:
         assert company["review_summary"]["total_reviews"] == 1
         assert company["review_summary"]["overall_average"] == 3.8333333333333335  # (4+3+5+4+3+4)/6
         assert company["review_summary"]["category_averages"]["recommendation"] == 4.0
-        assert company["review_summary"]["last_updated"] is not None
+        assert company["review_summary"]["last_review_date"] is not None
 
     @pytest.mark.asyncio
     async def test_update_company_review_summary_idempotent(self, service_and_db):

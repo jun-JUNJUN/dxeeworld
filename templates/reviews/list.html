@@ -229,9 +229,9 @@
                                         </h5>
                                         <div class="text-end">
                                             <div class="h4 text-warning mb-0">
-                                                ★{{ "%.1f"|format(company.get('overall_average', 0)) }}
+                                                ★{{ "%.1f" % company.get('review_summary', {}).get('overall_average', 0) }}
                                             </div>
-                                            <small class="text-muted">{{ company.get('total_reviews', 0) }}件のレビュー</small>
+                                            <small class="text-muted">{{ company.get('review_summary', {}).get('total_reviews', 0) }}件のレビュー</small>
                                         </div>
                                     </div>
 
@@ -240,24 +240,24 @@
                                     </p>
 
                                     <!-- 項目別評価 -->
-                                    {% if company.get('category_averages') %}
+                                    {% if company.get('review_summary', {}).get('category_averages') %}
                                     <div class="row text-center">
                                         <div class="col-4">
                                             <small class="text-muted">推薦度</small><br>
                                             <span class="badge bg-secondary">
-                                                {{ "%.1f"|format(company.get('category_averages', {}).get('recommendation', 0)) }}
+                                                {{ "%.1f" % company.get('review_summary', {}).get('category_averages', {}).get('recommendation', 0) }}
                                             </span>
                                         </div>
                                         <div class="col-4">
                                             <small class="text-muted">受入制度</small><br>
                                             <span class="badge bg-secondary">
-                                                {{ "%.1f"|format(company.get('category_averages', {}).get('foreign_support', 0)) }}
+                                                {{ "%.1f" % company.get('review_summary', {}).get('category_averages', {}).get('foreign_support', 0) }}
                                             </span>
                                         </div>
                                         <div class="col-4">
                                             <small class="text-muted">会社風土</small><br>
                                             <span class="badge bg-secondary">
-                                                {{ "%.1f"|format(company.get('category_averages', {}).get('company_culture', 0)) }}
+                                                {{ "%.1f" % company.get('review_summary', {}).get('category_averages', {}).get('company_culture', 0) }}
                                             </span>
                                         </div>
                                     </div>
@@ -265,19 +265,19 @@
                                         <div class="col-4">
                                             <small class="text-muted">関係性</small><br>
                                             <span class="badge bg-secondary">
-                                                {{ "%.1f"|format(company.get('category_averages', {}).get('employee_relations', 0)) }}
+                                                {{ "%.1f" % company.get('review_summary', {}).get('category_averages', {}).get('employee_relations', 0) }}
                                             </span>
                                         </div>
                                         <div class="col-4">
                                             <small class="text-muted">評価制度</small><br>
                                             <span class="badge bg-secondary">
-                                                {{ "%.1f"|format(company.get('category_averages', {}).get('evaluation_system', 0)) }}
+                                                {{ "%.1f" % company.get('review_summary', {}).get('category_averages', {}).get('evaluation_system', 0) }}
                                             </span>
                                         </div>
                                         <div class="col-4">
                                             <small class="text-muted">昇進待遇</small><br>
                                             <span class="badge bg-secondary">
-                                                {{ "%.1f"|format(company.get('category_averages', {}).get('promotion_treatment', 0)) }}
+                                                {{ "%.1f" % company.get('review_summary', {}).get('category_averages', {}).get('promotion_treatment', 0) }}
                                             </span>
                                         </div>
                                     </div>
@@ -299,7 +299,7 @@
                     </div>
 
                     <!-- ページネーション -->
-                    {% if pagination['pages'] > 1 %}
+                    {% if pagination['total_pages'] > 1 %}
                     <nav aria-label="Page navigation">
                         <ul class="pagination justify-content-center">
                             {% if pagination['page'] > 1 %}
@@ -310,7 +310,7 @@
                             </li>
                             {% end %}
 
-                            {% for page_num in range(max(1, pagination['page'] - 2), min(pagination['pages'] + 1, pagination['page'] + 3)) %}
+                            {% for page_num in range(max(1, pagination['page'] - 2), min(pagination['total_pages'] + 1, pagination['page'] + 3)) %}
                             <li class="page-item {% if page_num == pagination['page'] %}active{% end %}">
                                 <a class="page-link" href="?page={{ page_num }}&{{ '&'.join(['%s=%s' % (k,v) for k,v in search_params.items() if k != 'page' and v]) }}">
                                     {{ page_num }}
@@ -318,7 +318,7 @@
                             </li>
                             {% end %}
 
-                            {% if pagination['page'] < pagination['pages'] %}
+                            {% if pagination['page'] < pagination['total_pages'] %}
                             <li class="page-item">
                                 <a class="page-link" href="?page={{ pagination['page'] + 1 }}&{{ '&'.join(['%s=%s' % (k,v) for k,v in search_params.items() if k != 'page' and v]) }}">
                                     次へ

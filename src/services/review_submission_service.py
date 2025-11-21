@@ -3,10 +3,13 @@
 """
 
 import html
+import logging
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 from src.models.review import Review, EmploymentStatus, ReviewCategory
 from src.models.review_history import ReviewHistory, ReviewAction
+
+logger = logging.getLogger(__name__)
 
 
 class ValidationError:
@@ -152,6 +155,11 @@ class ReviewSubmissionService:
             )
 
             if not permission_check["can_create"]:
+                logger.warning(
+                    "Duplicate review blocked for user %s, company %s - Days until next: %d",
+                    review_data["user_id"], review_data["company_id"],
+                    permission_check.get("days_until_next", 0)
+                )
                 return {
                     "success": False,
                     "error_code": "duplicate_review",
@@ -203,6 +211,8 @@ class ReviewSubmissionService:
             }
 
         except Exception as e:
+            logger.exception("Review creation failed for user %s, company %s",
+                           review_data.get("user_id"), review_data.get("company_id"))
             return {"success": False, "error_code": "database_error", "message": str(e)}
 
     async def validate_review_permissions(self, user_id: str, company_id: str) -> Dict[str, Any]:
@@ -782,9 +792,6 @@ class ReviewSubmissionService:
         """
         try:
             from bson import ObjectId
-            import logging
-
-            logger = logging.getLogger(__name__)
 
             # ObjectIdに変換
             try:
@@ -793,17 +800,14 @@ class ReviewSubmissionService:
                 # ObjectId変換失敗時は文字列として扱う
                 object_id = user_id
 
-            # ユーザーのlast_review_posted_atを更新
+            # identitiesコレクションのlast_review_posted_atを更新
             # DatabaseServiceには update() メソッドがないため update_one() を使用
             await self.db.update_one(
-                "users", {"_id": object_id}, {"$set": {"last_review_posted_at": datetime.utcnow()}}
+                "identities", {"_id": object_id}, {"$set": {"last_review_posted_at": datetime.utcnow()}}
             )
 
-            logger.info(f"Updated last_review_posted_at for user {user_id}")
+            logger.info("Updated last_review_posted_at for identity %s", user_id)
 
-        except Exception as e:
+        except Exception:
             # エラーログを出力するが、レビュー投稿自体は失敗させない
-            import logging
-
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Failed to update last_review_posted_at for user {user_id}: {e}")
+            logger.exception("Failed to update last_review_posted_at for user %s", user_id)

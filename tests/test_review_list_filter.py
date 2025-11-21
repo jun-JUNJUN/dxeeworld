@@ -6,7 +6,29 @@ Requirements: 1.4, 1.5, 1.6
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
 from datetime import datetime, timedelta, timezone
+from tornado.httputil import HTTPServerRequest
+from tornado.web import Application
 from src.handlers.review_handler import ReviewListHandler
+
+
+def create_mock_application():
+    """モックTornado Applicationを作成"""
+    app = Mock(spec=Application)
+    app.ui_modules = {}
+    app.ui_methods = {}
+    app.settings = {"cookie_secret": "test_secret"}
+    return app
+
+
+def create_mock_request():
+    """モックHTTPServerRequestを作成"""
+    request = Mock(spec=HTTPServerRequest)
+    request.uri = "/review"
+    request.method = "GET"
+    request.headers = {}
+    request.connection = Mock()
+    request.connection.context = Mock()
+    return request
 
 
 class TestReviewListFilter:
@@ -17,7 +39,10 @@ class TestReviewListFilter:
         """
         Requirement 1.4, 1.5, 1.6: フィルター機能はaccess_level="full"の場合のみ有効
         """
-        handler = ReviewListHandler(application=Mock(), request=Mock())
+        handler = ReviewListHandler(
+            application=create_mock_application(),
+            request=create_mock_request()
+        )
         handler.initialize()
 
         # Mock AccessControlMiddleware
@@ -56,7 +81,10 @@ class TestReviewListFilter:
         """
         Requirement 1.1: プレビューアクセスの場合、フィルター機能は無効
         """
-        handler = ReviewListHandler(application=Mock(), request=Mock())
+        handler = ReviewListHandler(
+            application=create_mock_application(),
+            request=create_mock_request()
+        )
         handler.initialize()
 
         # Mock AccessControlMiddleware
@@ -94,7 +122,10 @@ class TestReviewListFilter:
         """
         Requirement 1.4: 会社別フィルター機能の統合
         """
-        handler = ReviewListHandler(application=Mock(), request=Mock())
+        handler = ReviewListHandler(
+            application=create_mock_application(),
+            request=create_mock_request()
+        )
         handler.initialize()
 
         # Mock get_argument to simulate company filter
@@ -143,7 +174,10 @@ class TestReviewListFilter:
         """
         Requirement 1.5: 地域別フィルター機能の統合
         """
-        handler = ReviewListHandler(application=Mock(), request=Mock())
+        handler = ReviewListHandler(
+            application=create_mock_application(),
+            request=create_mock_request()
+        )
         handler.initialize()
 
         # Mock get_argument to simulate location filter
@@ -192,7 +226,10 @@ class TestReviewListFilter:
         """
         Requirement 1.6: レビュー評価しきい値による絞り込み機能の統合
         """
-        handler = ReviewListHandler(application=Mock(), request=Mock())
+        handler = ReviewListHandler(
+            application=create_mock_application(),
+            request=create_mock_request()
+        )
         handler.initialize()
 
         # Mock get_argument to simulate rating filter
@@ -242,7 +279,10 @@ class TestReviewListFilter:
         """
         Requirement 1.4, 1.5, 1.6: 複数フィルターの組み合わせ
         """
-        handler = ReviewListHandler(application=Mock(), request=Mock())
+        handler = ReviewListHandler(
+            application=create_mock_application(),
+            request=create_mock_request()
+        )
         handler.initialize()
 
         # Mock get_argument to simulate combined filters

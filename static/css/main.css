@@ -330,7 +330,7 @@ body {
     height: 400px;
 }
 
-.card {
+.floating-card {
     position: absolute;
     background: white;
     border-radius: 1rem;
@@ -341,7 +341,7 @@ body {
     min-width: 180px;
 }
 
-.card:hover {
+.floating-card:hover {
     transform: translateY(-5px);
 }
 
@@ -372,13 +372,13 @@ body {
     margin-bottom: 0.5rem;
 }
 
-.card h3 {
+.floating-card h3 {
     font-size: 1.125rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
 }
 
-.card p {
+.floating-card p {
     font-size: 0.875rem;
     opacity: 0.9;
 }

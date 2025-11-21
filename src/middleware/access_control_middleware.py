@@ -23,10 +23,11 @@ class AccessControlError(Exception):
 class AccessControlMiddleware:
     """Access control middleware for URL pattern matching and permission checking"""
 
-    def __init__(self):
+    def __init__(self, db_service=None):
         """Initialize access control middleware"""
         self.access_rules: List[Dict[str, Any]] = []
         self.session_service = OAuthSessionService()
+        self.db_service = db_service
         self.user_service = None  # Lazy initialization
         self.last_config_load = None
         self.reload_interval = int(os.getenv("ACCESS_CONTROL_RELOAD_INTERVAL", "30"))
@@ -336,7 +337,7 @@ class AccessControlMiddleware:
             # Lazy initialization of UserService
             if self.user_service is None:
                 from ..services.user_service import UserService
-                self.user_service = UserService()
+                self.user_service = UserService(self.db_service)
 
             # Check if user has reviewed within one year (Requirements 1.3, 1.7)
             has_recent_review = await self.user_service.check_review_access_within_one_year(user_id)
