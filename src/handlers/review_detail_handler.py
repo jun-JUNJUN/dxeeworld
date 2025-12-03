@@ -99,45 +99,43 @@ class ReviewDetailHandler(tornado.web.RequestHandler):
         Returns:
             Review: レビューオブジェクト
             None: レビューが見つからない、または条件に合わない場合
+
+        Raises:
+            Exception: データベースエラーなど予期しないエラーの場合
         """
+        # ObjectId形式に変換
         try:
-            # ObjectId形式に変換
-            try:
-                review_object_id = ObjectId(review_id)
-            except (InvalidId, TypeError):
-                logger.warning("Invalid review_id format: %s", review_id)
-                return None
-
-            # レビューを取得
-            review_data = await self.db_service.find_one(
-                "reviews",
-                {"_id": review_object_id}
-            )
-
-            if review_data is None:
-                return None
-
-            # is_activeチェック
-            if not review_data.get('is_active', True):
-                logger.info("Review is inactive: review_id=%s", review_id)
-                return None
-
-            # company_id一致チェック
-            if review_data.get('company_id') != company_id:
-                logger.warning(
-                    "Company ID mismatch: expected=%s, actual=%s",
-                    company_id,
-                    review_data.get('company_id')
-                )
-                return None
-
-            # Reviewオブジェクトに変換
-            review = Review.from_dict(review_data)
-            return review
-
-        except Exception as e:
-            logger.exception("Error retrieving review: %s", e)
+            review_object_id = ObjectId(review_id)
+        except (InvalidId, TypeError):
+            logger.warning("Invalid review_id format: %s", review_id)
             return None
+
+        # レビューを取得
+        review_data = await self.db_service.find_one(
+            "reviews",
+            {"_id": review_object_id}
+        )
+
+        if review_data is None:
+            return None
+
+        # is_activeチェック
+        if not review_data.get('is_active', True):
+            logger.info("Review is inactive: review_id=%s", review_id)
+            return None
+
+        # company_id一致チェック
+        if review_data.get('company_id') != company_id:
+            logger.warning(
+                "Company ID mismatch: expected=%s, actual=%s",
+                company_id,
+                review_data.get('company_id')
+            )
+            return None
+
+        # Reviewオブジェクトに変換
+        review = Review.from_dict(review_data)
+        return review
 
     async def _get_company_name(self, company_id: str) -> Optional[str]:
         """
@@ -149,29 +147,27 @@ class ReviewDetailHandler(tornado.web.RequestHandler):
         Returns:
             str: 企業名
             None: 企業が見つからない場合
+
+        Raises:
+            Exception: データベースエラーなど予期しないエラーの場合
         """
+        # ObjectId形式に変換
         try:
-            # ObjectId形式に変換
-            try:
-                company_object_id = ObjectId(company_id)
-            except (InvalidId, TypeError):
-                logger.warning("Invalid company_id format: %s", company_id)
-                return None
-
-            # 企業情報を取得
-            company_data = await self.db_service.find_one(
-                "companies",
-                {"_id": company_object_id}
-            )
-
-            if company_data is None:
-                return None
-
-            return company_data.get('name')
-
-        except Exception as e:
-            logger.exception("Error retrieving company: %s", e)
+            company_object_id = ObjectId(company_id)
+        except (InvalidId, TypeError):
+            logger.warning("Invalid company_id format: %s", company_id)
             return None
+
+        # 企業情報を取得
+        company_data = await self.db_service.find_one(
+            "companies",
+            {"_id": company_object_id}
+        )
+
+        if company_data is None:
+            return None
+
+        return company_data.get('name')
 
     def _render_review_detail(
         self,
