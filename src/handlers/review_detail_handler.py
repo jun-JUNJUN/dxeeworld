@@ -84,6 +84,24 @@ class ReviewDetailHandler(tornado.web.RequestHandler):
             )
             raise tornado.web.HTTPError(500, "サーバーエラーが発生しました")
 
+    def _validate_object_id(self, id_string: str, id_type: str) -> Optional[ObjectId]:
+        """
+        ObjectId形式のバリデーションと変換
+
+        Args:
+            id_string: 変換する文字列
+            id_type: IDのタイプ（ログ出力用、例: "review_id", "company_id"）
+
+        Returns:
+            ObjectId: 変換されたObjectId
+            None: 無効な形式の場合
+        """
+        try:
+            return ObjectId(id_string)
+        except (InvalidId, TypeError):
+            logger.warning("Invalid %s format: %s", id_type, id_string)
+            return None
+
     async def _get_review(
         self,
         company_id: str,
@@ -104,10 +122,8 @@ class ReviewDetailHandler(tornado.web.RequestHandler):
             Exception: データベースエラーなど予期しないエラーの場合
         """
         # ObjectId形式に変換
-        try:
-            review_object_id = ObjectId(review_id)
-        except (InvalidId, TypeError):
-            logger.warning("Invalid review_id format: %s", review_id)
+        review_object_id = self._validate_object_id(review_id, "review_id")
+        if review_object_id is None:
             return None
 
         # レビューを取得
@@ -152,10 +168,8 @@ class ReviewDetailHandler(tornado.web.RequestHandler):
             Exception: データベースエラーなど予期しないエラーの場合
         """
         # ObjectId形式に変換
-        try:
-            company_object_id = ObjectId(company_id)
-        except (InvalidId, TypeError):
-            logger.warning("Invalid company_id format: %s", company_id)
+        company_object_id = self._validate_object_id(company_id, "company_id")
+        if company_object_id is None:
             return None
 
         # 企業情報を取得
