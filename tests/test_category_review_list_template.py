@@ -21,6 +21,14 @@ class TestCategoryReviewListTemplateRendering:
     @pytest.fixture
     def sample_reviews_data(self):
         """テスト用のサンプルレビューリストデータ"""
+        from zoneinfo import ZoneInfo
+
+        jst = ZoneInfo("Asia/Tokyo")
+
+        created_at_1 = datetime(2025, 11, 15, 10, 30, 0, tzinfo=timezone.utc)
+        created_at_2 = datetime(2025, 11, 10, 15, 45, 0, tzinfo=timezone.utc)
+        created_at_3 = datetime(2025, 11, 5, 9, 15, 0, tzinfo=timezone.utc)
+
         return [
             {
                 "id": "review_1",
@@ -37,7 +45,8 @@ class TestCategoryReviewListTemplateRendering:
                 "comments": {
                     "foreign_support": "サポート体制が充実しています"
                 },
-                "created_at": datetime(2025, 11, 15, 10, 30, 0, tzinfo=timezone.utc)
+                "created_at": created_at_1,
+                "created_at_jst": created_at_1.astimezone(jst)
             },
             {
                 "id": "review_2",
@@ -54,7 +63,8 @@ class TestCategoryReviewListTemplateRendering:
                 "comments": {
                     "foreign_support": "改善の余地があります"
                 },
-                "created_at": datetime(2025, 11, 10, 15, 45, 0, tzinfo=timezone.utc)
+                "created_at": created_at_2,
+                "created_at_jst": created_at_2.astimezone(jst)
             },
             {
                 "id": "review_3",
@@ -71,7 +81,8 @@ class TestCategoryReviewListTemplateRendering:
                 "comments": {
                     "foreign_support": None
                 },
-                "created_at": datetime(2025, 11, 5, 9, 15, 0, tzinfo=timezone.utc)
+                "created_at": created_at_3,
+                "created_at_jst": created_at_3.astimezone(jst)
             }
         ]
 

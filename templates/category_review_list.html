@@ -569,7 +569,7 @@
 
                 <div class="review-card-footer">
                     <div class="post-date">
-                        投稿日: {{ review['created_at'].strftime('%Y年%m月%d日') }}
+                        投稿日: {{ review['created_at_jst'].strftime('%Y年%m月%d日 %H:%M') }}
                     </div>
                     <a href="/companies/{{ company_id }}/reviews/{{ review['id'] }}" class="btn-detail">
                         <span>📄</span>
