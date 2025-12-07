@@ -135,10 +135,11 @@
 
 - [x] 6. データベースインデックスの作成
 - [x] 6.1 クエリパフォーマンス最適化のためのインデックス
-  - reviews コレクションに company_id + is_active + created_at の複合インデックス
-  - reviews コレクションに各評価項目（ratings.recommendation など）の複合インデックス
-  - インデックス作成スクリプトの実装
-  - 既存インデックスとの重複確認
+  - ✅ reviews コレクションに company_id + is_active + created_at の複合インデックス
+  - ✅ reviews コレクションに各評価項目（ratings.recommendation など）の複合インデックス
+  - ✅ インデックス作成スクリプトの実装 (scripts/create_review_indexes.py)
+  - ✅ 既存インデックスとの重複確認
+  - ✅ インデックステストの実装 (tests/test_review_indexes.py)
   - _Requirements: 7.3, 7.5_
 
 - [ ] 7. 単体テストの実装
