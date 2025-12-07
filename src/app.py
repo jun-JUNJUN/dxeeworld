@@ -27,6 +27,10 @@ from .handlers.email_auth_handler import (
 )
 from .handlers.simple_auth_handler import SimpleLoginHandler, SimpleLogoutHandler
 from .handlers.user_info_handler import UserInfoHandler
+from .handlers.review_detail_handler import ReviewDetailHandler
+from .handlers.category_review_list_handler import CategoryReviewListHandler
+from .database import get_db_service
+from .services.review_anonymization_service import ReviewAnonymizationService
 
 # ログ設定
 logging.basicConfig(
@@ -45,6 +49,10 @@ def create_app():
     os.makedirs(os.path.join(static_path, "css"), exist_ok=True)
     os.makedirs(os.path.join(static_path, "js"), exist_ok=True)
 
+    # サービスのインスタンス作成
+    db_service = get_db_service()
+    anonymization_service = ReviewAnonymizationService(salt=os.getenv("ANONYMIZATION_SALT", ""))
+
     # URLルーティング設定
     handlers = [
         (r"/", HomeHandler),
@@ -61,6 +69,15 @@ def create_app():
         (r"/review", ReviewListHandler),
         (r"/companies/([^/]+)/reviews/new", ReviewCreateHandler),
         (r"/reviews/([^/]+)/edit", ReviewEditHandler),
+        # レビュー詳細ページ (Task 5.1)
+        (r"/companies/([^/]+)/reviews/by-category/([^/]+)", CategoryReviewListHandler, {
+            "db_service": db_service,
+            "anonymization_service": anonymization_service
+        }),
+        (r"/companies/([^/]+)/reviews/([^/]+)", ReviewDetailHandler, {
+            "db_service": db_service,
+            "anonymization_service": anonymization_service
+        }),
         # メール認証関連ルート (Task 5.3, 5.4)
         (r"/auth/email/register", EmailRegistrationHandler),
         (r"/auth/email/verify", EmailVerificationHandler),
