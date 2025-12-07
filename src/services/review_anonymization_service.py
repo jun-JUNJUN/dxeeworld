@@ -5,6 +5,8 @@
 """
 import hashlib
 from typing import Optional, Dict, Any
+from datetime import timezone
+from zoneinfo import ZoneInfo
 from src.models.review import Review
 
 
@@ -70,6 +72,11 @@ class ReviewAnonymizationService:
         comments_zh = mask_comments(review.comments_zh) if preview_mode and review.comments_zh else review.comments_zh
         comments_en = mask_comments(review.comments_en) if preview_mode and review.comments_en else review.comments_en
 
+        # タイムゾーン変換: UTC → JST (Good Pattern - Timezone-Aware Datetime)
+        jst = ZoneInfo("Asia/Tokyo")
+        created_at_jst = review.created_at.astimezone(jst) if review.created_at else None
+        updated_at_jst = review.updated_at.astimezone(jst) if review.updated_at else None
+
         # 匿名化されたレビューデータを構築
         anonymized_review = {
             "id": review.id,
@@ -81,8 +88,10 @@ class ReviewAnonymizationService:
             "comments": comments,
             "individual_average": review.individual_average,
             "answered_count": review.answered_count,
-            "created_at": review.created_at,
-            "updated_at": review.updated_at,
+            "created_at": review.created_at,  # 元のUTC時刻（互換性のため保持）
+            "created_at_jst": created_at_jst,  # JST変換済み
+            "updated_at": review.updated_at,  # 元のUTC時刻（互換性のため保持）
+            "updated_at_jst": updated_at_jst,  # JST変換済み
             "is_active": review.is_active,
             "language": review.language,
             "comments_ja": comments_ja,

@@ -21,6 +21,11 @@ class TestReviewDetailTemplateRendering:
     @pytest.fixture
     def sample_review_data(self):
         """テスト用のサンプルレビューデータ"""
+        from zoneinfo import ZoneInfo
+
+        created_at_utc = datetime(2025, 11, 15, 10, 30, 0, tzinfo=timezone.utc)
+        created_at_jst = created_at_utc.astimezone(ZoneInfo("Asia/Tokyo"))
+
         return {
             "id": "test_review_123",
             "company_id": "test_company_456",
@@ -48,7 +53,8 @@ class TestReviewDetailTemplateRendering:
             },
             "individual_average": 3.8,
             "answered_count": 5,
-            "created_at": datetime(2025, 11, 15, 10, 30, 0, tzinfo=timezone.utc),
+            "created_at": created_at_utc,
+            "created_at_jst": created_at_jst,
             "language": "ja"
         }
 

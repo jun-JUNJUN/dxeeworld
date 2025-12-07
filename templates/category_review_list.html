@@ -1,0 +1,631 @@
+{% extends "base.html" %}
+
+{% block title %}{{ company_name }}の{{ category_label }}に関するレビュー - Startup Platform: Dxee{% end %}
+
+{% block head %}
+<style>
+/* Task 4.2 & 4.3: Category Review List Page Styles with Responsive Design */
+.category-review-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Breadcrumb Navigation */
+.breadcrumb {
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.breadcrumb a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumb-separator {
+    margin: 0 8px;
+    color: #6c757d;
+}
+
+/* Page Header */
+.page-header {
+    background: white;
+    border-radius: 8px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.page-header h1 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 15px;
+}
+
+.company-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.company-link:hover {
+    text-decoration: underline;
+}
+
+.header-meta {
+    display: flex;
+    gap: 20px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+    color: #495057;
+    align-items: center;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 1rem;
+}
+
+.category-average {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #007bff;
+}
+
+.review-count {
+    font-size: 1rem;
+    color: #6c757d;
+}
+
+/* Preview Mode CTA */
+.preview-cta {
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.preview-cta h3 {
+    color: #856404;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+}
+
+.preview-cta p {
+    color: #856404;
+    margin-bottom: 15px;
+}
+
+.btn-submit-review {
+    padding: 12px 30px;
+    background: #ffc107;
+    color: #212529;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.3s ease;
+}
+
+.btn-submit-review:hover {
+    background: #e0a800;
+    color: #212529;
+}
+
+/* Review Cards List */
+.review-cards-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.review-card {
+    background: white;
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s ease;
+    position: relative;
+}
+
+.review-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.review-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.reviewer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.reviewer-name {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.reviewer-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 0.9rem;
+    color: #6c757d;
+    flex-wrap: wrap;
+}
+
+.meta-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.review-rating {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rating-stars {
+    font-size: 1.3rem;
+    color: #ffc107;
+}
+
+.rating-number {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #007bff;
+}
+
+.rating-unanswered {
+    color: #6c757d;
+    font-style: italic;
+    font-size: 1rem;
+}
+
+.review-comment {
+    color: #495057;
+    line-height: 1.6;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+    margin-bottom: 15px;
+}
+
+.comment-masked {
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+    padding: 15px;
+    background: #fff3cd;
+    border-radius: 6px;
+    border-left: 4px solid #ffc107;
+    margin-bottom: 15px;
+}
+
+.comment-unanswered {
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+    padding: 15px;
+    background: #e9ecef;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.review-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+}
+
+.post-date {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.btn-detail {
+    padding: 8px 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-detail:hover {
+    background: #0056b3;
+    color: white;
+}
+
+/* Empty State */
+.empty-state {
+    background: white;
+    border-radius: 8px;
+    padding: 60px 30px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.empty-state h2 {
+    color: #2c3e50;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+}
+
+.empty-state p {
+    color: #6c757d;
+    font-size: 1rem;
+}
+
+/* Pagination */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+    margin-bottom: 40px;
+}
+
+.pagination {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.pagination a,
+.pagination span {
+    padding: 10px 16px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #007bff;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.pagination a:hover {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.pagination .current {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.pagination .disabled {
+    color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.pagination .disabled:hover {
+    background: white;
+    color: #6c757d;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+.btn-back {
+    padding: 12px 24px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #6c757d;
+    color: white;
+    border: 2px solid #6c757d;
+}
+
+.btn-back:hover {
+    background: #5a6268;
+    border-color: #5a6268;
+    color: white;
+}
+
+/* Task 4.3: Responsive Design */
+@media (min-width: 768px) {
+    /* Desktop Layout */
+    .review-cards-list {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .page-header h1 {
+        font-size: 2.5rem;
+    }
+
+    .category-average {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 767px) {
+    /* Mobile Layout */
+    .category-review-container {
+        padding: 15px;
+    }
+
+    .page-header {
+        padding: 20px;
+    }
+
+    .page-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .header-meta {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .review-card {
+        padding: 20px;
+    }
+
+    .review-card-header {
+        flex-direction: column;
+    }
+
+    .reviewer-meta {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .review-card-footer {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .btn-detail {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .btn-back {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .pagination a,
+    .pagination span {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Touch Device Optimization (Task 4.3) */
+@media (hover: none) and (pointer: coarse) {
+    .btn-detail,
+    .btn-back,
+    .btn-submit-review {
+        min-height: 44px; /* iOS minimum touch target */
+        padding: 12px 24px;
+    }
+
+    .pagination a,
+    .pagination span {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .review-card {
+        margin-bottom: 10px;
+    }
+
+    .review-card:active {
+        background: #f8f9fa;
+    }
+}
+</style>
+{% end %}
+
+{% block content %}
+<div class="category-review-container">
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb" aria-label="パンくずリスト">
+        <a href="/">ホーム</a>
+        <span class="breadcrumb-separator">›</span>
+        <a href="/companies">企業一覧</a>
+        <span class="breadcrumb-separator">›</span>
+        <a href="/companies/{{ company_id }}">{{ company_name }}</a>
+        <span class="breadcrumb-separator">›</span>
+        <span>{{ category_label }}</span>
+    </nav>
+
+    <!-- Preview Mode CTA (if applicable) -->
+    {% if preview_mode %}
+    <div class="preview-cta">
+        <h3>ℹ️ プレビューモード</h3>
+        <p>現在、評価スコアのみ閲覧可能です。コメント詳細を見るには、レビューを投稿してください。</p>
+        <a href="/companies/{{ company_id }}/reviews/create" class="btn-submit-review">
+            レビューを投稿する
+        </a>
+    </div>
+    {% end %}
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1>
+            <a href="/companies/{{ company_id }}" class="company-link">{{ company_name }}</a>
+            の「{{ category_label }}」に関するレビュー
+        </h1>
+        <div class="header-meta">
+            <div class="meta-item">
+                <span class="review-count">全{{ pagination['total_count'] }}件のレビュー</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Cards List -->
+    {% if reviews %}
+        <div class="review-cards-list">
+            {% for review in reviews %}
+            <div class="review-card">
+                <div class="review-card-header">
+                    <div class="reviewer-info">
+                        <div class="reviewer-name">{{ review['anonymous_user'] }}</div>
+                        <div class="reviewer-meta">
+                            <div class="meta-badge">
+                                <span>💼</span>
+                                <span>{{ review['employment_status'] }}</span>
+                            </div>
+                            {% if review.get('employment_period') %}
+                            <div class="meta-badge">
+                                <span>📅</span>
+                                <span>
+                                    {{ review['employment_period']['start_year'] }}年〜{% if review['employment_period'].get('end_year') %}{{ review['employment_period']['end_year'] }}年{% else %}現在{% end %}
+                                </span>
+                            </div>
+                            {% end %}
+                        </div>
+                    </div>
+                    <div class="review-rating">
+                        {% set rating = review['ratings'].get(category_name) %}
+                        {% if rating is not None %}
+                            <span class="rating-stars">
+                                {% for i in range(rating) %}★{% end %}{% for i in range(5 - rating) %}☆{% end %}
+                            </span>
+                            <span class="rating-number">{{ rating }}</span>
+                        {% else %}
+                            <span class="rating-unanswered">未回答</span>
+                        {% end %}
+                    </div>
+                </div>
+
+                {% set comment = review['comments'].get(category_name) %}
+                {% set rating = review['ratings'].get(category_name) %}
+                {% if rating is None %}
+                    <div class="comment-unanswered">
+                        この項目は回答されていません
+                    </div>
+                {% elif preview_mode %}
+                    <div class="comment-masked">
+                        *** このコメントを見るにはレビューを投稿してください ***
+                    </div>
+                {% elif comment %}
+                    <div class="review-comment">
+                        {{ comment }}
+                    </div>
+                {% else %}
+                    <div class="comment-unanswered">
+                        コメントなし
+                    </div>
+                {% end %}
+
+                <div class="review-card-footer">
+                    <div class="post-date">
+                        投稿日: {{ review['created_at_jst'].strftime('%Y年%m月%d日 %H:%M') }}
+                    </div>
+                    <a href="/companies/{{ company_id }}/reviews/{{ review['id'] }}" class="btn-detail">
+                        <span>📄</span>
+                        <span>詳細を見る</span>
+                    </a>
+                </div>
+            </div>
+            {% end %}
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination['total_pages'] > 1 %}
+        <div class="pagination-container">
+            <div class="pagination">
+                <!-- Previous Page -->
+                {% if pagination['has_prev'] %}
+                    <a href="?page={{ pagination['prev_page'] }}">← 前へ</a>
+                {% else %}
+                    <span class="disabled">← 前へ</span>
+                {% end %}
+
+                <!-- Page Numbers -->
+                {% for page_num in range(1, pagination['total_pages'] + 1) %}
+                    {% if page_num == pagination['current_page'] %}
+                        <span class="current">{{ page_num }}</span>
+                    {% elif page_num == 1 or page_num == pagination['total_pages'] or (page_num >= pagination['current_page'] - 2 and page_num <= pagination['current_page'] + 2) %}
+                        <a href="?page={{ page_num }}">{{ page_num }}</a>
+                    {% elif page_num == pagination['current_page'] - 3 or page_num == pagination['current_page'] + 3 %}
+                        <span class="disabled">...</span>
+                    {% end %}
+                {% end %}
+
+                <!-- Next Page -->
+                {% if pagination['has_next'] %}
+                    <a href="?page={{ pagination['next_page'] }}">次へ →</a>
+                {% else %}
+                    <span class="disabled">次へ →</span>
+                {% end %}
+            </div>
+        </div>
+        {% end %}
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <h2>この項目に関するレビューはまだありません</h2>
+            <p>「{{ category_label }}」について、まだレビューが投稿されていません。</p>
+        </div>
+    {% end %}
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="/companies/{{ company_id }}" class="btn-back">
+            <span>←</span>
+            <span>企業ページに戻る</span>
+        </a>
+    </div>
+</div>
+{% end %}
