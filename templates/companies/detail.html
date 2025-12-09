@@ -260,6 +260,18 @@
         box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
     }
 
+    /* カテゴリリンクのホバー効果 */
+    .category-review-links .badge {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .category-review-links .badge:hover {
+        opacity: 0.8;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
     /* モバイル用レビュー最適化 - Task 4.5 */
     .reviews-section {
         margin-top: 20px;
@@ -547,6 +559,43 @@
 
                 <!-- Task 5.1: レビューが存在する場合の表示 -->
                 {% if has_reviews %}
+                <!-- カテゴリ別レビューリンクセクション -->
+                <div class="category-review-links" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <h4 style="font-size: 1rem; margin-bottom: 12px; color: #2c3e50;">評価項目別のレビューを見る</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <a href="/companies/{{ company['id'] }}/reviews/by-category/recommendation"
+                           class="badge bg-primary text-white text-decoration-none"
+                           style="padding: 8px 12px; font-size: 0.85rem;">
+                            推薦度
+                        </a>
+                        <a href="/companies/{{ company['id'] }}/reviews/by-category/foreign_support"
+                           class="badge bg-info text-dark text-decoration-none"
+                           style="padding: 8px 12px; font-size: 0.85rem;">
+                            受入制度
+                        </a>
+                        <a href="/companies/{{ company['id'] }}/reviews/by-category/company_culture"
+                           class="badge bg-success text-white text-decoration-none"
+                           style="padding: 8px 12px; font-size: 0.85rem;">
+                            会社風土
+                        </a>
+                        <a href="/companies/{{ company['id'] }}/reviews/by-category/employee_relations"
+                           class="badge bg-warning text-dark text-decoration-none"
+                           style="padding: 8px 12px; font-size: 0.85rem;">
+                            関係性
+                        </a>
+                        <a href="/companies/{{ company['id'] }}/reviews/by-category/evaluation_system"
+                           class="badge bg-secondary text-white text-decoration-none"
+                           style="padding: 8px 12px; font-size: 0.85rem;">
+                            評価制度
+                        </a>
+                        <a href="/companies/{{ company['id'] }}/reviews/by-category/promotion_treatment"
+                           class="badge bg-dark text-white text-decoration-none"
+                           style="padding: 8px 12px; font-size: 0.85rem;">
+                            昇進待遇
+                        </a>
+                    </div>
+                </div>
+
                 <!-- レビュー投稿促進セクション（レビューが既に存在する場合も表示） -->
                 <div class="review-prompt-section" style="margin-bottom: 20px;">
                     <div class="prompt-message">
@@ -581,6 +630,13 @@
                         <div class="review-meta-mobile">
                             <span>投稿日: {{ review['created_at'][:10] if review['created_at'] else '不明' }}</span>
                             <span>総合評価: {{ "%.1f" % float(review['overall_rating']) }}/5.0</span>
+                        </div>
+                        <div class="review-actions-mobile" style="margin-top: 10px;">
+                            <a href="/companies/{{ company['id'] }}/reviews/{{ review['_id'] }}"
+                               class="btn btn-sm btn-outline-primary"
+                               style="text-decoration: none;">
+                                詳細を見る
+                            </a>
                         </div>
                     </div>
                     {% end %}

@@ -67,6 +67,18 @@
         opacity: 0.6;
         cursor: not-allowed;
     }
+
+    /* カテゴリバッジリンクのホバー効果 */
+    .category-badge-link {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .category-badge-link:hover {
+        opacity: 0.8;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
 </style>
 {% end %}
 
@@ -244,41 +256,47 @@
                                     <div class="row text-center">
                                         <div class="col-4">
                                             <small class="text-muted">推薦度</small><br>
-                                            <span class="badge bg-secondary">
+                                            <a href="/companies/{{ company.get('id', company.get('_id', '')) }}/reviews/by-category/recommendation"
+                                               class="badge bg-secondary text-white text-decoration-none category-badge-link">
                                                 {{ "%.1f" % company.get('review_summary', {}).get('category_averages', {}).get('recommendation', 0) }}
-                                            </span>
+                                            </a>
                                         </div>
                                         <div class="col-4">
                                             <small class="text-muted">受入制度</small><br>
-                                            <span class="badge bg-secondary">
+                                            <a href="/companies/{{ company.get('id', company.get('_id', '')) }}/reviews/by-category/foreign_support"
+                                               class="badge bg-secondary text-white text-decoration-none category-badge-link">
                                                 {{ "%.1f" % company.get('review_summary', {}).get('category_averages', {}).get('foreign_support', 0) }}
-                                            </span>
+                                            </a>
                                         </div>
                                         <div class="col-4">
                                             <small class="text-muted">会社風土</small><br>
-                                            <span class="badge bg-secondary">
+                                            <a href="/companies/{{ company.get('id', company.get('_id', '')) }}/reviews/by-category/company_culture"
+                                               class="badge bg-secondary text-white text-decoration-none category-badge-link">
                                                 {{ "%.1f" % company.get('review_summary', {}).get('category_averages', {}).get('company_culture', 0) }}
-                                            </span>
+                                            </a>
                                         </div>
                                     </div>
                                     <div class="row text-center mt-2">
                                         <div class="col-4">
                                             <small class="text-muted">関係性</small><br>
-                                            <span class="badge bg-secondary">
+                                            <a href="/companies/{{ company.get('id', company.get('_id', '')) }}/reviews/by-category/employee_relations"
+                                               class="badge bg-secondary text-white text-decoration-none category-badge-link">
                                                 {{ "%.1f" % company.get('review_summary', {}).get('category_averages', {}).get('employee_relations', 0) }}
-                                            </span>
+                                            </a>
                                         </div>
                                         <div class="col-4">
                                             <small class="text-muted">評価制度</small><br>
-                                            <span class="badge bg-secondary">
+                                            <a href="/companies/{{ company.get('id', company.get('_id', '')) }}/reviews/by-category/evaluation_system"
+                                               class="badge bg-secondary text-white text-decoration-none category-badge-link">
                                                 {{ "%.1f" % company.get('review_summary', {}).get('category_averages', {}).get('evaluation_system', 0) }}
-                                            </span>
+                                            </a>
                                         </div>
                                         <div class="col-4">
                                             <small class="text-muted">昇進待遇</small><br>
-                                            <span class="badge bg-secondary">
+                                            <a href="/companies/{{ company.get('id', company.get('_id', '')) }}/reviews/by-category/promotion_treatment"
+                                               class="badge bg-secondary text-white text-decoration-none category-badge-link">
                                                 {{ "%.1f" % company.get('review_summary', {}).get('category_averages', {}).get('promotion_treatment', 0) }}
-                                            </span>
+                                            </a>
                                         </div>
                                     </div>
                                     {% end %}
