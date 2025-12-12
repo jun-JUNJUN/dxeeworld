@@ -12,11 +12,12 @@ from bson.errors import InvalidId
 from ..database import DatabaseService
 from ..services.review_anonymization_service import ReviewAnonymizationService
 from ..models.review import Review
+from .base_handler import BaseHandler
 
 logger = logging.getLogger(__name__)
 
 
-class CategoryReviewListHandler(tornado.web.RequestHandler):
+class CategoryReviewListHandler(BaseHandler):
     """質問別レビュー一覧ページハンドラー"""
 
     # 有効なカテゴリ名のホワイトリスト

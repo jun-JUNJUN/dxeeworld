@@ -11,11 +11,12 @@ from bson.errors import InvalidId
 from ..database import DatabaseService
 from ..services.review_anonymization_service import ReviewAnonymizationService
 from ..models.review import Review
+from .base_handler import BaseHandler
 
 logger = logging.getLogger(__name__)
 
 
-class ReviewDetailHandler(tornado.web.RequestHandler):
+class ReviewDetailHandler(BaseHandler):
     """個別レビュー詳細ページハンドラー"""
 
     def initialize(

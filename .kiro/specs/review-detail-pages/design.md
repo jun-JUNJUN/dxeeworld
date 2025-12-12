@@ -1148,13 +1148,42 @@ db.reviews.createIndex({ "company_id": 1, "ratings.recommendation": 1, "is_activ
 </div>
 ```
 
-**推奨**: オプション2（「もっと見る」リンク）
-- 理由: より明示的で、UIが煩雑にならない
+オプション3: カテゴリ評価セクションに「質問別レビュー一覧」セクションリンクを追加
+```html
+<!-- レビューサマリーセクションの下部に追加 -->
+<div class="category-reviews-section mt-4">
+  <h3>質問別レビュー一覧</h3>
+  <div class="category-links">
+    <a href="/companies/{{ company['id'] }}/reviews/by-category/recommendation" class="btn btn-outline-primary btn-sm">
+      推薦度のレビューを見る
+    </a>
+    <a href="/companies/{{ company['id'] }}/reviews/by-category/foreign_support" class="btn btn-outline-primary btn-sm">
+      受入制度のレビューを見る
+    </a>
+    <a href="/companies/{{ company['id'] }}/reviews/by-category/company_culture" class="btn btn-outline-primary btn-sm">
+      会社風土のレビューを見る
+    </a>
+    <a href="/companies/{{ company['id'] }}/reviews/by-category/employee_relations" class="btn btn-outline-primary btn-sm">
+      関係性のレビューを見る
+    </a>
+    <a href="/companies/{{ company['id'] }}/reviews/by-category/evaluation_system" class="btn btn-outline-primary btn-sm">
+      評価制度のレビューを見る
+    </a>
+    <a href="/companies/{{ company['id'] }}/reviews/by-category/promotion_treatment" class="btn btn-outline-primary btn-sm">
+      昇進待遇のレビューを見る
+    </a>
+  </div>
+</div>
+```
 
-**配置場所**: 各カテゴリ評価の右側またはカテゴリセクションの下部
+**推奨**: オプション3（質問別レビュー一覧セクション）
+- 理由: より目立つ配置でユーザーに発見されやすく、すべてのカテゴリへのアクセスを提供
+
+**配置場所**: 企業詳細ページのレビューサマリーセクションの下部
 
 **条件**:
-- 各カテゴリに1件以上のレビューがある場合のみ表示
+- 企業に1件以上のレビューがある場合にセクション全体を表示
+- 各カテゴリボタンは常に表示（レビュー0件の場合でも）
 - すべてのアクセスレベルのユーザーに表示
 
 ### 11.4 レビュー一覧ページ (`reviews/list.html`) への統合
