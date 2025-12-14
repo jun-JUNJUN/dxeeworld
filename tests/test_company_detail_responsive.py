@@ -119,3 +119,56 @@ class TestCompanyDetailResponsiveLayout:
             ]
             found_related = any(re.search(pattern, content, re.IGNORECASE) for pattern in related_patterns)
             assert found_related, "レビューセクションまたは関連情報セクションが見つかりません"
+
+    def test_category_review_section_exists(self):
+        """質問別レビュー一覧セクションが存在することを確認 - Task 9.1"""
+        with open('templates/companies/detail.html', 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # 質問別レビュー一覧セクションの存在確認
+        assert re.search(r'category-reviews-section', content), "質問別レビュー一覧セクションのクラスが見つかりません"
+        assert re.search(r'質問別レビュー一覧', content), "質問別レビュー一覧のタイトルが見つかりません"
+
+    def test_category_review_buttons_exist(self):
+        """6つのカテゴリレビューボタンが存在することを確認 - Task 9.1"""
+        with open('templates/companies/detail.html', 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # 各カテゴリボタンの存在確認
+        categories = [
+            (r'/companies/.*?/reviews/by-category/recommendation', r'推薦度'),
+            (r'/companies/.*?/reviews/by-category/foreign_support', r'受入制度'),
+            (r'/companies/.*?/reviews/by-category/company_culture', r'会社風土'),
+            (r'/companies/.*?/reviews/by-category/employee_relations', r'関係性'),
+            (r'/companies/.*?/reviews/by-category/evaluation_system', r'評価制度'),
+            (r'/companies/.*?/reviews/by-category/promotion_treatment', r'昇進待遇'),
+        ]
+
+        for url_pattern, label_pattern in categories:
+            assert re.search(url_pattern, content), f"カテゴリURL {url_pattern} が見つかりません"
+            assert re.search(label_pattern, content), f"カテゴリラベル {label_pattern} が見つかりません"
+
+    def test_category_review_section_grid_layout(self):
+        """質問別レビュー一覧セクションがグリッドレイアウトを使用していることを確認 - Task 9.1"""
+        with open('templates/companies/detail.html', 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # グリッドレイアウトまたはflexboxの使用確認
+        layout_patterns = [
+            r'display:\s*grid',
+            r'grid-template-columns',
+            r'display:\s*flex',
+            r'flex-wrap',
+        ]
+
+        # <div class="category-reviews-section"で始まるセクション全体を抽出
+        section_match = re.search(
+            r'<div\s+class="category-reviews-section"[^>]*>.*?</div>\s*</div>',
+            content,
+            re.DOTALL
+        )
+
+        if section_match:
+            section_content = section_match.group(0)
+            found_layout = any(re.search(pattern, section_content, re.IGNORECASE) for pattern in layout_patterns)
+            assert found_layout, "質問別レビュー一覧セクションでグリッドまたはflexレイアウトが見つかりません"

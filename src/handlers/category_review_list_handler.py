@@ -260,7 +260,7 @@ class CategoryReviewListHandler(BaseHandler):
         skip = (page - 1) * per_page
 
         # レビューリストの取得（投稿日時降順）
-        reviews = await self.db_service.find(
+        reviews = await self.db_service.find_many(
             "reviews",
             query,
             sort=[("created_at", -1)],

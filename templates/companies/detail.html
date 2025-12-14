@@ -372,6 +372,16 @@
         text-decoration: none;
         color: white;
     }
+
+    /* Task 9.1: 質問別レビュー一覧セクション - モバイル対応 */
+    .category-buttons-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .category-reviews-section .btn {
+        font-size: 0.9rem !important;
+        padding: 10px 12px !important;
+    }
 }
 
 .back-button {
@@ -592,6 +602,43 @@
                            class="badge bg-dark text-white text-decoration-none"
                            style="padding: 8px 12px; font-size: 0.85rem;">
                             昇進待遇
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Task 9.1: 質問別レビュー一覧セクション -->
+                <div class="category-reviews-section" style="margin: 30px 0; padding: 20px; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08);">
+                    <h3 style="font-size: 1.25rem; margin-bottom: 20px; color: #2c3e50; font-weight: 600;">質問別レビュー一覧</h3>
+                    <div class="category-buttons-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                        <a href="/companies/{{ company['id'] }}/reviews/by-category/recommendation"
+                           class="btn btn-outline-primary"
+                           style="padding: 12px 16px; text-align: center; font-size: 0.95rem; white-space: nowrap; transition: all 0.2s ease;">
+                            推薦度のレビューを見る
+                        </a>
+                        <a href="/companies/{{ company['id'] }}/reviews/by-category/foreign_support"
+                           class="btn btn-outline-primary"
+                           style="padding: 12px 16px; text-align: center; font-size: 0.95rem; white-space: nowrap; transition: all 0.2s ease;">
+                            受入制度のレビューを見る
+                        </a>
+                        <a href="/companies/{{ company['id'] }}/reviews/by-category/company_culture"
+                           class="btn btn-outline-primary"
+                           style="padding: 12px 16px; text-align: center; font-size: 0.95rem; white-space: nowrap; transition: all 0.2s ease;">
+                            会社風土のレビューを見る
+                        </a>
+                        <a href="/companies/{{ company['id'] }}/reviews/by-category/employee_relations"
+                           class="btn btn-outline-primary"
+                           style="padding: 12px 16px; text-align: center; font-size: 0.95rem; white-space: nowrap; transition: all 0.2s ease;">
+                            関係性のレビューを見る
+                        </a>
+                        <a href="/companies/{{ company['id'] }}/reviews/by-category/evaluation_system"
+                           class="btn btn-outline-primary"
+                           style="padding: 12px 16px; text-align: center; font-size: 0.95rem; white-space: nowrap; transition: all 0.2s ease;">
+                            評価制度のレビューを見る
+                        </a>
+                        <a href="/companies/{{ company['id'] }}/reviews/by-category/promotion_treatment"
+                           class="btn btn-outline-primary"
+                           style="padding: 12px 16px; text-align: center; font-size: 0.95rem; white-space: nowrap; transition: all 0.2s ease;">
+                            昇進待遇のレビューを見る
                         </a>
                     </div>
                 </div>

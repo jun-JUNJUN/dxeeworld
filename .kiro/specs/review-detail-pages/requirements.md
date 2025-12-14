@@ -227,3 +227,7 @@
 ### URL設計
 - `/companies/{company_id}/reviews/{review_id}` - 個別レビュー詳細
 - `/companies/{company_id}/reviews/by-category/{category_name}` - 質問別レビュー一覧
+
+### UI表示制約
+- 企業詳細ページで「データソース」フィールドは表示しない（データベースには保持）
+- データソースはバックエンドでのデータ管理目的のみで使用
