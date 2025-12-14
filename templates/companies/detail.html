@@ -549,14 +549,15 @@
                         </div>
                         {% end %}
 
-                        {% if company['source_files'] %}
+                        {# Task 10.1: データソースフィールドは非表示（データベースには保持） #}
+                        {# {% if company['source_files'] %}
                         <div class="source-files">
                             <div class="detail-label" style="margin-bottom: 10px;">データソース</div>
                             {% for source_file in company['source_files'] %}
                             <span class="source-file">{{ source_file }}</span>
                             {% end %}
                         </div>
-                        {% end %}
+                        {% end %} #}
                     </div>
                 </div>
             </div>
