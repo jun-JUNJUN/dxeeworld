@@ -13,13 +13,13 @@
 ---
 
 - [ ] 1. プロジェクト基盤の準備とライブラリ統合
-- [ ] 1.1 新規依存ライブラリの追加とGeoIP2データベース配置
+- [x] 1.1 新規依存ライブラリの追加とGeoIP2データベース配置
   - `pyproject.toml` に `geoip2 >= 5.2.0` と `babel >= 2.14.0` を追加
   - GeoLite2 Country データベースをMaxMindから取得し `static/geo/` に配置
   - ライブラリインストールと動作確認
   - _Requirements: 2.3, 10.2_
 
-- [ ] 1.2 翻訳データファイルの初期構造作成
+- [x] 1.2 翻訳データファイルの初期構造作成
   - `static/i18n/` ディレクトリを作成
   - `en.json`, `ja.json`, `zh.json` の空骨格ファイルを作成
   - 基本的なナビゲーション翻訳キーを追加（nav.home, nav.companies, nav.reviews, nav.jobs）

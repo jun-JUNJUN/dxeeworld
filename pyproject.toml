@@ -16,6 +16,8 @@ dependencies = [
     "pytest>=7.4.4",
     "pytest-asyncio>=0.21.1",
     "httpx>=0.28.1",
+    "geoip2>=4.7.0",
+    "babel>=2.14.0",
 ]
 
 [project.optional-dependencies]
@@ -113,6 +115,8 @@ module = [
     "tornado.*",
     "motor.*",
     "bcrypt.*",
+    "geoip2.*",
+    "babel.*",
 ]
 ignore_missing_imports = true
 
