@@ -1,8 +1,19 @@
 {
+  "site": {
+    "title": "创业平台: Dxee"
+  },
+  "meta": {
+    "description": "面向国际员工的公司评价平台 - 评价和分享工作经历",
+    "keywords": "国际,公司评价,日本公司,就业,求职,工作环境"
+  },
   "nav": {
     "home": "首页",
     "companies": "公司列表",
     "reviews": "评价",
-    "jobs": "招聘"
+    "jobs": "招聘",
+    "home_aria": "前往首页",
+    "companies_aria": "前往公司列表页面",
+    "reviews_aria": "前往评价页面",
+    "jobs_aria": "前往招聘页面"
   }
 }

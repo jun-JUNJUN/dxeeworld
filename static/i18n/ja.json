@@ -1,8 +1,19 @@
 {
+  "site": {
+    "title": "スタートアッププラットフォーム: Dxee"
+  },
+  "meta": {
+    "description": "外国人向け企業レビュープラットフォーム - 日本企業の働きやすさを評価・共有",
+    "keywords": "外国人,企業レビュー,日本企業,就職,転職,働きやすさ"
+  },
   "nav": {
     "home": "ホーム",
     "companies": "企業一覧",
     "reviews": "レビュー",
-    "jobs": "求人"
+    "jobs": "求人",
+    "home_aria": "ホームページへ移動",
+    "companies_aria": "企業一覧ページへ移動",
+    "reviews_aria": "レビューページへ移動",
+    "jobs_aria": "求人ページへ移動"
   }
 }
