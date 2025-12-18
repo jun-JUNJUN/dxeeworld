@@ -1,8 +1,19 @@
 {
+  "site": {
+    "title": "Startup Platform: Dxee"
+  },
+  "meta": {
+    "description": "Company review platform for international workers - Rate and share workplace experiences",
+    "keywords": "international,company reviews,Japanese companies,employment,job search,workplace"
+  },
   "nav": {
     "home": "Home",
     "companies": "Companies",
     "reviews": "Reviews",
-    "jobs": "Jobs"
+    "jobs": "Jobs",
+    "home_aria": "Go to home page",
+    "companies_aria": "Go to companies page",
+    "reviews_aria": "Go to reviews page",
+    "jobs_aria": "Go to jobs page"
   }
 }

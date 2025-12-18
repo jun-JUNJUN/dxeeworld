@@ -1,18 +1,18 @@
 <!doctype html>
-<html lang="ja">
+<html lang="{{ current_locale }}">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta
             name="description"
-            content="外国人向け企業レビュープラットフォーム - 日本企業の働きやすさを評価・共有"
+            content="{{ t('meta.description') }}"
         />
         <meta
             name="keywords"
-            content="外国人,企業レビュー,日本企業,就職,転職,働きやすさ"
+            content="{{ t('meta.keywords') }}"
         />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <title>{% block title %}Startup Platform: Dxee{% end %}</title>
+        <title>{% block title %}{{ t('site.title') }}{% end %}</title>
 
         <!-- Bootstrap CSS (ローカル) -->
         <link rel="stylesheet" href="/static/css/bootstrap.min.css" />
@@ -44,38 +44,38 @@
                 <ul class="nav-menu" role="menubar">
                     <li class="nav-item" role="none">
                         <a
-                            href="/"
+                            href="{{ url_for_lang('/') }}"
                             class="nav-link"
-                            title="ホーム"
-                            aria-label="ホームページへ移動"
+                            title="{{ t('nav.home') }}"
+                            aria-label="{{ t('nav.home_aria') }}"
                             role="menuitem"
                         >
                             <span class="nav-icon" aria-hidden="true">🏠</span>
-                            <span class="nav-text">ホーム</span>
+                            <span class="nav-text">{{ t('nav.home') }}</span>
                         </a>
                     </li>
                     <li class="nav-item" role="none">
                         <a
-                            href="/review"
+                            href="{{ url_for_lang('/review') }}"
                             class="nav-link"
-                            title="レビュー"
-                            aria-label="レビューページへ移動"
+                            title="{{ t('nav.reviews') }}"
+                            aria-label="{{ t('nav.reviews_aria') }}"
                             role="menuitem"
                         >
                             <span class="nav-icon" aria-hidden="true">⭐</span>
-                            <span class="nav-text">レビュー</span>
+                            <span class="nav-text">{{ t('nav.reviews') }}</span>
                         </a>
                     </li>
                     <li class="nav-item" role="none">
                         <a
-                            href="/companies"
+                            href="{{ url_for_lang('/companies') }}"
                             class="nav-link"
-                            title="企業一覧"
-                            aria-label="企業一覧ページへ移動"
+                            title="{{ t('nav.companies') }}"
+                            aria-label="{{ t('nav.companies_aria') }}"
                             role="menuitem"
                         >
                             <span class="nav-icon" aria-hidden="true">🏢</span>
-                            <span class="nav-text">企業一覧</span>
+                            <span class="nav-text">{{ t('nav.companies') }}</span>
                         </a>
                     </li>
                 </ul>

@@ -49,8 +49,13 @@ class LocaleDetectionService:
             self.reader = geoip2.database.Reader(self.geoip_db_path)
             logger.info("GeoIP2データベース初期化成功: %s", self.geoip_db_path)
             return Result.success(None)
-        except Exception as e:
-            logger.exception("GeoIP2データベース初期化失敗: %s", e)
+        except FileNotFoundError as e:
+            logger.warning("GeoIP2データベースファイルが見つかりません: %s", e)
+            return Result.failure(
+                LocaleDetectionError(f"GeoIP2 database file not found: {self.geoip_db_path}")
+            )
+        except (OSError, IOError) as e:
+            logger.exception("GeoIP2データベースの読み込みエラー: %s", e)
             return Result.failure(LocaleDetectionError(f"Failed to load GeoIP2 database: {e}"))
 
     def detect_locale_from_ip(self, ip_address: str) -> Result[LanguageCode, LocaleDetectionError]:
@@ -96,9 +101,11 @@ class LocaleDetectionService:
         except geoip2.errors.AddressNotFoundError:
             logger.warning("IPアドレス %s がGeoIP2データベースに見つかりません", ip_address)
             return Result.success("en")  # デフォルト言語
-
-        except Exception as e:
-            logger.exception("IPロケーション検出エラー: %s", e)
+        except (ValueError, TypeError) as e:
+            logger.warning("無効なIPアドレス形式: %s - %s", ip_address, e)
+            return Result.success("en")  # デフォルト言語
+        except geoip2.errors.GeoIP2Error as e:
+            logger.exception("GeoIP2検出エラー: %s", e)
             return Result.success("en")  # エラー時もデフォルト言語で継続
 
     def map_country_to_language(self, country_code: CountryCode) -> LanguageCode:
