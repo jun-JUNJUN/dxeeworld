@@ -168,6 +168,23 @@ async def startup_tasks(app):
     logger.info("多言語サービスの初期化が完了しました")
 
 
+async def shutdown_tasks(app):
+    """アプリケーション終了時のタスク"""
+    logger.info("アプリケーションのシャットダウン処理を開始します")
+
+    # GeoIP2リーダーのクローズ
+    if hasattr(app, "locale_detection_service"):
+        await app.locale_detection_service.close()
+
+    logger.info("アプリケーションのシャットダウン処理が完了しました")
+
+
+async def shutdown_and_stop(app, io_loop):
+    """シャットダウン処理を実行してイベントループを停止"""
+    await shutdown_tasks(app)
+    io_loop.stop()
+
+
 def main():
     """メイン関数 - サーバー起動"""
     config = get_app_config()
@@ -189,8 +206,25 @@ def main():
     # 起動時タスクを実行
     io_loop.run_sync(lambda: startup_tasks(app))
 
-    # イベントループ開始
-    io_loop.start()
+    # シャットダウンハンドラーの登録
+    def shutdown_handler(signum, frame):
+        """シグナル受信時のシャットダウン処理"""
+        logger.info("シャットダウンシグナルを受信しました")
+        io_loop.add_callback_from_signal(lambda: shutdown_and_stop(app, io_loop))
+
+    import signal
+
+    signal.signal(signal.SIGINT, shutdown_handler)
+    signal.signal(signal.SIGTERM, shutdown_handler)
+
+    try:
+        # イベントループ開始
+        io_loop.start()
+    except KeyboardInterrupt:
+        logger.info("KeyboardInterruptを受信しました")
+    finally:
+        # 確実にクリーンアップを実行
+        io_loop.run_sync(lambda: shutdown_tasks(app))
 
 
 if __name__ == "__main__":

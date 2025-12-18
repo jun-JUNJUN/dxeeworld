@@ -55,9 +55,12 @@ class I18nService:
                     self.translations[lang] = {}  # type: ignore
 
             return Result.success(None)
-        except Exception as e:
-            logger.exception("翻訳データロードエラー: %s", e)
-            return Result.failure(I18nError(f"Failed to load translations: {e}"))
+        except json.JSONDecodeError as e:
+            logger.exception("JSON翻訳ファイルの解析エラー: %s", e)
+            return Result.failure(I18nError(f"Failed to parse translation JSON: {e}"))
+        except (OSError, IOError) as e:
+            logger.exception("翻訳ファイルの読み込みエラー: %s", e)
+            return Result.failure(I18nError(f"Failed to read translation files: {e}"))
 
     def get_translation(self, key: str, locale: LanguageCode) -> str:
         """
@@ -149,7 +152,7 @@ class I18nService:
             else:
                 # 日本語・中国語: "2025年12月14日"
                 return babel_format_date(date, format="long", locale=babel_locale)
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             logger.exception("日付フォーマットエラー: %s", e)
             # フォールバック: ISO形式
             return date.strftime("%Y-%m-%d")
@@ -174,7 +177,7 @@ class I18nService:
 
         try:
             return format_decimal(number, locale=babel_locale)
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             logger.exception("数値フォーマットエラー: %s", e)
             # フォールバック: 基本フォーマット
             return f"{number:,.2f}"

@@ -1,6 +1,7 @@
 """
 ベースハンドラー
 """
+import ipaddress
 import logging
 from typing import Literal
 import tornado.web
@@ -174,12 +175,56 @@ class BaseHandler(tornado.web.RequestHandler):
             return None
         return user_id
 
-    def get_client_ip(self):
-        """クライアントIPアドレスを取得"""
-        return (self.request.headers.get('X-Forwarded-For') or
-                self.request.headers.get('X-Real-IP') or
-                self.request.remote_ip or
-                '127.0.0.1')
+    def get_client_ip(self) -> str:
+        """
+        クライアントIPアドレスを取得（検証付き）
+
+        Returns:
+            str: 検証済みのIPアドレス
+
+        Security:
+            - X-Forwarded-For ヘッダーのIPアドレスを検証
+            - 無効なIPアドレスはスキップ
+            - プライベートIPアドレスの考慮
+        """
+        # X-Forwarded-For ヘッダーから取得（カンマ区切りの場合、最初のIPを使用）
+        forwarded_for = self.request.headers.get("X-Forwarded-For")
+        if forwarded_for:
+            # カンマ区切りの場合、最初のIPアドレスを取得
+            first_ip = forwarded_for.split(",")[0].strip()
+            # IPアドレスの検証
+            if self._is_valid_ip(first_ip):
+                return first_ip
+            logger.warning("無効なX-Forwarded-For IPアドレス: %s", first_ip)
+
+        # X-Real-IP ヘッダーから取得
+        real_ip = self.request.headers.get("X-Real-IP")
+        if real_ip and self._is_valid_ip(real_ip):
+            return real_ip
+
+        # リモートIPアドレス（直接接続）
+        remote_ip = self.request.remote_ip
+        if remote_ip:
+            return remote_ip
+
+        # フォールバック
+        return "127.0.0.1"
+
+    def _is_valid_ip(self, ip_str: str) -> bool:
+        """
+        IPアドレスの検証
+
+        Args:
+            ip_str: 検証対象のIPアドレス文字列
+
+        Returns:
+            bool: 有効なIPv4またはIPv6アドレスの場合True
+        """
+        try:
+            ipaddress.ip_address(ip_str)
+            return True
+        except ValueError:
+            return False
 
     def _get_client_ip(self):
         """クライアントIPアドレスを取得（内部メソッド）"""
