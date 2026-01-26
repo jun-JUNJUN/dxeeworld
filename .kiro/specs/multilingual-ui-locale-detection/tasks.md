@@ -25,8 +25,8 @@
   - 基本的なナビゲーション翻訳キーを追加（nav.home, nav.companies, nav.reviews, nav.jobs）
   - _Requirements: 6.1, 6.2_
 
-- [ ] 2. バックエンドサービスの実装
-- [ ] 2.1 LocaleDetectionServiceの実装
+- [x] 2. バックエンドサービスの実装
+- [x] 2.1 LocaleDetectionServiceの実装
   - IPアドレスから国コードを検出するロジック
   - 国コードを言語コード（en/ja/zh）にマッピングする機能
   - 日本、中国語圏（CN/HK/TW/SG）、その他地域の判定
@@ -34,20 +34,20 @@
   - エラー時のフォールバック（デフォルト英語）
   - _Requirements: 2.1, 2.2, 2.3_
 
-- [ ] 2.2 I18nServiceの実装
+- [x] 2.2 I18nServiceの実装
   - アプリケーション起動時に全言語の翻訳データをメモリロード
   - 翻訳キーから文字列を取得する機能（ネストキー対応）
   - 翻訳キー不在時の英語フォールバック処理
   - 英語でも見つからない場合はキー名を返却
   - _Requirements: 5.2, 6.3, 7.1, 7.2_
 
-- [ ] 2.3 I18nServiceの日付・数値フォーマット機能
+- [x] 2.3 I18nServiceの日付・数値フォーマット機能
   - Babelを使用した言語別日付フォーマット（ja: YYYY年MM月DD日, en: Month DD, YYYY）
   - 言語別数値フォーマット（桁区切りカンマ）
   - 言語コードからBabelロケール名へのマッピング
   - _Requirements: 5.4, 5.5_
 
-- [ ] 2.4 URLLanguageServiceの実装
+- [x] 2.4 URLLanguageServiceの実装
   - URLに言語クエリパラメータを追加する機能
   - 既存の言語パラメータを更新する機能
   - URLから言語パラメータを抽出する機能
