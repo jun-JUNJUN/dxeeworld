@@ -1,6 +1,159 @@
 // Startup Platform:Dxee - Main JavaScript
 
+// ============================================
+// Header Navigation Class (Task 2)
+// ============================================
+class HeaderNavigation {
+  constructor() {
+    this.header = document.getElementById('header');
+    this.hamburgerBtn = document.getElementById('hamburger-btn');
+    this.headerMenu = document.getElementById('header-menu');
+    this.isMobileMenuOpen = false;
+    this.resizeTimer = null;
+
+    this.init();
+  }
+
+  init() {
+    // ハンバーガーメニューのクリックイベント
+    if (this.hamburgerBtn) {
+      this.hamburgerBtn.addEventListener('click', () => this.toggleHamburger());
+    }
+
+    // メニュー外クリックでメニューを閉じる
+    document.addEventListener('click', (e) => this.handleMobileMenuClick(e));
+
+    // ウィンドウのリサイズイベント（デバウンス付き）
+    window.addEventListener('resize', () => this.onWindowResize());
+
+    // 初期状態での判定
+    this.handleWindowResize();
+  }
+
+  /**
+   * ウィンドウリサイズイベントのデバウンス処理
+   */
+  onWindowResize() {
+    clearTimeout(this.resizeTimer);
+    this.resizeTimer = setTimeout(() => {
+      this.handleWindowResize();
+    }, 150);
+  }
+
+  /**
+   * ハンバーガーメニューの表示/非表示を切り替え
+   */
+  toggleHamburger() {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+
+    if (this.headerMenu) {
+      if (this.isMobileMenuOpen) {
+        this.showMobileMenu();
+      } else {
+        this.hideMobileMenu();
+      }
+    }
+
+    // ハンバーガーアイコンのアニメーション
+    this.animateHamburgerIcon();
+  }
+
+  /**
+   * モバイルメニューを表示
+   */
+  showMobileMenu() {
+    if (!this.headerMenu) return;
+
+    this.headerMenu.style.cssText = `
+      display: flex;
+      position: absolute;
+      top: 64px;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      background-color: var(--color-bg-card);
+      border-bottom: 1px solid var(--color-border);
+      z-index: 999;
+    `;
+  }
+
+  /**
+   * モバイルメニューを非表示
+   */
+  hideMobileMenu() {
+    if (!this.headerMenu) return;
+    this.headerMenu.style.display = 'none';
+  }
+
+  /**
+   * ハンバーガーアイコンをアニメーション
+   */
+  animateHamburgerIcon() {
+    const spans = this.hamburgerBtn?.querySelectorAll('span') || [];
+
+    if (this.isMobileMenuOpen) {
+      // X アイコンに変形
+      spans[0].style.transform = 'rotate(45deg) translateY(10px)';
+      spans[1].style.opacity = '0';
+      spans[2].style.transform = 'rotate(-45deg) translateY(-10px)';
+    } else {
+      // 通常の状態に戻す
+      spans[0].style.transform = '';
+      spans[1].style.opacity = '1';
+      spans[2].style.transform = '';
+    }
+  }
+
+  /**
+   * ウィンドウリサイズ時の処理
+   */
+  handleWindowResize() {
+    const width = window.innerWidth;
+
+    // 768px以上ではメニューを表示
+    if (width >= 768) {
+      if (this.headerMenu) {
+        this.headerMenu.style.cssText = `
+          display: flex;
+          position: static;
+        `;
+      }
+      this.isMobileMenuOpen = false;
+      if (this.hamburgerBtn) {
+        this.hamburgerBtn.style.display = 'none';
+      }
+    } else {
+      // 768px以下ではメニューを隠す
+      if (this.headerMenu && !this.isMobileMenuOpen) {
+        this.headerMenu.style.display = 'none';
+      }
+      if (this.hamburgerBtn) {
+        this.hamburgerBtn.style.display = 'flex';
+      }
+    }
+  }
+
+  /**
+   * モバイルメニューのクリック処理：メニュー外をクリックした場合、メニューを閉じる
+   */
+  handleMobileMenuClick(e) {
+    // ハンバーガーボタンまたはメニュー要素上のクリックは処理しない
+    if (this.hamburgerBtn?.contains(e.target) || this.headerMenu?.contains(e.target)) {
+      return;
+    }
+
+    // メニューが開いている場合は閉じる
+    if (this.isMobileMenuOpen) {
+      this.toggleHamburger();
+    }
+  }
+}
+
+// ============================================
+
 document.addEventListener("DOMContentLoaded", function () {
+  // HeaderNavigation の初期化
+  const headerNav = new HeaderNavigation();
   // Sidebar toggle functionality
   const sidebar = document.getElementById("sidebar");
   const sidebarToggle = document.getElementById("sidebar-toggle");

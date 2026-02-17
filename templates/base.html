@@ -28,9 +28,60 @@
         {% block head %}{% end %}
     </head>
     <body>
+        <!-- 新しいヘッダーナビゲーション (64px固定) -->
+        <header class="header" id="header">
+            <div class="header-container">
+                <!-- ロゴセクション -->
+                <div class="header-logo">
+                    <a href="{{ url_for_lang('/') }}" class="logo-link">
+                        <span class="logo-icon">🚀</span>
+                        <span class="logo-text">Startup Platform: Dxee</span>
+                    </a>
+                </div>
+
+                <!-- メニューセクション -->
+                <nav class="header-menu" id="header-menu" role="navigation">
+                    <ul class="menu-items">
+                        <li>
+                            <a href="{{ url_for_lang('/') }}" class="menu-item" title="{{ t('nav.home') }}">
+                                <span class="menu-icon">🏠</span>
+                                <span class="menu-text">{{ t('nav.home') }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for_lang('/review') }}" class="menu-item" title="{{ t('nav.reviews') }}">
+                                <span class="menu-icon">⭐</span>
+                                <span class="menu-text">{{ t('nav.reviews') }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for_lang('/companies') }}" class="menu-item" title="{{ t('nav.companies') }}">
+                                <span class="menu-icon">🏢</span>
+                                <span class="menu-text">{{ t('nav.companies') }}</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <!-- ユーザー/ログインセクション -->
+                <div class="header-user">
+                    <button class="user-btn" id="user-btn" onclick="openLoginPanel()" title="ログイン">
+                        <span class="user-icon">👤</span>
+                    </button>
+                </div>
+
+                <!-- ハンバーガーメニュー (モバイル) -->
+                <button class="hamburger-btn" id="hamburger-btn" aria-label="メニュー">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </header>
+
         <div class="app-container">
-            <!-- サイドバーナビゲーション -->
-            <nav class="sidebar" id="sidebar">
+            <!-- 旧サイドバーナビゲーション (非表示) -->
+            <nav class="sidebar" id="sidebar" style="display: none;">
                 <div class="sidebar-header">
                     <h1 class="logo">
                         <span class="logo-icon">🚀</span>

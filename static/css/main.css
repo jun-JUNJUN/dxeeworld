@@ -1,4 +1,113 @@
 /* Startup Platform:Dxee - Main CSS */
+
+/* ============================================
+   Design System: CSS Variables & Design Tokens
+   ============================================
+
+   This CSS file implements a comprehensive design system using CSS custom
+   properties (variables). All colors, typography, spacing, and effects
+   are centrally defined in the :root selector for consistency across the
+   entire application.
+
+   Usage:
+   - Reference colors: var(--color-primary)
+   - Reference typography: var(--font-size-h1)
+   - Reference spacing: var(--spacing-md)
+
+   Principles:
+   - All hardcoded color values should be replaced with CSS variables
+   - 4px base unit for spacing consistency
+   - Semantic color naming for accessibility and maintainability
+   - Typography scale based on 1rem (16px) base unit
+*/
+
+:root {
+  /* ========== PRIMARY COLORS ==========
+     Core brand colors: Blue theme for Kaggle-style design
+  */
+  --color-primary: #20BEFF;           /* Main blue */
+  --color-primary-dark: #1A8FCC;      /* Darker shade for hover/active */
+  --color-primary-light: #E3F5FF;     /* Light shade for backgrounds */
+
+  /* ========== BACKGROUND COLORS ==========
+     Page and component backgrounds
+  */
+  --color-bg-main: #F5F5F5;           /* Main page background */
+  --color-bg-card: #FFFFFF;           /* Card/component background */
+  --color-bg-section: #FAFAFA;        /* Section backgrounds */
+
+  /* ========== TEXT COLORS ==========
+     Text color hierarchy for readability
+  */
+  --color-text-primary: #1A1A1A;      /* Main text (highest contrast) */
+  --color-text-secondary: #666666;    /* Secondary text (lower contrast) */
+  --color-text-disabled: #AAAAAA;     /* Disabled/inactive text */
+
+  /* ========== UI ELEMENT COLORS ==========
+     Borders, dividers, and UI components
+  */
+  --color-border: #E0E0E0;            /* Standard border color */
+  --color-border-light: #D0D0D0;      /* Light border color */
+
+  /* ========== SEMANTIC COLORS ==========
+     Contextual colors for status and feedback
+  */
+  --color-success: #4CAF50;           /* Success/positive state */
+  --color-warning: #FF9800;           /* Warning state */
+  --color-error: #F44336;             /* Error/danger state */
+  --color-star: #FFB400;              /* Star rating color */
+  --color-tag-bg: #F0F0F0;            /* Tag background */
+  --color-tag-text: #333333;          /* Tag text color */
+
+  /* ========== TYPOGRAPHY ==========
+     Font families and sizing scale (1rem = 16px base)
+  */
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-ja: 'Noto Sans JP', 'Hiragino Sans', sans-serif;
+
+  /* Font Sizes */
+  --font-size-h1: 2rem;               /* 32px - Page titles */
+  --font-size-h2: 1.5rem;             /* 24px - Section titles */
+  --font-size-h3: 1.25rem;            /* 20px - Subsection titles */
+  --font-size-h4: 1.125rem;           /* 18px - Minor headings */
+  --font-size-body: 1rem;             /* 16px - Body text */
+  --font-size-small: 0.875rem;        /* 14px - Small text */
+  --font-size-caption: 0.75rem;       /* 12px - Captions/labels */
+
+  /* Font Weights */
+  --font-weight-bold: 700;            /* Bold text (headings) */
+  --font-weight-semibold: 600;        /* Semi-bold (emphasis) */
+  --font-weight-normal: 400;          /* Regular/normal weight */
+
+  /* Line Heights */
+  --line-height-heading: 1.2;         /* Tight line height for titles */
+  --line-height-body: 1.6;            /* Comfortable line height for readability */
+
+  /* ========== SPACING ==========
+     4px base unit scale for consistent spacing
+     Multiples: 4px (1x) → 8px (2x) → 16px (4x) → 24px (6x)...
+  */
+  --spacing-unit: 4px;                /* Base unit */
+  --spacing-xs: 4px;                  /* 1 × base (extra small) */
+  --spacing-sm: 8px;                  /* 2 × base (small) */
+  --spacing-md: 16px;                 /* 4 × base (medium) */
+  --spacing-lg: 24px;                 /* 6 × base (large) */
+  --spacing-xl: 32px;                 /* 8 × base (extra large) */
+  --spacing-2xl: 48px;                /* 12 × base (2x large) */
+  --spacing-3xl: 64px;                /* 16 × base (3x large) */
+
+  /* ========== SHADOWS & EFFECTS ==========
+     Box shadows for depth and elevation
+  */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);    /* Subtle shadow */
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);   /* Medium elevation */
+
+  /* Border Radius */
+  --border-radius-sm: 4px;            /* Small radius (buttons) */
+  --border-radius-md: 8px;            /* Medium radius (cards) */
+  --border-radius-lg: 16px;           /* Large radius (containers) */
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -6,16 +115,168 @@
 }
 
 body {
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8fafc;
-    color: #334155;
-    line-height: 1.6;
+    font-family: var(--font-family-base);
+    background-color: var(--color-bg-main);
+    color: var(--color-text-primary);
+    line-height: var(--line-height-body);
+    padding-top: 64px;
+}
+
+/* ============================================
+   Header Navigation (Task 2)
+   ============================================ */
+.header {
+    position: sticky;
+    top: 0;
+    height: 64px;
+    background-color: var(--color-bg-card);
+    border-bottom: 1px solid var(--color-border);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+}
+
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 100%;
+    padding: 0 var(--spacing-md);
+    height: 100%;
+}
+
+/* ロゴセクション */
+.header-logo {
+    flex-shrink: 0;
+    max-width: 150px;
+}
+
+.logo-link {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    text-decoration: none;
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-semibold);
+}
+
+.logo-icon {
+    font-size: 24px;
+}
+
+.logo-text {
+    font-size: var(--font-size-body);
+    white-space: nowrap;
+}
+
+/* メニューセクション */
+.header-menu {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    margin: 0 var(--spacing-lg);
+}
+
+.menu-items {
+    display: flex;
+    list-style: none;
+    gap: var(--spacing-lg);
+    margin: 0;
+    padding: 0;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    text-decoration: none;
+    color: var(--color-text-primary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.menu-item:hover {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.menu-icon {
+    font-size: 18px;
+}
+
+.menu-text {
+    font-size: var(--font-size-small);
+}
+
+/* ユーザーセクション */
+.header-user {
+    flex-shrink: 0;
+}
+
+.user-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    padding: var(--spacing-xs);
+    color: var(--color-text-primary);
+    transition: transform 0.2s ease;
+}
+
+.user-btn:hover {
+    transform: scale(1.1);
+}
+
+/* ハンバーガーメニュー (モバイル) */
+.hamburger-btn {
+    display: none;
+    flex-direction: column;
+    background: none;
+    border: none;
+    cursor: pointer;
+    gap: 5px;
+    padding: 0;
+}
+
+.hamburger-btn span {
+    width: 24px;
+    height: 3px;
+    background-color: var(--color-text-primary);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+/* レスポンシブ: 768px以下でハンバーガーメニュー表示 */
+@media (max-width: 767px) {
+    body {
+        padding-top: 64px;
+    }
+
+    .hamburger-btn {
+        display: flex;
+    }
+
+    .header-menu {
+        display: none;
+    }
+
+    .menu-text {
+        display: none;
+    }
+
+    .logo-text {
+        display: none;
+    }
 }
 
 /* App Layout */
 .app-container {
     display: flex;
-    min-height: 100vh;
+    min-height: calc(100vh - 64px);
+    margin-top: -64px;
+    padding-top: 64px;
 }
 
 /* Sidebar Navigation */
@@ -228,12 +489,13 @@ body {
 /* Main Content */
 .main-content {
     flex: 1;
-    margin-left: 280px;
+    margin-left: 0;
+    margin-top: 0;
     transition: margin-left 0.3s ease;
 }
 
 .sidebar.collapsed + .main-content {
-    margin-left: 70px;
+    margin-left: 0;
 }
 
 .content-wrapper {

@@ -27,6 +27,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - **review-listing-page**: Review listing page (/review) with real-time aggregation, sorting, filtering, and pagination (Phase: initialized)
 - **review-detail-pages**: Individual review detail page and category-based review list pages with user anonymization and access control (Phase: initialized)
 - **multilingual-ui-locale-detection**: Full site multilingual support (EN/ZH/JA) with IP-based locale detection and language switcher UI (Phase: initialized)
+- **design-and-survey-improvements**: Comprehensive UI redesign (Kaggle-style) with color scheme, typography, and layout improvements + survey structure redesign (OpenWork-style, MECE principle) with 8 core categories (Phase: initialized)
 - Check `.kiro/specs/` for active specifications
 - Use `/kiro:spec-status [feature-name]` to check progress
 
