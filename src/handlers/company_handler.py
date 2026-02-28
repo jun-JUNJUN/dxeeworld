@@ -33,6 +33,7 @@ class CompanyListHandler(BaseHandler):
             skip = (page - 1) * page_size
 
             # フィルター条件の取得
+            search = self.get_query_argument('search', None)
             industry = self.get_query_argument('industry', None)
             size = self.get_query_argument('size', None)
             location = self.get_query_argument('location', None)
@@ -40,9 +41,11 @@ class CompanyListHandler(BaseHandler):
             founded_year_max = self.get_query_argument('founded_year_max', None)
             employee_count_min = self.get_query_argument('employee_count_min', None)
             employee_count_max = self.get_query_argument('employee_count_max', None)
+            sort = self.get_query_argument('sort', None)
 
             # フィルター条件を辞書にまとめる
             filters = self._build_filter_dict(
+                search=search,
                 industry=industry,
                 size=size,
                 location=location,
@@ -52,9 +55,12 @@ class CompanyListHandler(BaseHandler):
                 employee_count_max=employee_count_max
             )
 
+            # ソート条件の決定
+            sort_order = self._get_sort_order(sort)
+
             # 企業データの取得
             company_objects = await self.company_service.search_companies_with_pagination(
-                filters, skip, page_size, sort=[('name', 1)]
+                filters, skip, page_size, sort=sort_order
             )
 
             # Company オブジェクトを表示用辞書に変換
@@ -106,6 +112,8 @@ class CompanyListHandler(BaseHandler):
                 'previous_page': page - 1 if has_previous else None,
                 'next_page': page + 1 if has_next else None,
                 'filters': {
+                    'search': search,
+                    'sort': sort,
                     'industry': industry,
                     'size': size,
                     'location': location,
@@ -132,6 +140,10 @@ class CompanyListHandler(BaseHandler):
     def _build_filter_dict(self, **kwargs) -> dict:
         """フィルター条件辞書を構築"""
         filters = {'is_active': True}  # アクティブな企業のみ
+
+        # 検索フィルター
+        if kwargs.get('search'):
+            filters['name'] = {'$regex': kwargs['search'], '$options': 'i'}
 
         # 業界フィルター
         if kwargs.get('industry'):
@@ -177,6 +189,20 @@ class CompanyListHandler(BaseHandler):
 
         return filters
 
+    def _get_sort_order(self, sort: str | None) -> list:
+        """ソート条件をMongoDB形式に変換"""
+        if not sort or sort == 'name':
+            return [('name', 1)]
+        elif sort == 'rating_desc':
+            return [('overall_rating', -1), ('name', 1)]
+        elif sort == 'rating_asc':
+            return [('overall_rating', 1), ('name', 1)]
+        elif sort == 'review_count':
+            return [('review_count', -1), ('name', 1)]
+        elif sort == 'recent':
+            return [('created_at', -1), ('name', 1)]
+        else:
+            return [('name', 1)]
 
     async def _get_filter_options(self) -> dict:
         """フィルター選択肢を取得"""

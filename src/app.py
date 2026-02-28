@@ -29,6 +29,7 @@ from .handlers.simple_auth_handler import SimpleLoginHandler, SimpleLogoutHandle
 from .handlers.user_info_handler import UserInfoHandler
 from .handlers.review_detail_handler import ReviewDetailHandler
 from .handlers.category_review_list_handler import CategoryReviewListHandler
+from .handlers.company_stats_handler import CompanyStatsHandler
 from .database import get_db_service
 from .services.review_anonymization_service import ReviewAnonymizationService
 from .services.locale_detection_service import LocaleDetectionService
@@ -96,6 +97,7 @@ def create_app():
         (r"/health", HealthCheckHandler),
         (r"/jobs", JobsListHandler),
         (r"/companies", CompanyListHandler),
+        (r"/companies/([^/]+)/stats", CompanyStatsHandler),
         (r"/companies/([^/]+)", CompanyDetailHandler),
         (r"/companies/([^/]+)/jobs", CompanyJobsHandler),
         # レビュー関連ルート

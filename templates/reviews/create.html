@@ -356,7 +356,16 @@ block head %}
                     </div>
                     {% end %}
 
-                    <!-- レビューフォーム -->
+                    <!-- 新ウィザードレビューフォーム（Task 7） -->
+                    {% if not show_login_panel %}
+                    <div id="review-wizard-form"
+                         data-company-id="{{ company.get('_id', '') }}"
+                         style="margin-bottom: 32px;">
+                      <!-- ReviewWizardForm が JavaScript で初期化されます -->
+                    </div>
+                    {% end %}
+
+                    <!-- 旧レビューフォーム（後方互換性のため保持） -->
                     {% if not show_login_panel %}
                     <form method="post" id="reviewForm">
                         {% module xsrf_form_html() %}
@@ -821,4 +830,5 @@ block head %}
         });
     });
 </script>
+<script src="/static/js/wizardReviewForm.js"></script>
 {% end %} {% end %}

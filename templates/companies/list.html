@@ -4,652 +4,626 @@
 
 {% block head %}
 <style>
+/* Companies Page Container */
 .companies-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 64px);
 }
 
-.page-header {
-    margin-bottom: 30px;
+/* Filter Sidebar */
+.filter-sidebar {
+    width: 250px;
+    background: #FFFFFF;
+    border-right: 1px solid #E0E0E0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: 24px;
+    overflow-y: auto;
 }
 
-.page-header h1 {
-    font-size: 2rem;
-    color: #2c3e50;
-    margin-bottom: 10px;
+.filter-header {
+    margin-bottom: 24px;
 }
 
-.companies-stats {
-    color: #7f8c8d;
-    font-size: 0.9rem;
+.filter-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 8px;
 }
 
-/* フィルターセクション */
-.filters-section {
-    background: #f8f9fa;
+.filter-section {
+    margin-bottom: 32px;
+}
+
+.filter-section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-option {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-option:hover {
+    color: var(--color-primary);
+}
+
+.filter-option input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    cursor: pointer;
+    accent-color: var(--color-primary);
+}
+
+.filter-option label {
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    flex: 1;
+}
+
+.filter-option .count {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    background: var(--color-bg-section);
+    padding: 2px 6px;
+    border-radius: 12px;
+    margin-left: 8px;
+}
+
+/* Search Input */
+.search-input {
+    width: 100%;
+    padding: 10px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(32, 190, 255, 0.1);
+}
+
+/* Results Area */
+.results-area {
+    padding: 24px;
+    background: var(--color-bg-main);
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.results-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.results-count {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+/* Company Cards Grid */
+.companies-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+/* Company Card */
+.company-card {
+    background: #FFFFFF;
+    border: 1px solid #E0E0E0;
     border-radius: 8px;
     padding: 20px;
-    margin-bottom: 30px;
-    border: 1px solid #e9ecef;
-}
-
-.filters-header {
-    display: flex;
-    justify-content: between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.filters-header h2 {
-    font-size: 1.2rem;
-    color: #495057;
-    margin: 0;
-}
-
-.filters-toggle {
-    background: none;
-    border: none;
-    color: #6c757d;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
     cursor: pointer;
-    padding: 5px;
-    border-radius: 4px;
-}
-
-.filters-toggle:hover {
-    background: #e9ecef;
-}
-
-.filters-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-}
-
-.filter-group {
     display: flex;
     flex-direction: column;
 }
 
-.filter-group label {
-    font-weight: 500;
-    margin-bottom: 5px;
-    color: #495057;
-    font-size: 0.9rem;
+.company-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
 }
 
-.filter-group select,
-.filter-group input {
-    padding: 8px 12px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    background: white;
-}
-
-.filter-group select:focus,
-.filter-group input:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-.filter-actions {
+.company-card-header {
     display: flex;
-    gap: 10px;
-    margin-top: 20px;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
 }
 
-.btn {
-    padding: 8px 16px;
-    border-radius: 4px;
-    text-decoration: none;
-    font-size: 0.9rem;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all 0.2s;
+.company-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--border-radius-sm);
+    object-fit: cover;
+    flex-shrink: 0;
 }
 
-.btn-primary {
-    background: #007bff;
-    color: white;
-    border-color: #007bff;
-}
-
-.btn-primary:hover {
-    background: #0056b3;
-    border-color: #0056b3;
-}
-
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-    border-color: #6c757d;
-}
-
-.btn-secondary:hover {
-    background: #545b62;
-    border-color: #545b62;
-}
-
-/* 企業一覧テーブル */
-.companies-table-wrapper {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    overflow: hidden;
-}
-
-.companies-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.companies-table th {
-    background: #f8f9fa;
-    padding: 15px 12px;
-    text-align: left;
-    font-weight: 600;
-    color: #495057;
-    border-bottom: 2px solid #dee2e6;
-    font-size: 0.9rem;
-}
-
-.companies-table td {
-    padding: 12px;
-    border-bottom: 1px solid #dee2e6;
-    vertical-align: top;
-}
-
-.companies-table tbody tr:hover {
-    background: #f8f9fa;
+.company-info {
+    flex: 1;
 }
 
 .company-name {
+    font-size: 1.125rem;
     font-weight: 600;
-    color: #007bff;
+    color: var(--color-text-primary);
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.company-name a {
+    color: inherit;
     text-decoration: none;
+    transition: color 0.2s ease;
 }
 
-.company-name:hover {
-    text-decoration: underline;
+.company-name a:hover {
+    color: var(--color-primary);
 }
 
-.company-description {
-    color: #6c757d;
-    font-size: 0.85rem;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.company-rating {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
-.industry-badge,
-.size-badge {
-    display: inline-block;
+.rating-stars {
+    color: #FFB400;
+    font-size: 0.875rem;
+}
+
+.rating-score {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.company-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+.meta-icon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.6;
+}
+
+.company-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.badge {
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 0.75rem;
     font-weight: 500;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.industry-badge {
-    background: #e3f2fd;
-    color: #1565c0;
+.badge-industry {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
 }
 
-.size-badge {
-    background: #f3e5f5;
-    color: #7b1fa2;
+.badge-size {
+    background: #F3E5F5;
+    color: #7B1FA2;
 }
 
-/* ページネーション */
-.pagination-section {
-    margin-top: 30px;
+.badge-location {
+    background: #E8F5E8;
+    color: #2E7D32;
+}
+
+.company-description {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    margin-bottom: 16px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.company-footer {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid #F0F0F0;
     display: flex;
-    justify-content: between;
+    justify-content: space-between;
     align-items: center;
+}
+
+.company-stats {
+    display: flex;
+    gap: 16px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+.stat-icon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.6;
+}
+
+.company-tags {
+    display: flex;
+    gap: 6px;
     flex-wrap: wrap;
-    gap: 20px;
 }
 
-.pagination-info {
-    color: #6c757d;
-    font-size: 0.9rem;
+.tag {
+    padding: 2px 8px;
+    background: var(--color-bg-section);
+    color: var(--color-text-secondary);
+    border-radius: 12px;
+    font-size: 0.75rem;
 }
 
-.pagination {
-    display: flex;
-    gap: 5px;
-    align-items: center;
-}
-
-.pagination .btn {
-    min-width: 40px;
-    text-align: center;
-}
-
-.pagination .btn.active {
-    background: #007bff;
-    color: white;
-}
-
-.pagination .btn:disabled {
-    background: #e9ecef;
-    color: #6c757d;
-    cursor: not-allowed;
-}
-
-/* レスポンシブデザイン */
-@media (max-width: 768px) {
-    .companies-container {
-        padding: 10px;
-        max-width: 100%;
-        margin: 0;
-    }
-
-    .filters-section {
-        padding: 15px;
-        margin-bottom: 20px;
-        border-radius: 6px;
-    }
-
-    .filters-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-
-    .filter-group {
-        margin-bottom: 12px;
-    }
-
-    .filter-group label {
-        font-size: 0.85rem;
-        margin-bottom: 6px;
-    }
-
-    .filter-group select,
-    .filter-group input {
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-        padding: 10px 12px;
-        font-size: 0.9rem;
-    }
-
-    .filter-actions {
-        margin-top: 15px;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .btn {
-        width: 100%;
-        text-align: center;
-        padding: 10px 16px;
-    }
-
-    .companies-table-wrapper {
-        display: none;
-    }
-
-    .mobile-companies-view {
-        display: block;
-    }
-
-    .pagination-section {
-        flex-direction: column;
-        text-align: center;
-        gap: 15px;
-    }
-
-    .pagination {
-        justify-content: center;
-    }
-}
-
-@media (min-width: 769px) {
-    .mobile-companies-view {
-        display: none;
-    }
-}
-
+/* No Results */
 .no-results {
     text-align: center;
-    padding: 40px 20px;
-    color: #6c757d;
+    padding: 60px 20px;
+    color: var(--color-text-secondary);
 }
 
 .no-results-icon {
     font-size: 3rem;
-    margin-bottom: 15px;
-}
-
-/* モバイル用企業カード表示 */
-.mobile-companies-view {
-    display: none;
-}
-
-.company-card {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: 16px;
-    padding: 16px;
-    border: 1px solid #e9ecef;
+    opacity: 0.5;
 }
 
-.company-card-header {
-    margin-bottom: 12px;
-}
-
-.company-card-name {
-    margin: 0 0 8px 0;
-    font-size: 1.1rem;
+.no-results h3 {
+    font-size: 1.25rem;
     font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 8px;
 }
 
-.company-card-name a {
-    color: #007bff;
-    text-decoration: none;
+.no-results p {
+    font-size: 0.875rem;
+    margin-bottom: 24px;
 }
 
-.company-card-name a:hover {
-    text-decoration: underline;
-}
-
-.company-card-badges {
+/* Pagination */
+.pagination {
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
-}
-
-.company-card-body {
-    margin-top: 12px;
-}
-
-.company-card-info {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 12px;
-}
-
-.info-item {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 4px 0;
-    border-bottom: 1px solid #f0f0f0;
+    justify-content: center;
+    margin-top: 32px;
 }
 
-.info-item:last-child {
-    border-bottom: none;
+.pagination .btn {
+    padding: 0.5rem 1rem;
 }
 
-.info-label {
-    font-weight: 500;
-    color: #6c757d;
-    font-size: 0.85rem;
-    flex-shrink: 0;
-    margin-right: 8px;
+/* Responsive Design */
+
+/* 1024px - Tablet */
+@media (max-width: 1024px) {
+    .companies-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
 }
 
-.info-value {
-    font-size: 0.9rem;
-    color: #495057;
-    text-align: right;
+/* 768px - Tablet */
+@media (max-width: 768px) {
+    .companies-container {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-sidebar {
+        display: none;
+    }
+
+    .results-area {
+        padding: 16px;
+    }
+
+    .results-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .companies-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .company-card {
+        padding: 16px;
+    }
 }
 
-.company-card-description {
-    background: #f8f9fa;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    color: #6c757d;
-    line-height: 1.4;
+/* 480px - Small Mobile */
+@media (max-width: 480px) {
+    .results-area {
+        padding: 12px;
+    }
+
+    .company-card {
+        padding: 16px;
+    }
+
+    .company-card-header {
+        gap: 12px;
+    }
+
+    .company-logo {
+        width: 40px;
+        height: 40px;
+    }
+
+    .company-name {
+        font-size: 1rem;
+    }
+
+    .company-description {
+        font-size: 0.8125rem;
+    }
+
+    .company-footer {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .companies-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+/* 320px - Extra Small Mobile */
+@media (max-width: 320px) {
+    .results-area {
+        padding: 8px;
+    }
+
+    .company-card {
+        padding: 12px;
+    }
+
+    .company-name {
+        font-size: 0.875rem;
+    }
+
+    .company-description {
+        font-size: 0.75rem;
+    }
+
+    .companies-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
 }
 </style>
 {% end %}
 
 {% block content %}
 <div class="companies-container">
-    <!-- ページヘッダー -->
-    <div class="page-header">
-        <h1>{{ page_title }}</h1>
-        <div class="companies-stats">
-            総企業数: {{ total_companies }}社
-            {% if filters['industry'] or filters['size'] or filters['location'] or filters['founded_year_min'] or filters['founded_year_max'] or filters['employee_count_min'] or filters['employee_count_max'] %}
-            （フィルター適用中）
-            {% end %}
-        </div>
-    </div>
-
-    <!-- フィルターセクション -->
-    <div class="filters-section">
-        <div class="filters-header">
-            <h2>検索・フィルター</h2>
+    <!-- Filter Sidebar -->
+    <div class="filter-sidebar">
+        <div class="filter-header">
+            <h3>フィルター</h3>
         </div>
 
         <form method="GET" action="/companies" id="filter-form">
-            <div class="filters-grid">
-                <!-- 業界フィルター -->
-                <div class="filter-group">
-                    <label for="industry">業界</label>
-                    <select name="industry" id="industry">
-                        <option value="">すべての業界</option>
-                        {% for option in filter_options['industries'] %}
-                        <option value="{{ option['value'] }}"
-                                {% if filters['industry'] == option['value'] %}selected{% end %}>
-                            {{ option['label'] }} ({{ option['count'] }})
-                        </option>
-                        {% end %}
-                    </select>
-                </div>
-
-                <!-- 企業規模フィルター -->
-                <div class="filter-group">
-                    <label for="size">企業規模</label>
-                    <select name="size" id="size">
-                        <option value="">すべての規模</option>
-                        {% for option in filter_options['sizes'] %}
-                        <option value="{{ option['value'] }}"
-                                {% if filters['size'] == option['value'] %}selected{% end %}>
-                            {{ option['label'] }} ({{ option['count'] }})
-                        </option>
-                        {% end %}
-                    </select>
-                </div>
-
-                <!-- 所在地フィルター -->
-                <div class="filter-group">
-                    <label for="location">所在地</label>
-                    <select name="location" id="location">
-                        <option value="">すべての地域</option>
-                        {% for option in filter_options['locations'] %}
-                        <option value="{{ option['value'] }}"
-                                {% if filters['location'] == option['value'] %}selected{% end %}>
-                            {{ option['label'] }} ({{ option['count'] }})
-                        </option>
-                        {% end %}
-                    </select>
-                </div>
-
-                <!-- 設立年（開始） -->
-                <div class="filter-group">
-                    <label for="founded_year_min">設立年（開始）</label>
-                    <input type="number" name="founded_year_min" id="founded_year_min"
-                           min="1800" max="2024" placeholder="1990"
-                           value="{{ filters['founded_year_min'] or '' }}">
-                </div>
-
-                <!-- 設立年（終了） -->
-                <div class="filter-group">
-                    <label for="founded_year_max">設立年（終了）</label>
-                    <input type="number" name="founded_year_max" id="founded_year_max"
-                           min="1800" max="2024" placeholder="2024"
-                           value="{{ filters['founded_year_max'] or '' }}">
-                </div>
-
-                <!-- 従業員数（最小） -->
-                <div class="filter-group">
-                    <label for="employee_count_min">従業員数（最小）</label>
-                    <input type="number" name="employee_count_min" id="employee_count_min"
-                           min="1" placeholder="10"
-                           value="{{ filters['employee_count_min'] or '' }}">
-                </div>
-
-                <!-- 従業員数（最大） -->
-                <div class="filter-group">
-                    <label for="employee_count_max">従業員数（最大）</label>
-                    <input type="number" name="employee_count_max" id="employee_count_max"
-                           min="1" placeholder="1000"
-                           value="{{ filters['employee_count_max'] or '' }}">
-                </div>
+            <div class="filter-section">
+                <div class="filter-section-title">検索</div>
+                <input type="text" class="search-input" name="search" placeholder="企業名を検索..." value="{{ filters['search'] or '' }}">
             </div>
 
-            <div class="filter-actions">
-                <button type="submit" class="btn btn-primary">検索</button>
-                <a href="/companies" class="btn btn-secondary">フィルターをクリア</a>
+        <div class="filter-section">
+            <div class="filter-section-title">業界</div>
+            {% for option in filter_options['industries'] %}
+            <div class="filter-option">
+                <input type="checkbox" name="industry" value="{{ option['value'] }}"
+                       {% if filters['industry'] == option['value'] %}checked{% end %}>
+                <label>{{ option['label'] }}</label>
+                <span class="count">{{ option['count'] }}</span>
             </div>
+            {% end %}
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-section-title">所在地</div>
+            {% for option in filter_options['locations'] %}
+            <div class="filter-option">
+                <input type="checkbox" name="location" value="{{ option['value'] }}"
+                       {% if filters['location'] == option['value'] %}checked{% end %}>
+                <label>{{ option['label'] }}</label>
+                <span class="count">{{ option['count'] }}</span>
+            </div>
+            {% end %}
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-section-title">企業規模</div>
+            {% for option in filter_options['sizes'] %}
+            <div class="filter-option">
+                <input type="checkbox" name="size" value="{{ option['value'] }}"
+                       {% if filters['size'] == option['value'] %}checked{% end %}>
+                <label>{{ option['label'] }}</label>
+                <span class="count">{{ option['count'] }}</span>
+            </div>
+            {% end %}
+        </div>
+        <div class="filter-section">
+            <div class="filter-section-title">並び替え</div>
+            <select name="sort" class="sort-dropdown" id="sort-dropdown">
+                <option value="">並び替え</option>
+                <option value="rating_desc" {% if filters.get('sort') == 'rating_desc' %}selected{% end %}>評価順（高→低）</option>
+                <option value="rating_asc" {% if filters.get('sort') == 'rating_asc' %}selected{% end %}>評価順（低→高）</option>
+                <option value="review_count" {% if filters.get('sort') == 'review_count' %}selected{% end %}>レビュー数順</option>
+                <option value="name" {% if filters.get('sort') == 'name' %}selected{% end %}>企業名順</option>
+                <option value="recent" {% if filters.get('sort') == 'recent' %}selected{% end %}>最近追加順</option>
+            </select>
+        </div>
         </form>
     </div>
 
-    <!-- 企業一覧テーブル（デスクトップ用） -->
-    {% if companies %}
-    <div class="companies-table-wrapper">
-        <table class="companies-table">
-            <thead>
-                <tr>
-                    <th>企業名</th>
-                    <th>業界</th>
-                    <th>規模</th>
-                    <th>所在地</th>
-                    <th>設立年</th>
-                    <th>従業員数</th>
-                    <th>概要</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for company in companies %}
-                <tr>
-                    <td>
-                        <a href="/companies/{{ company['id'] }}" class="company-name">
-                            {{ company['name'] }}
-                        </a>
-                    </td>
-                    <td>
-                        <span class="industry-badge">{{ company['industry_label'] }}</span>
-                    </td>
-                    <td>
-                        <span class="size-badge">{{ company['size_label'] }}</span>
-                    </td>
-                    <td>{{ company['location'] or '-' }}</td>
-                    <td>{{ company['founded_year'] or '-' }}</td>
-                    <td>
-                        {% if company['employee_count'] %}
-                        {{ "{:,}".format(company['employee_count']) }}名
-                        {% else %}
-                        -
-                        {% end %}
-                    </td>
-                    <td>
-                        {% if company['description'] %}
-                        <div class="company-description" title="{{ company['description'] }}">
-                            {{ company['description'] }}
+    <!-- Results Area -->
+    <div class="results-area">
+        <div class="results-header">
+            <div>
+                <h1 class="results-title">{{ page_title }}</h1>
+                <div class="results-count">
+                    総企業数: {{ total_companies }}社
+                    {% if filters['industry'] or filters['size'] or filters['location'] or filters['search'] %}
+                    （フィルター適用中）
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if companies %}
+        <div class="companies-grid">
+            {% for company in companies %}
+            <div class="company-card" onclick="window.location.href='/companies/{{ company['id'] }}'">
+                <div class="company-card-header">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect fill='%23F0F0F0' width='48' height='48' rx='8'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%2320BEFF' font-size='16' font-family='Arial'%3E{{ company['name'][:1] }}%3C/text%3E%3C/svg" class="company-logo" alt="{{ company['name'] }}" loading="lazy">
+                    <div class="company-info">
+                        <h3 class="company-name">
+                            <a href="/companies/{{ company['id'] }}">{{ company['name'] }}</a>
+                        </h3>
+                        <div class="company-rating">
+                            <span class="rating-stars">★★★★★</span>
+                            <span class="rating-score">4.5</span>
                         </div>
-                        {% else %}
-                        -
-                        {% end %}
-                    </td>
-                </tr>
-                {% end %}
-            </tbody>
-        </table>
-    </div>
+                    </div>
+                </div>
 
-    <!-- 企業一覧カード表示（モバイル用） -->
-    <div class="mobile-companies-view">
-        {% for company in companies %}
-        <div class="company-card">
-            <div class="company-card-header">
-                <h3 class="company-card-name">
-                    <a href="/companies/{{ company['id'] }}">{{ company['name'] }}</a>
-                </h3>
-                <div class="company-card-badges">
-                    <span class="industry-badge">{{ company['industry_label'] }}</span>
-                    <span class="size-badge">{{ company['size_label'] }}</span>
-                </div>
-            </div>
-            <div class="company-card-body">
-                <div class="company-card-info">
-                    <div class="info-item">
-                        <span class="info-label">所在地</span>
-                        <span class="info-value">{{ company['location'] or '-' }}</span>
+                <div class="company-meta">
+                    <div class="meta-item">
+                        <span>📍</span>
+                        <span>{{ company['location'] or '-' }}</span>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">設立年</span>
-                        <span class="info-value">{{ company['founded_year'] or '-' }}</span>
+                    <div class="meta-item">
+                        <span>👥</span>
+                        <span>{{ company['employee_count'] or '-' }}名</span>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">従業員数</span>
-                        <span class="info-value">
-                            {% if company['employee_count'] %}
-                            {{ "{:,}".format(company['employee_count']) }}名
-                            {% else %}
-                            -
-                            {% end %}
-                        </span>
+                    <div class="meta-item">
+                        <span>📅</span>
+                        <span>{{ company['founded_year'] or '-' }}年設立</span>
                     </div>
                 </div>
+
+                <div class="company-badges">
+                    <span class="badge badge-industry">{{ company['industry_label'] }}</span>
+                    <span class="badge badge-size">{{ company['size_label'] }}</span>
+                    <span class="badge badge-location">{{ company['location'] or '-' }}</span>
+                </div>
+
                 {% if company['description'] %}
-                <div class="company-card-description">
-                    {{ company['description'][:100] }}{% if len(company['description']) > 100 %}...{% end %}
+                <div class="company-description">
+                    {{ company['description'] }}
                 </div>
-                {% end %}
+                {% endif %}
+
+                <div class="company-footer">
+                    <div class="company-stats">
+                        <div class="stat-item">
+                            <span>💬</span>
+                            <span>レビュー 128件</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>👍</span>
+                            <span>推奨 85%</span>
+                        </div>
+                    </div>
+                    <div class="company-tags">
+                        <span class="tag">スタートアップ</span>
+                        <span class="tag">成長企業</span>
+                    </div>
+                </div>
             </div>
-        </div>
-        {% end %}
-    </div>
-
-    <!-- ページネーション -->
-    {% if total_pages > 1 %}
-    <div class="pagination-section">
-        <div class="pagination-info">
-            {{ (current_page - 1) * 30 + 1 }}〜{{ min(current_page * 30, total_companies) }}社目
-            （全{{ total_companies }}社中）
+            {% end %}
         </div>
 
+        <!-- Pagination -->
+        {% if total_pages > 1 %}
         <div class="pagination">
             {% if has_previous %}
-            <a href="?page={{ previous_page }}{% for key, value in filters.items() %}{% if value %}&{{ key }}={{ value }}{% end %}{% end %}"
-               class="btn btn-secondary">前</a>
+            <a href="?page={{ previous_page }}{% for key, value in filters.items() %}{% if value %}&{{ key }}={{ value }}{% end %}{% end %}" class="btn btn-secondary">前</a>
             {% else %}
             <button class="btn btn-secondary" disabled>前</button>
-            {% end %}
+            {% endif %}
 
             <span class="btn active">{{ current_page }}</span>
 
             {% if has_next %}
-            <a href="?page={{ next_page }}{% for key, value in filters.items() %}{% if value %}&{{ key }}={{ value }}{% end %}{% end %}"
-               class="btn btn-secondary">次</a>
+            <a href="?page={{ next_page }}{% for key, value in filters.items() %}{% if value %}&{{ key }}={{ value }}{% end %}{% end %}" class="btn btn-secondary">次</a>
             {% else %}
             <button class="btn btn-secondary" disabled>次</button>
-            {% end %}
+            {% endif %}
         </div>
-    </div>
-    {% end %}
+        {% endif %}
 
-    {% else %}
-    <!-- 結果なしの表示 -->
-    <div class="no-results">
-        <div class="no-results-icon">🔍</div>
-        <h3>検索条件に一致する企業が見つかりませんでした</h3>
-        <p>フィルター条件を変更して再度お試しください</p>
-        <a href="/companies" class="btn btn-primary">すべての企業を表示</a>
+        {% else %}
+        <!-- 結果なしの表示 -->
+        <div class="no-results">
+            <div class="no-results-icon">🔍</div>
+            <h3>検索条件に一致する企業が見つかりませんでした</h3>
+            <p>フィルター条件を変更して再度お試しください</p>
+            <a href="/companies" class="btn btn-primary">すべての企業を表示</a>
+        </div>
+        {% endif %}
     </div>
-    {% end %}
 </div>
 {% end %}
 
@@ -666,6 +640,32 @@ document.addEventListener('DOMContentLoaded', function() {
     //         filterForm.submit();
     //     });
     // });
+
+    // チェックボックス変更時の即時更新
+    const checkboxes = filterForm.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    });
+
+    // 検索入力（エンターキー）
+    const searchInput = filterForm.querySelector('input[name="search"]');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                filterForm.submit();
+            }
+        });
+    }
+
+    // ソートドロップダウン
+    const sortDropdown = document.getElementById('sort-dropdown');
+    if (sortDropdown) {
+        sortDropdown.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    }
 });
 </script>
 {% end %}

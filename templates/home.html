@@ -5,90 +5,80 @@
 {% block content %}
 <div class="hero-section">
     <div class="hero-content">
-        <h1 class="hero-title">次世代のスタートアップエコシステム</h1>
+        <h1 class="hero-title">優秀な人材とスタートアップをつなぐ</h1>
         <p class="hero-subtitle">
-            イノベーションと才能が出会う場所。あなたのキャリアを加速させ、
-            未来を創造するスタートアップに参加しよう。
+            実績ベースの評価で、透明性の高いマッチングを実現
         </p>
         <div class="hero-actions">
             {% if not current_user %}
-            <a href="/auth/email/register" class="btn btn-primary">今すぐ始める</a>
-            <a href="/jobs" class="btn btn-secondary">求人を探す</a>
+            <a href="/auth/email/register" class="btn btn-primary">無料で始める</a>
+            <a href="/companies" class="btn btn-secondary-outline">企業を探す</a>
             {% else %}
             <a href="/jobs" class="btn btn-primary">求人を探す</a>
-            <a href="/profile" class="btn btn-secondary">プロフィール</a>
+            <a href="/companies" class="btn btn-secondary-outline">企業を探す</a>
             {% end %}
         </div>
     </div>
     <div class="hero-visual">
-        <div class="floating-cards">
-            <div class="floating-card startup-card">
-                <div class="card-icon">🚀</div>
-                <h3>スタートアップ</h3>
-                <p>革新的なアイデアを実現</p>
-            </div>
-            <div class="floating-card talent-card">
-                <div class="card-icon">💡</div>
-                <h3>優秀な人材</h3>
-                <p>専門スキルを持つプロ</p>
-            </div>
-            <div class="floating-card growth-card">
-                <div class="card-icon">📈</div>
-                <h3>成長機会</h3>
-                <p>キャリアアップを支援</p>
-            </div>
+        <div class="hero-illustration">
+            <!-- SVG illustration placeholder - can be replaced with actual illustration -->
+            <svg width="100%" height="100%" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+                <rect width="400" height="300" fill="url(#gradient)" />
+                <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#20BEFF;stop-opacity:0.1" />
+                        <stop offset="100%" style="stop-color:#1A8FCC;stop-opacity:0.2" />
+                    </linearGradient>
+                </defs>
+                <!-- Abstract shapes representing connection between talent and startups -->
+                <circle cx="100" cy="100" r="40" fill="#20BEFF" opacity="0.3"/>
+                <circle cx="300" cy="200" r="60" fill="#1A8FCC" opacity="0.2"/>
+                <path d="M 100 100 Q 200 150 300 200" stroke="#20BEFF" stroke-width="3" fill="none" opacity="0.5"/>
+                <text x="200" y="50" text-anchor="middle" font-family="var(--font-family-base)" font-size="24" font-weight="700" fill="#20BEFF">Talent → Startup</text>
+            </svg>
         </div>
     </div>
 </div>
 
-<section class="features-section">
-    <div class="section-header">
-        <h2>プラットフォームの特徴</h2>
-        <p>Kaggleライクな競争的環境で、最高の才能とプロジェクトを発見</p>
-    </div>
-    
-    <div class="features-grid">
-        <div class="feature-card">
-            <div class="feature-icon">🎯</div>
-            <h3>精密なマッチング</h3>
-            <p>AIを活用したスキルマッチングシステムで、最適な求人とタレントをマッチング</p>
-        </div>
-        
-        <div class="feature-card">
-            <div class="feature-icon">🏆</div>
-            <h3>実績ベース評価</h3>
-            <p>プロジェクトの成果と実績を可視化し、透明性の高い評価システムを提供</p>
-        </div>
-        
-        <div class="feature-card">
-            <div class="feature-icon">🌐</div>
-            <h3>グローバルネットワーク</h3>
-            <p>世界中のスタートアップと人材を繋ぐ、ボーダーレスなプラットフォーム</p>
-        </div>
-        
-        <div class="feature-card">
-            <div class="feature-icon">📚</div>
-            <h3>学習リソース</h3>
-            <p>スキルアップのための教材とメンターシップで継続的な成長をサポート</p>
-        </div>
-    </div>
-</section>
-
 <section class="stats-section">
     <div class="stats-container">
         <div class="stat-item">
+            <div class="stat-icon">
+                <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="24" cy="24" r="20" fill="#20BEFF" opacity="0.2"/>
+                    <path d="M24 8 L28 16 L36 16 L30 22 L32 30 L24 26 L16 30 L18 22 L12 16 L20 16 Z" fill="#20BEFF"/>
+                </svg>
+            </div>
             <div class="stat-number">10,000+</div>
             <div class="stat-label">アクティブユーザー</div>
         </div>
         <div class="stat-item">
+            <div class="stat-icon">
+                <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="12" y="16" width="24" height="20" rx="2" fill="#1A8FCC" opacity="0.2"/>
+                    <path d="M18 24 L22 28 L30 20" stroke="#1A8FCC" stroke-width="3" fill="none"/>
+                </svg>
+            </div>
             <div class="stat-number">5,000+</div>
             <div class="stat-label">求人情報</div>
         </div>
         <div class="stat-item">
+            <div class="stat-icon">
+                <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="16" y="12" width="16" height="24" rx="2" fill="#20BEFF" opacity="0.2"/>
+                    <circle cx="24" cy="20" r="3" fill="#20BEFF"/>
+                    <rect x="20" y="28" width="8" height="6" fill="#20BEFF"/>
+                </svg>
+            </div>
             <div class="stat-number">1,200+</div>
             <div class="stat-label">登録企業</div>
         </div>
         <div class="stat-item">
+            <div class="stat-icon">
+                <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M24 8 L28 14 L36 14 L30 20 L32 28 L24 24 L16 28 L18 20 L12 14 L20 14 Z" fill="#FFB400"/>
+                </svg>
+            </div>
             <div class="stat-number">95%</div>
             <div class="stat-label">マッチング成功率</div>
         </div>

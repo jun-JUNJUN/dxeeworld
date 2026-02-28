@@ -3,10 +3,22 @@
 """
 import logging
 from typing import Dict, List, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 
 logger = logging.getLogger(__name__)
+
+# 新8カテゴリーの定義: (出力キー, フィールドリスト)
+_NEW_CATEGORIES: List[tuple] = [
+    ("compensation",       ["comp_salary", "comp_bonus", "comp_benefits", "comp_equity"]),
+    ("work_life_balance",  ["wlb_hours", "wlb_vacation", "wlb_flexibility", "wlb_overall"]),
+    ("culture",            ["culture_atmosphere", "culture_diversity", "culture_ethics", "culture_communication"]),
+    ("career_development", ["career_growth", "career_training", "career_path", "career_mentorship"]),
+    ("management",         ["mgmt_vision", "mgmt_decision", "mgmt_structure", "mgmt_manager"]),
+    ("performance_system", ["perf_fairness", "perf_feedback", "perf_promotion", "perf_linkage"]),
+    ("work_environment",   ["env_office", "env_relationships", "env_stress", "env_health"]),
+    ("business_product",   ["biz_future", "biz_pride", "biz_social_impact", "biz_financial"]),
+]
 
 
 class ReviewAggregationService:
@@ -18,6 +30,7 @@ class ReviewAggregationService:
             db_service: データベースサービス
         """
         self.db = db_service
+        self._cache: Dict[str, Any] = {}
 
     def calculate_category_averages(self, reviews: List[Dict[str, Any]]) -> Dict[str, float]:
         """
@@ -149,6 +162,176 @@ class ReviewAggregationService:
                 "company_id": company_id,
                 "error": str(e)
             }
+
+    def calculate_new_category_averages(self, reviews: List[Dict[str, Any]]) -> Dict[str, float]:
+        """
+        新8カテゴリーの平均評価を計算（None値を除外）
+
+        Args:
+            reviews: レビューのリスト（新スキーマフィールドを含む）
+
+        Returns:
+            8カテゴリーの平均評価辞書
+        """
+        result: Dict[str, float] = {}
+        for category_key, fields in _NEW_CATEGORIES:
+            all_values: List[float] = []
+            for review in reviews:
+                for field in fields:
+                    val = review.get(field)
+                    if val is not None:
+                        all_values.append(float(val))
+            result[category_key] = sum(all_values) / len(all_values) if all_values else 0.0
+        return result
+
+    def calculate_new_overall_average(self, category_averages: Dict[str, float]) -> float:
+        """
+        新8カテゴリーの平均から総合評価を計算
+
+        Args:
+            category_averages: カテゴリー別平均の辞書
+
+        Returns:
+            総合評価平均（0.0〜5.0）
+        """
+        values = [v for v in category_averages.values() if v > 0.0]
+        return sum(values) / len(values) if values else 0.0
+
+    def calculate_nps(self, reviews: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        NPS（Net Promoter Score）を計算
+
+        Promoters: overall_nps 9-10
+        Passives:  overall_nps 7-8
+        Detractors: overall_nps 0-6
+
+        NPS = (Promoters - Detractors) / Total * 100
+
+        Args:
+            reviews: レビューのリスト
+
+        Returns:
+            NPS計算結果辞書
+        """
+        promoters = 0
+        passives = 0
+        detractors = 0
+
+        for review in reviews:
+            nps = review.get("overall_nps")
+            if nps is None:
+                continue
+            nps = int(nps)
+            if nps >= 9:
+                promoters += 1
+            elif nps >= 7:
+                passives += 1
+            else:
+                detractors += 1
+
+        total = promoters + passives + detractors
+
+        if total == 0:
+            nps_score = 0
+        else:
+            nps_score = round((promoters - detractors) / total * 100)
+
+        return {
+            "nps_score": nps_score,
+            "promoters_count": promoters,
+            "passives_count": passives,
+            "detractors_count": detractors,
+            "total_count": total,
+        }
+
+    async def get_company_aggregations(self, company_id: str) -> Dict[str, Any]:
+        """
+        企業の新8カテゴリー集計データを取得
+
+        Args:
+            company_id: 企業ID
+
+        Returns:
+            集計結果辞書
+        """
+        try:
+            reviews = await self.db.find_many(
+                "reviews",
+                {"company_id": company_id, "is_active": True},
+                sort=[("created_at", -1)]
+            )
+
+            if not reviews:
+                return {
+                    "success": True,
+                    "company_id": company_id,
+                    "overall_rating": 0.0,
+                    "nps_score": 0,
+                    "review_count": 0,
+                    "category_scores": {key: 0.0 for key, _ in _NEW_CATEGORIES},
+                    "last_updated": datetime.now(timezone.utc).isoformat(),
+                }
+
+            category_scores = self.calculate_new_category_averages(reviews)
+            overall_rating = self.calculate_new_overall_average(category_scores)
+            nps_result = self.calculate_nps(reviews)
+            last_review = reviews[0].get("created_at")
+
+            return {
+                "success": True,
+                "company_id": company_id,
+                "overall_rating": round(overall_rating, 2),
+                "nps_score": nps_result["nps_score"],
+                "review_count": len(reviews),
+                "category_scores": {k: round(v, 2) for k, v in category_scores.items()},
+                "last_updated": last_review.isoformat() if hasattr(last_review, "isoformat") else str(last_review),
+            }
+
+        except Exception as e:
+            logger.exception("Failed to get company aggregations for %s: %s", company_id, e)
+            return {
+                "success": False,
+                "company_id": company_id,
+                "error": str(e),
+            }
+
+    async def get_industry_benchmarks(self) -> Dict[str, Any]:
+        """
+        全企業を対象とした業界ベンチマーク（8カテゴリー平均）を計算
+
+        Returns:
+            業界ベンチマーク辞書
+        """
+        try:
+            reviews = await self.db.find_many(
+                "reviews",
+                {"is_active": True},
+            )
+
+            benchmarks = self.calculate_new_category_averages(reviews)
+
+            return {
+                "success": True,
+                "benchmarks": {k: round(v, 2) for k, v in benchmarks.items()},
+                "review_count": len(reviews),
+            }
+
+        except Exception as e:
+            logger.exception("Failed to get industry benchmarks: %s", e)
+            return {
+                "success": False,
+                "benchmarks": {key: 0.0 for key, _ in _NEW_CATEGORIES},
+                "error": str(e),
+            }
+
+    async def invalidate_cache(self, company_id: str) -> None:
+        """
+        特定企業のキャッシュを無効化
+
+        Args:
+            company_id: 企業ID
+        """
+        self._cache.pop(company_id, None)
 
     async def aggregate_and_update_company(self, company_id: str) -> Dict[str, Any]:
         """
