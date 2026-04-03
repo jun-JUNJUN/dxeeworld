@@ -3,7 +3,7 @@
 Task 3: 質問別レビュー一覧ページの実装
 """
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import Mock, AsyncMock, patch
 import tornado.web
 from bson import ObjectId
@@ -96,8 +96,8 @@ class TestCategoryReviewListHandler:
             },
             individual_average=3.8,
             answered_count=5,
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
             is_active=True,
             employment_period=EmploymentPeriod(start_year=2020, end_year=None),
             language="ja"
